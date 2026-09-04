@@ -147,4 +147,23 @@ body {
 .hero-compact .input-wrap {
   max-width: 560px;
 }
+.chat-tabs {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.question-counter {
+  margin-left: auto;
+  font-size: 0.85rem;
+  color: #9a8f86;
+  font-weight: 500;
+}
+
+.ask-hint {
+  font-size: 0.75rem;
+  color: #b0a59b;
+  margin-top: 6px;
+  padding-left: 4px;
+}
 

@@ -1,6 +1,8 @@
 import { useState, useCallback } from "react";
 import { askQuestion, getQaHistory } from "../api/videoApi";
 
+const MAX_QUESTIONS = 5;
+
 export function useVideoQA(videoId) {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -21,6 +23,10 @@ export function useVideoQA(videoId) {
   }, [videoId]);
 
   const askVideo = async (question) => {
+    if (messages.length >= MAX_QUESTIONS) {
+      setError(`You've reached the limit of ${MAX_QUESTIONS} questions.`);
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -35,5 +41,13 @@ export function useVideoQA(videoId) {
     }
   };
 
-  return { messages, fetchHistory, askVideo, loading, error };
+  return {
+    messages,
+    fetchHistory,
+    askVideo,
+    loading,
+    error,
+    questionCount: messages.length,
+    limitReached: messages.length >= MAX_QUESTIONS,
+  };
 }
