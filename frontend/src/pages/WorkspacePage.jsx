@@ -1,7 +1,6 @@
 import { useRef } from "react";
 import VideoPlayer from "../components/workspace/VideoPlayer";
 import ChatPanel from "../components/workspace/ChatPanel";
-import ComingSoon from "../components/reels/ComingSoon";
 
 export default function WorkspacePage({ video }) {
   const playerRef = useRef(null);
@@ -13,7 +12,11 @@ export default function WorkspacePage({ video }) {
   return (
     <section className="preview">
       <div className="preview-card">
-        <div className="preview-head">Workspace</div>
+        <div className="window-dots">
+          <span className="dot red"></span>
+          <span className="dot yellow"></span>
+          <span className="dot green"></span>
+        </div>
         <div className="workspace">
           <VideoPlayer
             ref={playerRef}
@@ -23,9 +26,8 @@ export default function WorkspacePage({ video }) {
             youtubeUrl={video?.youtube_url}
           />
           <ChatPanel videoId={video?.id} onSeek={handleSeek} />
-         </div>
+        </div>
       </div>
-      <ComingSoon />
     </section>
   );
 }

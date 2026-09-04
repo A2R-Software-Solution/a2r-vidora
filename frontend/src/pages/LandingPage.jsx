@@ -3,7 +3,7 @@ import InputBox from "../components/landing/InputBox";
 import Features from "../components/landing/Features";
 import { useVideoAnalyze } from "../hooks/useVideoAnalyze";
 
-export default function LandingPage({ onAnalyzed }) {
+export default function LandingPage({ onAnalyzed, compact }) {
   const { submitVideo, loading, error } = useVideoAnalyze();
 
   const handleAnalyze = async (url) => {
@@ -16,10 +16,10 @@ export default function LandingPage({ onAnalyzed }) {
   };
 
   return (
-    <Hero>
+    <Hero compact={compact}>
       <InputBox onAnalyze={handleAnalyze} loading={loading} />
       {error && <div className="error-text">{error}</div>}
-      <Features />
+      {!compact && <Features />}
     </Hero>
   );
 }

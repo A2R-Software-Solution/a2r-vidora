@@ -24,8 +24,11 @@ export default function ChatPanel({ videoId, onSeek }) {
 
   return (
     <div className="chat">
-      <div className="chat-title">Ask this video</div>
-      <div className="chat-sub">Find information without watching the whole thing.</div>
+      <div className="chat-tabs">
+        <span className="chat-tab active">✨ AI Answer</span>
+        <span className="chat-tab">💬 Chat</span>
+        <span className="chat-tab new-video">↻ New Video</span>
+      </div>
 
       <div className="messages">
         {messages.map((msg, idx) => (
