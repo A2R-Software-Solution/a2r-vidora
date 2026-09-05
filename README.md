@@ -1,4 +1,4 @@
-# VidoraAI
+   # VidoraAI
 
 > AI-powered video intelligence platform — understand, search, summarize, and later create short-form content from long-form videos.
 
@@ -15,7 +15,7 @@ VidoraAI is a web-based AI video intelligence platform where a user provides a Y
 - Ask natural-language questions about the video.
 - Return concise answers with relevant timestamps.
 - Generate video summaries.
-- Temporarily retain transcript/embedding data and automatically remove it after approximately 24 hours.
+- Temporarily retain transcript/embeddi   ng data an  d automatically remove it after approximately 24 hours.
 - Do not permanently store the original YouTube video.
 
 ### Future capability
