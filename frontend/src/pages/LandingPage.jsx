@@ -18,7 +18,7 @@ export default function LandingPage({ onAnalyzed, compact }) {
   return (
     <Hero compact={compact}>
       <InputBox onAnalyze={handleAnalyze} loading={loading} />
-      {error && <div className="error-text">{error}</div>}
+      {error && <div className="error-text" role="alert">{error}</div>}
       {!compact && <Features />}
     </Hero>
   );

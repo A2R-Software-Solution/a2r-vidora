@@ -1,3 +1,4 @@
+import { errorMessage } from "../api/errorMessage";
 import { useState } from "react";
 import { analyzeVideo, getVideos } from "../api/videoApi";
 
@@ -84,7 +85,7 @@ export function useVideoAnalyze() {
 
       return newVideo;
     } catch (err) {
-      setError(err?.response?.data?.detail || "Failed to analyze video");
+      setError(errorMessage(err, "Failed to analyze video"));
       throw err;
     } finally {
       setLoading(false);
@@ -130,7 +131,7 @@ export function useVideoAnalyze() {
 
       return foundVideo;
     } catch (err) {
-      setError(err?.response?.data?.detail || "Failed to restore video");
+      setError(errorMessage(err, "Failed to restore video"));
       return null;
     } finally {
       setLoading(false);

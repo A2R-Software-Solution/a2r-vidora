@@ -1,0 +1,13 @@
+{
+  "version": "1.0.0",
+  "owner": "unassigned",
+  "approved": false,
+  "deployment_regions": [],
+  "evaluated_languages": [],
+  "operations": {
+    "answer": "openai/gpt-oss-20b",
+    "summary": "openai/gpt-oss-20b",
+    "transcription": "whisper-large-v3",
+    "embedding": "all-MiniLM-L6-v2"
+  }
+}

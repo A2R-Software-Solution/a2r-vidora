@@ -1,6 +1,9 @@
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.responses import JSONResponse
+from app.governance.routes import router as governance_router
+from app.governance.runtime import GovernanceBlocked
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
@@ -39,3 +42,10 @@ app.include_router(qa_log_router)
 @app.get("/health")
 async def health():
     return {"status": "ok"}
+
+app.include_router(governance_router)
+
+
+@app.exception_handler(GovernanceBlocked)
+async def governance_blocked_handler(request, exc):
+    return JSONResponse(status_code=503, content={"detail": str(exc)})

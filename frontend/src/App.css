@@ -167,3 +167,40 @@ body {
   padding-left: 4px;
 }
 
+
+/* AI transparency and source verification */
+.processing-notice {
+  max-width: 720px; margin: 22px auto; padding: 16px 20px;
+  text-align: left; border: 1px solid #dfc8b5; border-radius: 12px;
+  background: #fff8f0; color: #51453c; font-size: 13px; line-height: 1.65;
+}
+.processing-notice p { margin: 0 0 10px; }
+.processing-notice p:last-child { margin-bottom: 0; }
+summary { cursor: pointer; font-weight: 600; }
+details[open] > summary { margin-bottom: 12px; }
+.ai-notice { font-size: 13px; line-height: 1.6; color: #62564c; }
+.ai-label { display: block; font-size: 12px; font-weight: 700; color: #8a391d; margin-bottom: 6px; }
+.message-text { white-space: pre-wrap; overflow-wrap: anywhere; }
+.qa-exchange { margin-bottom: 28px; }
+.workspace-notice { padding: 18px 24px; border-bottom: 1px solid #f0e0d0; font-size: 13px; line-height: 1.6; }
+.workspace-notice a { display: inline-block; margin-left: 16px; color: #8a391d; }
+.workspace-notice p { margin-bottom: 0; color: #62564c; }
+.video-summary { padding: 0 28px 28px; font-size: 14px; line-height: 1.65; }
+.video-summary h2 { font-size: 16px; }
+.source-excerpts, .issue-report { margin-top: 16px; font-size: 13px; }
+.source-excerpts blockquote { margin: 8px 0; padding-left: 12px; border-left: 3px solid #dfc8b5; white-space: pre-wrap; overflow-wrap: anywhere; }
+.issue-report { border-top: 1px solid #ecdccc; padding-top: 12px; }
+.issue-report label { display: block; margin: 12px 0 6px; }
+.issue-report select, .issue-report textarea { width: 100%; font: inherit; padding: 9px; color: #332b25; background: #fff; border: 1px solid #bca997; border-radius: 6px; }
+.issue-report textarea { resize: vertical; }
+.secondary-button { background: #fff3e9; color: #78351e; border: 1px solid #c6a18c; border-radius: 6px; padding: 8px 12px; margin-top: 8px; }
+button:disabled { cursor: not-allowed; opacity: .6; }
+:where(button, input, textarea, select, a, summary):focus-visible { outline: 3px solid #8a391d; outline-offset: 3px; }
+.chat, .workspace > div { min-width: 0; }
+.video-box iframe { width: 100%; height: 100%; border-radius: 12px; }
+.ask-hint, .hint, .question-counter { color: #62564c; }
+@media (max-width: 760px) {
+  .workspace-notice a { display: block; margin-left: 0; margin-top: 8px; }
+  .chat, .video { padding: 20px; }
+  .video-summary { padding: 0 20px 20px; }
+}

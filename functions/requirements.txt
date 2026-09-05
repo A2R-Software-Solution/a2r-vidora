@@ -18,3 +18,4 @@ asyncpg
 a2wsgi
 asgiref
 email-validator
+prometheus-client>=0.21,<1

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from app.governance.runtime import QUALITY
+
 import re
 import uuid
 from typing import Awaitable, Callable
@@ -112,6 +114,7 @@ class QALogService:
             )
 
         if not relevant_chunks:
+            QUALITY.labels("no_context").inc()
             answer = _NO_CONTEXT_ANSWER
         else:
             # Timestamps are always included in the context sent to the
@@ -131,6 +134,11 @@ class QALogService:
             answer=answer,
         )
         await self._db.commit()
+        # Response-only evidence: do not reconstruct historical sources from a new search.
+        log.sources = [
+            {"text": chunk.chunk_text, "start_time": chunk.start_time, "end_time": chunk.end_time}
+            for chunk in relevant_chunks
+        ]
         return log
 
     async def list_for_video(

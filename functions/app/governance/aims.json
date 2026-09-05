@@ -1,0 +1,371 @@
+{
+  "schema_version": "1.0",
+  "version": "draft-1",
+  "scope": "Vidora video understanding: YouTube audio ingestion, Groq transcription and generation, local embeddings, PostgreSQL storage, frontend disclosures, and supporting operations.",
+  "intended_use": "Human-reviewed understanding of video content using summaries and source-based Q&A.",
+  "excluded_uses": [
+    "Autonomous decisions affecting rights, access to services, or safety.",
+    "Claims of verified factual accuracy or validated global language coverage."
+  ],
+  "interested_parties": [
+    "Viewers",
+    "Speakers and people mentioned in videos",
+    "Rights holders",
+    "Service operators",
+    "External service providers"
+  ],
+  "obligations": [
+    "Identify applicable regional requirements before deployment.",
+    "Review authorized media use, data processing, provider responsibilities, and user notices."
+  ],
+  "accountable_owner": null,
+  "executive_sponsor": null,
+  "maximum_residual_risk": 6,
+  "controls": [
+    {
+      "id": "policy",
+      "area": "policy",
+      "reference": "Organizational policy (project control; map to the licensed standard during review)",
+      "applicable": true,
+      "rationale": "Maintain a reviewed policy and management-system scope.",
+      "owner": null,
+      "implemented": false,
+      "evidence": []
+    },
+    {
+      "id": "accountability",
+      "area": "accountability",
+      "reference": "Ownership and escalation (project control; map to the licensed standard during review)",
+      "applicable": true,
+      "rationale": "Assign accountable decision makers and a support intake process.",
+      "owner": null,
+      "implemented": false,
+      "evidence": []
+    },
+    {
+      "id": "resources",
+      "area": "resources",
+      "reference": "People and resources (project control; map to the licensed standard during review)",
+      "applicable": true,
+      "rationale": "Document competence, staffing, and operational resources.",
+      "owner": null,
+      "implemented": false,
+      "evidence": []
+    },
+    {
+      "id": "impact",
+      "area": "impact",
+      "reference": "Impact assessment (project control; map to the licensed standard during review)",
+      "applicable": true,
+      "rationale": "Assess effects on viewers, speakers, and people mentioned in recordings.",
+      "owner": null,
+      "implemented": false,
+      "evidence": []
+    },
+    {
+      "id": "lifecycle",
+      "area": "lifecycle",
+      "reference": "System lifecycle (project control; map to the licensed standard during review)",
+      "applicable": true,
+      "rationale": "Review changes, evaluation evidence, release artifacts, and rollback.",
+      "owner": null,
+      "implemented": false,
+      "evidence": []
+    },
+    {
+      "id": "data",
+      "area": "data",
+      "reference": "Data management (project control; map to the licensed standard during review)",
+      "applicable": true,
+      "rationale": "Review provenance, authorized processing, retention, and deletion evidence.",
+      "owner": null,
+      "implemented": false,
+      "evidence": []
+    },
+    {
+      "id": "transparency",
+      "area": "transparency",
+      "reference": "User information (project control; map to the licensed standard during review)",
+      "applicable": true,
+      "rationale": "Disclose AI processing, limits, sources, expiry, and complaint options.",
+      "owner": null,
+      "implemented": false,
+      "evidence": []
+    },
+    {
+      "id": "responsible_use",
+      "area": "responsible_use",
+      "reference": "Intended use (project control; map to the licensed standard during review)",
+      "applicable": true,
+      "rationale": "Define allowed uses, misuse scenarios, human review, and limitations.",
+      "owner": null,
+      "implemented": false,
+      "evidence": []
+    },
+    {
+      "id": "suppliers",
+      "area": "suppliers",
+      "reference": "Supplier relationships (project control; map to the licensed standard during review)",
+      "applicable": true,
+      "rationale": "Review Groq, hosting, database, models, and third-party responsibilities.",
+      "owner": null,
+      "implemented": false,
+      "evidence": []
+    }
+  ],
+  "risks": [
+    {
+      "id": "unsupported-answers",
+      "description": "Incorrect or unsupported answers may mislead viewers.",
+      "affected_parties": [
+        "Viewers",
+        "People represented in source media"
+      ],
+      "owner": null,
+      "likelihood": 4,
+      "severity": 4,
+      "treatment": "Evaluate groundedness by language and show source excerpts.",
+      "control_ids": [
+        "lifecycle",
+        "transparency"
+      ],
+      "due_on": null,
+      "status": "open",
+      "residual_likelihood": null,
+      "residual_severity": null,
+      "accepted_by": null,
+      "evidence": [],
+      "accepted_on": null
+    },
+    {
+      "id": "personal-data",
+      "description": "Audio and text may disclose personal data to external providers.",
+      "affected_parties": [
+        "Viewers",
+        "People represented in source media"
+      ],
+      "owner": null,
+      "likelihood": 3,
+      "severity": 5,
+      "treatment": "Review processing locations, provider terms, privacy notices, and deletion evidence.",
+      "control_ids": [
+        "data",
+        "suppliers"
+      ],
+      "due_on": null,
+      "status": "open",
+      "residual_likelihood": null,
+      "residual_severity": null,
+      "accepted_by": null,
+      "evidence": [],
+      "accepted_on": null
+    },
+    {
+      "id": "language-disparity",
+      "description": "Retrieval and transcription quality may vary by language and accent.",
+      "affected_parties": [
+        "Viewers",
+        "People represented in source media"
+      ],
+      "owner": null,
+      "likelihood": 4,
+      "severity": 4,
+      "treatment": "Evaluate supported language and accent slices before approving deployment.",
+      "control_ids": [
+        "impact",
+        "lifecycle"
+      ],
+      "due_on": null,
+      "status": "open",
+      "residual_likelihood": null,
+      "residual_severity": null,
+      "accepted_by": null,
+      "evidence": [],
+      "accepted_on": null
+    },
+    {
+      "id": "prompt-injection",
+      "description": "Transcript instructions may influence generated output.",
+      "affected_parties": [
+        "Viewers",
+        "People represented in source media"
+      ],
+      "owner": null,
+      "likelihood": 3,
+      "severity": 4,
+      "treatment": "Maintain adversarial evaluations and bounded model use; verify source-based answers.",
+      "control_ids": [
+        "lifecycle",
+        "responsible_use"
+      ],
+      "due_on": null,
+      "status": "open",
+      "residual_likelihood": null,
+      "residual_severity": null,
+      "accepted_by": null,
+      "evidence": [],
+      "accepted_on": null
+    },
+    {
+      "id": "unreviewed-change",
+      "description": "Model, provider, prompt, or retention changes may invalidate prior assessments.",
+      "affected_parties": [
+        "Viewers",
+        "People represented in source media"
+      ],
+      "owner": null,
+      "likelihood": 3,
+      "severity": 4,
+      "treatment": "Bind release approval to policy, backend code, and retention configuration.",
+      "control_ids": [
+        "policy",
+        "lifecycle"
+      ],
+      "due_on": null,
+      "status": "open",
+      "residual_likelihood": null,
+      "residual_severity": null,
+      "accepted_by": null,
+      "evidence": [],
+      "accepted_on": null
+    },
+    {
+      "id": "incident-response",
+      "description": "User concerns may not reach a responsible reviewer.",
+      "affected_parties": [
+        "Viewers",
+        "People represented in source media"
+      ],
+      "owner": null,
+      "likelihood": 3,
+      "severity": 4,
+      "treatment": "Establish an operator-owned report intake and test escalation and corrective actions.",
+      "control_ids": [
+        "accountability",
+        "resources"
+      ],
+      "due_on": null,
+      "status": "open",
+      "residual_likelihood": null,
+      "residual_severity": null,
+      "accepted_by": null,
+      "evidence": [],
+      "accepted_on": null
+    }
+  ],
+  "objectives": [
+    {
+      "id": "groundedness",
+      "description": "Establish acceptable groundedness for each supported language before release.",
+      "owner": null,
+      "metric": "Reviewer-scored supported-answer proportion, worst supported language slice",
+      "target": 0.95,
+      "direction": "at_least",
+      "observed": null,
+      "measured_on": null,
+      "next_measurement_on": null,
+      "evidence": []
+    },
+    {
+      "id": "cleanup",
+      "description": "Verify deletion of expired analysis data in the deployed environment.",
+      "owner": null,
+      "metric": "Proportion of sampled expired records deleted within the documented cleanup window",
+      "target": 1.0,
+      "direction": "at_least",
+      "observed": null,
+      "measured_on": null,
+      "next_measurement_on": null,
+      "evidence": []
+    }
+  ],
+  "reviews": [
+    {
+      "kind": "risk_assessment",
+      "reviewer": null,
+      "performed_on": null,
+      "next_review_on": null,
+      "accepted": false,
+      "evidence": [],
+      "languages": []
+    },
+    {
+      "kind": "impact_assessment",
+      "reviewer": null,
+      "performed_on": null,
+      "next_review_on": null,
+      "accepted": false,
+      "evidence": [],
+      "languages": []
+    },
+    {
+      "kind": "supplier_review",
+      "reviewer": null,
+      "performed_on": null,
+      "next_review_on": null,
+      "accepted": false,
+      "evidence": [],
+      "languages": []
+    },
+    {
+      "kind": "data_review",
+      "reviewer": null,
+      "performed_on": null,
+      "next_review_on": null,
+      "accepted": false,
+      "evidence": [],
+      "languages": []
+    },
+    {
+      "kind": "evaluation",
+      "reviewer": null,
+      "performed_on": null,
+      "next_review_on": null,
+      "accepted": false,
+      "evidence": [],
+      "languages": []
+    },
+    {
+      "kind": "competence",
+      "reviewer": null,
+      "performed_on": null,
+      "next_review_on": null,
+      "accepted": false,
+      "evidence": [],
+      "languages": []
+    },
+    {
+      "kind": "internal_audit",
+      "reviewer": null,
+      "performed_on": null,
+      "next_review_on": null,
+      "accepted": false,
+      "evidence": [],
+      "languages": []
+    },
+    {
+      "kind": "management_review",
+      "reviewer": null,
+      "performed_on": null,
+      "next_review_on": null,
+      "accepted": false,
+      "evidence": [],
+      "languages": []
+    }
+  ],
+  "findings": [],
+  "release": {
+    "id": "unreleased",
+    "description": "Initial AIMS adoption; reviews and evidence have not been supplied.",
+    "requested_by": null,
+    "approved_by": null,
+    "approved_on": null,
+    "review_due_on": null,
+    "policy_sha256": null,
+    "application_sha256": null,
+    "retention_hours": 24,
+    "rollback_plan": "Disable AI on all instances, assess impact, restore a reviewed build and matching policy/evidence package, then rerun release checks.",
+    "evidence": []
+  },
+  "evidence": {}
+}

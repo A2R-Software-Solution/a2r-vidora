@@ -11,7 +11,7 @@ function App() {
     <div className="page">
       <Navbar onHome={() => setVideo(null)} />
       <LandingPage onAnalyzed={setVideo} compact={!!video} />
-      {video && <WorkspacePage video={video} />}
+      {video && <WorkspacePage key={video.id} video={video} />}
     </div>
   );
 }

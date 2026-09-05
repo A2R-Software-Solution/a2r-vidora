@@ -61,6 +61,12 @@ class QALogCreate(_QALogBase):
         return v
 
 
+class RetrievedSource(BaseModel):
+    text: str
+    start_time: float
+    end_time: float
+
+
 class QALogResponse(_QALogBase):
     """
     Read-only schema returned from API responses.
@@ -77,6 +83,10 @@ class QALogResponse(_QALogBase):
     question: str = Field(..., description="Question as asked.")
     answer: str = Field(..., description="Generated answer.")
     created_at: datetime = Field(..., description="UTC timestamp of the exchange.")
+    sources: list[RetrievedSource] | None = Field(
+        default=None,
+        description="Context used for this new answer; null for history where sources were not saved. An empty list means no context was retrieved.",
+    )
 
 
 

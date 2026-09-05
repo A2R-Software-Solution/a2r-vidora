@@ -1,0 +1,24 @@
+groups:
+  - name: vidora-ai
+    rules:
+      - alert: VidoraAIProviderErrors
+        expr: sum(rate(vidora_ai_calls_total{outcome="error"}[10m])) / clamp_min(sum(rate(vidora_ai_calls_total[10m])), 0.001) > 0.1
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: AI operation error ratio exceeds 10 percent
+      - alert: VidoraAIPolicyBlocks
+        expr: sum(increase(vidora_ai_calls_total{outcome="blocked"}[10m])) > 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: AI policy is blocking model calls; check release policy and emergency stop
+      - alert: VidoraAISlowInference
+        expr: histogram_quantile(0.95, sum by (le, operation) (rate(vidora_ai_duration_seconds_bucket[10m]))) > 30
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: AI operation p95 exceeds 30 seconds

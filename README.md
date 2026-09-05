@@ -2,6 +2,10 @@
 
 > AI-powered video intelligence platform — understand, search, summarize, and later create short-form content from long-form videos.
 
+## AI governance
+
+Runtime controls support NIST AI RMF Govern, Map, Measure, and Manage using Pydantic and Prometheus. [ISO/IEC 42001 AIMS support](docs/iso-42001-aims.md) adds risk/treatment records, current reviews, objectives, corrective actions, artifact integrity, and production release checks. Production AI is blocked until both the deployment policy and AIMS release criteria pass. The bundled AIMS records are drafts, not certification evidence. See [policy configuration, risk inventory, evaluation requirements, and incident runbook](docs/ai-risk-management.md).
+
 ## 1. Product Overview
 
 VidoraAI is a web-based AI video intelligence platform where a user provides a YouTube video URL and can interact with the video's content.

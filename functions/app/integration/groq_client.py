@@ -1,16 +1,16 @@
 from __future__ import annotations
 
 from functools import lru_cache
+from html import escape
 from pathlib import Path
 
 from groq import AsyncGroq
 from groq import GroqError
 
+from app.governance.inventory import CHAT_MODEL, STT_MODEL
+from app.governance.runtime import governed, QUALITY
 from app.core.config import settings
 from app.core.logging import logger
-
-CHAT_MODEL = "openai/gpt-oss-20b"
-STT_MODEL = "whisper-large-v3"
 
 _ANSWER_MAX_TOKENS = 1024
 _ANSWER_TEMPERATURE = 0.2
@@ -60,12 +60,12 @@ def _get_client() -> AsyncGroq:
 
 def _build_user_message(question: str, context_chunks: list[str]) -> str:
     if context_chunks:
-        joined = "\n---\n".join(chunk.strip() for chunk in context_chunks if chunk.strip())
+        joined = "\n---\n".join(escape(chunk.strip()) for chunk in context_chunks if chunk.strip())
         context_block = f"<transcript_context>\n{joined}\n</transcript_context>"
     else:
         context_block = "<transcript_context>\n(no relevant excerpts found)\n</transcript_context>"
 
-    return f"{context_block}\n\n<user_question>\n{question.strip()}\n</user_question>"
+    return f"{context_block}\n\n<user_question>\n{escape(question.strip())}\n</user_question>"
 
 
 _SUMMARY_SYSTEM_PROMPT = (
@@ -89,6 +89,7 @@ _SUMMARY_MAX_TOKENS = 400
 _SUMMARY_MAX_INPUT_CHARS = 20_000  # keeps very long transcripts within a safe prompt budget
 
 
+@governed("summary", CHAT_MODEL)
 async def generate_summary(full_transcript_text: str) -> str:
     """
     Generates a short summary of a video's full transcript text.
@@ -102,10 +103,11 @@ async def generate_summary(full_transcript_text: str) -> str:
 
     text = full_transcript_text.strip()
     if len(text) > _SUMMARY_MAX_INPUT_CHARS:
+        QUALITY.labels("summary_truncated").inc()
         text = text[:_SUMMARY_MAX_INPUT_CHARS]
 
     client = _get_client()
-    user_message = f"<transcript_context>\n{text}\n</transcript_context>"
+    user_message = f"<transcript_context>\n{escape(text)}\n</transcript_context>"
 
     try:
         response = await client.chat.completions.create(
@@ -118,8 +120,8 @@ async def generate_summary(full_transcript_text: str) -> str:
             temperature=_ANSWER_TEMPERATURE,
         )
     except GroqError as exc:
-        logger.error(f"Groq summary generation failed: {exc}")
-        raise GroqRequestError(f"Groq summary generation failed: {exc}") from exc
+        logger.error("Groq summary generation failed")
+        raise GroqRequestError("Groq summary generation failed") from exc
 
     summary = (response.choices[0].message.content or "").strip()
     if not summary:
@@ -128,6 +130,7 @@ async def generate_summary(full_transcript_text: str) -> str:
     return summary
 
 
+@governed("answer", CHAT_MODEL)
 async def generate_answer(question: str, context_chunks: list[str]) -> str:
     """
     Generate an answer to `question` grounded in `context_chunks`
@@ -155,8 +158,8 @@ async def generate_answer(question: str, context_chunks: list[str]) -> str:
             temperature=_ANSWER_TEMPERATURE,
         )
     except GroqError as exc:
-        logger.error(f"Groq chat completion failed: {exc}")
-        raise GroqRequestError(f"Groq chat completion failed: {exc}") from exc
+        logger.error("Groq chat completion failed")
+        raise GroqRequestError("Groq chat completion failed") from exc
 
     answer = (response.choices[0].message.content or "").strip()
     if not answer:
@@ -165,6 +168,7 @@ async def generate_answer(question: str, context_chunks: list[str]) -> str:
     return answer
 
 
+@governed("transcription", STT_MODEL)
 async def transcribe_audio(audio_file_path: str) -> list[dict]:
     """
     Transcribe an audio file via Groq Whisper, returning segment-level
@@ -186,8 +190,8 @@ async def transcribe_audio(audio_file_path: str) -> list[dict]:
             timestamp_granularities=["segment"],
         )
     except GroqError as exc:
-        logger.error(f"Groq transcription failed: {exc}")
-        raise GroqRequestError(f"Groq transcription failed: {exc}") from exc
+        logger.error("Groq transcription failed")
+        raise GroqRequestError("Groq transcription failed") from exc
 
     segments = getattr(response, "segments", None) or []
     if not segments:

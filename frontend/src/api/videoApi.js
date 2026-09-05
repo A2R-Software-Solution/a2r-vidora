@@ -19,6 +19,6 @@ export const askQuestion = (videoId, payload) => {
   return apiClient.post(`/videos/${videoId}/qa/ask`, payload);
 };
 
-export const getQaHistory = (videoId) => {
-  return apiClient.get(`/videos/${videoId}/qa`);
+export const getQaHistory = (videoId, signal) => {
+  return apiClient.get(`/videos/${videoId}/qa`, { signal });
 };

@@ -1,35 +1,29 @@
 import { useState } from "react";
+import ProcessingNotice from "../governance/ProcessingNotice";
 
 export default function InputBox({ onAnalyze, loading }) {
   const [url, setUrl] = useState("");
 
-  const handleAnalyze = () => {
+  const handleAnalyze = (event) => {
+    event.preventDefault();
     const trimmed = url.trim();
-    if (!trimmed) return;
+    if (!trimmed || loading) return;
     onAnalyze(trimmed);
   };
 
   return (
     <>
-      <div className="input-wrap">
+      <ProcessingNotice />
+      <form className="input-wrap" onSubmit={handleAnalyze} aria-describedby="processing-notice">
         <span className="input-icon" aria-hidden="true">🔍</span>
-        <input
-          value={url}
-          onChange={(e) => setUrl(e.target.value)}
-          placeholder="https://www.youtube.com/watch?v=..."
-          disabled={loading}
-        />
-        <button className="analyze" onClick={handleAnalyze} disabled={loading}>
+        <input type="url" aria-label="YouTube video URL" required maxLength={500}
+          value={url} onChange={(event) => setUrl(event.target.value)}
+          placeholder="https://www.youtube.com/watch?v=..." disabled={loading} />
+        <button className="analyze" type="submit" disabled={loading || !url.trim()}>
           {loading ? "Analyzing..." : "Analyze Video →"}
         </button>
-      </div>
-      <div className="providers">
-        <span>▶ YouTube</span>
-        <span>🎬 Vimeo</span>
-        <span>📁 Google Drive</span>
-        <span>⋯ And more</span>
-      </div>
-      <div className="hint">Just paste the link. No login. No hassle.</div>
+      </form>
+      <div className="hint" role="status">{loading ? "Processing video. This may take a few minutes." : "YouTube videos supported"}</div>
     </>
   );
 }

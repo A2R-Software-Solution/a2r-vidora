@@ -19,6 +19,11 @@ class Settings(BaseSettings):
     max_overflow: int
     pool_recycle: int
 
+    ai_release_id: str = ""
+    ai_enabled: bool = True
+    ai_deployment_region: str = ""
+    ai_metrics_token: str | None = None
+
     database_url: str | None = None
     groq_api_key: str | None = None
     google_credentials_path: str | None = None

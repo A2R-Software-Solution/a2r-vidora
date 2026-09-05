@@ -77,6 +77,6 @@ async def run_pipeline(video_id: uuid.UUID, youtube_url: str, *, db: AsyncSessio
         return video
 
     except Exception as exc:
-        logger.exception(f"Pipeline failed for video {video.id}: {exc}")
+        logger.error(f"Pipeline failed for video {video.id} ({type(exc).__name__})")
         await video_service.mark_failed(video)
         raise PipelineError(f"Ingestion pipeline failed for video {video.id}") from exc
