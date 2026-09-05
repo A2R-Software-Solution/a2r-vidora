@@ -24,9 +24,9 @@ export default function InputBox({ onAnalyze, loading }) {
         </button>
       </div>
       <div className="providers">
-        <span>▶ YouTube</span>
-        <span>🎬 Vimeo</span>
-        <span>📁 Google Drive</span>
+        <span><span className="provider-icon yt">▶</span> YouTube</span>
+        <span><span className="provider-icon vimeo">V</span> Vimeo</span>
+        <span><span className="provider-icon drive">▲</span> Google Drive</span>
         <span>⋯ And more</span>
       </div>
       <div className="hint">Just paste the link. No login. No hassle.</div>

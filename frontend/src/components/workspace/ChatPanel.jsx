@@ -3,30 +3,27 @@ import { useVideoQA } from "../../hooks/useVideoQA";
 import MessageBubble from "./MessageBubble";
 import TimestampChip from "./TimestampChip";
 
-const MAX_WORDS = 50;
-const MAX_QUESTIONS = 5;
+const MAX_CHARS = 100;
 
 export default function ChatPanel({ videoId, onSeek }) {
   const { messages, fetchHistory, askVideo, loading, error, limitReached, questionCount } = useVideoQA(videoId);
   const [question, setQuestion] = useState("");
-  const [wordError, setWordError] = useState("");
+  const [charError, setCharError] = useState("");
 
   useEffect(() => {
     fetchHistory();
   }, [fetchHistory]);
 
-  const countWords = (text) => text.trim().split(/\s+/).filter(Boolean).length;
-
   const handleAsk = async () => {
     const trimmed = question.trim();
     if (!trimmed || limitReached) return;
 
-    if (countWords(trimmed) > MAX_WORDS) {
-      setWordError(`Please keep questions under ${MAX_WORDS} words.`);
+    if (trimmed.length > MAX_CHARS) {
+      setCharError(`Please keep questions under ${MAX_CHARS} characters.`);
       return;
     }
 
-    setWordError("");
+    setCharError("");
     setQuestion("");
     await askVideo(trimmed);
   };
@@ -40,7 +37,7 @@ export default function ChatPanel({ videoId, onSeek }) {
       <div className="chat-tabs">
         <span className="chat-tab active">✨ AI Answer</span>
         <span className="chat-tab">💬 Chat</span>
-        <span className="question-counter">{questionCount}/{MAX_QUESTIONS} questions</span>
+        <span className="question-counter">{questionCount}/5 questions</span>
       </div>
 
       <div className="messages">
@@ -61,7 +58,7 @@ export default function ChatPanel({ videoId, onSeek }) {
       </div>
 
       {error && <div className="error-text">{error}</div>}
-      {wordError && <div className="error-text">{wordError}</div>}
+      {charError && <div className="error-text">{charError}</div>}
 
       {limitReached ? (
         <div className="limit-reached-text">
@@ -74,15 +71,16 @@ export default function ChatPanel({ videoId, onSeek }) {
               value={question}
               onChange={(e) => {
                 setQuestion(e.target.value);
-                if (wordError) setWordError("");
+                if (charError) setCharError("");
               }}
               onKeyDown={handleKeyDown}
               placeholder="Ask another question..."
               disabled={loading}
+              maxLength={MAX_CHARS}
             />
             <button className="send" onClick={handleAsk} disabled={loading}>↑</button>
           </div>
-          <div className="ask-hint">Keep your question under {MAX_WORDS} words</div>
+          <div className="ask-hint">Keep your question under {MAX_CHARS} characters</div>
         </>
       )}
     </div>

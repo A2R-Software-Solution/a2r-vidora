@@ -15,7 +15,6 @@ nav {
   align-items: center;
   justify-content: space-between;
   padding: 0 7%;
-  border-bottom: 1px solid #f0e0d0;
   background: #fdf1e7;
 }
 .logo { font-size: 21px; font-weight: 750; letter-spacing: -0.5px; color: #1a1a1a; }
@@ -30,14 +29,14 @@ button { border: 0; cursor: pointer; font: inherit; }
   border-radius: 9px; font-weight: 650;
 }
 
-.hero { max-width: 900px; margin: 0 auto; padding: 105px 24px 70px; text-align: center; position: relative; }
+.hero { max-width: 900px; margin: 0 auto; padding: 48px 24px 32px; text-align: center; position: relative; }
 .badge {
   display: inline-flex; border: 1px solid #f0d9c5; background: #fff8f0;
-  color: #b5651d; border-radius: 999px; padding: 7px 12px; font-size: 13px; margin-bottom: 22px;
+  color: #b5651d; border-radius: 999px; padding: 7px 12px; font-size: 13px; margin-bottom: 14px;
 }
-h1 { margin: 0; font-size: clamp(42px, 6vw, 72px); line-height: .98; letter-spacing: -3.5px; color: #1a1a1a; }
+h1 { margin: 0; font-size: clamp(32px, 4vw, 48px); line-height: 1.1; letter-spacing: -1.5px; color: #1a1a1a; }
 h1 span { color: #ff6b35; }
-.sub { color: #6b6259; font-size: 18px; line-height: 1.6; max-width: 650px; margin: 24px auto 34px; }
+.sub { color: #6b6259; font-size: 15px; line-height: 1.5; max-width: 550px; margin: 14px auto 24px; }
 
 .input-wrap {
   max-width: 720px; margin: auto; display: flex; padding: 6px;

@@ -11,6 +11,23 @@ export default function WorkspacePage({ video }) {
 
   return (
     <section className="preview">
+      <div className="workspace-tagline workspace-tagline-left" aria-hidden="true">
+        Video, transcript<br />and AI — all in<br />one place.
+      </div>
+      <div className="workspace-tagline workspace-tagline-top-right" aria-hidden="true">
+        ...to answers<br />in seconds.
+        <svg className="tagline-arrow" viewBox="0 0 60 50" fill="none">
+          <path d="M5 5 Q 30 10, 40 40" stroke="#ff6b35" strokeWidth="2" strokeLinecap="round"/>
+          <path d="M32 34 L40 40 L34 28" stroke="#ff6b35" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      </div>
+      <div className="workspace-tagline workspace-tagline-bottom-right" aria-hidden="true">
+        Actual answers.<br />Not just summaries.
+        <svg className="tagline-arrow" viewBox="0 0 60 50" fill="none">
+          <path d="M5 5 Q 30 10, 40 40" stroke="#ff6b35" strokeWidth="2" strokeLinecap="round"/>
+          <path d="M32 34 L40 40 L34 28" stroke="#ff6b35" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      </div>
       <div className="preview-card">
         <div className="window-dots">
           <span className="dot red"></span>
