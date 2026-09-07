@@ -2,6 +2,7 @@ import { useState } from "react";
 import Navbar from "./components/layout/Navbar";
 import LandingPage from "./pages/LandingPage";
 import WorkspacePage from "./pages/WorkspacePage";
+import SpotlightGlow from "./components/common/SpotlightGlow";
 import "./App.css";
 
 function App() {
@@ -15,6 +16,7 @@ function App() {
         <span className="bubble b3"></span>
         <span className="bubble b4"></span>
       </div>
+      <SpotlightGlow />
       <Navbar onHome={() => setVideo(null)} />
       <LandingPage onAnalyzed={setVideo} compact={!!video} />
       {video && <WorkspacePage video={video} />}
