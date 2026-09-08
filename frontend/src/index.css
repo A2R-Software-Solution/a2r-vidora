@@ -8,6 +8,65 @@ body {
 
 .page { min-height: 100vh; }
 
+.bug-report-button {
+  position: fixed;
+  right: 22px;
+  bottom: 22px;
+  z-index: 60;
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border: 1px solid #1a1a1a;
+  border-radius: 50%;
+  background: #1a1a1a;
+  color: #fff;
+  box-shadow: 0 8px 24px rgba(26, 26, 26, 0.28);
+  transition: transform 0.2s ease, background 0.2s ease, color 0.2s ease;
+}
+.bug-report-button:hover,
+.bug-report-button:focus-visible {
+  transform: translateY(-2px);
+  border-color: #ff6b35;
+  background: #ff6b35;
+  color: #fff;
+}
+.bug-report-button:focus-visible { outline: 3px solid #ffb385; outline-offset: 3px; }
+.bug-report-button svg {
+  width: 21px;
+  height: 21px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+.bug-report-button::after {
+  position: absolute;
+  right: calc(100% + 10px);
+  width: max-content;
+  padding: 7px 10px;
+  border-radius: 7px;
+  background: #1a1a1a;
+  color: #fff;
+  content: attr(data-tooltip);
+  font-size: 12px;
+  font-weight: 600;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(4px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.bug-report-button:hover::after,
+.bug-report-button:focus-visible::after {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+@media (max-width: 760px) {
+  .bug-report-button { right: 16px; bottom: 16px; }
+}
+
 nav {
   height: 72px;
   display: flex;
@@ -54,7 +113,7 @@ input {
 input::placeholder { color: #b0a89e; }
 .analyze { background: #ff6b35; color: white; padding: 0 22px; border-radius: 9px; font-weight: 700; }
 
-.features { display: flex; justify-content: center; gap: 24px; margin-top: 18px; margin-bottom: 60px; color: #8a8078; font-size: 13px; }
+.features { display: flex; justify-content: center; gap: 24px; margin-top: 18px; margin-bottom: 60px; color: #8a8078; font-size: 13px; transition: opacity 0.3s ease; }
 
 .preview { max-width: 1080px; margin: 0 auto; padding: 0 24px 90px; }
 .preview-card { background: #fff; border: 1px solid #f0e0d0; border-radius: 18px; overflow: hidden; }

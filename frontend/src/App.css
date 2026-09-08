@@ -377,10 +377,13 @@ h1 span { color: #ff6b35; }
   transition: transform 0.2s ease;
 }
 
-/* Big pinned heading: fixed position, driven by JS scroll progress */
+/* Big pinned heading: fixed position, driven by JS scroll progress.
+   Height must match RELEASE_SCROLL_PX in usescrollpin.js — that's the
+   scroll distance the hero stays pinned/fixed for before releasing back
+   into normal document flow. */
 .pin-heading-spacer {
   width: 100%;
-  height: calc(100vh + 450px);
+  height: calc(100vh + 180px);
 }
 .pin-heading {
   position: fixed;

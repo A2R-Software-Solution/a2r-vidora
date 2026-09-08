@@ -3,6 +3,7 @@ import Navbar from "./components/layout/Navbar";
 import LandingPage from "./pages/LandingPage";
 import WorkspacePage from "./pages/WorkspacePage";
 import SpotlightGlow from "./components/common/SpotlightGlow";
+import BugReportButton from "./components/common/BugReportButton";
 import "./App.css";
 
 function App() {
@@ -20,6 +21,7 @@ function App() {
       <Navbar onHome={() => setVideo(null)} />
       <LandingPage onAnalyzed={setVideo} compact={!!video} />
       {video && <WorkspacePage video={video} />}
+      <BugReportButton />
     </div>
   );
 }
