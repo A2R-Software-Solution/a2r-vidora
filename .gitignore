@@ -64,6 +64,37 @@ node_modules/
 
 # dotenv environment variables file
 .env
+.env.*
+!.env.example
+!.env.*.example
+
+# Python virtual environments, caches and test artifacts
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Local production credentials, database backups and model downloads
+**/secrets/
+*.pem
+*.key
+*.p12
+*.dump
+*.sql.gz
+**/models/
+
+# Local build artifacts and browser-debug sessions
+frontend/dist/
+.chrome-debug*/
+*.zip
+*.tgz
+*.tar.gz
+.DS_Store
 
 # dataconnect generated files
 .dataconnect

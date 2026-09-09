@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     )
 
     environment: str
+    ai_enabled: bool = True
     app_name: str
     video_retention_hours: int
     pool_pre_ping: bool
@@ -21,6 +22,7 @@ class Settings(BaseSettings):
 
     database_url: str | None = None
     groq_api_key: str | None = None
+    groq_api_key_fallback: str | None = None
     google_credentials_path: str | None = None
     
     gcp_project_id: str | None = None

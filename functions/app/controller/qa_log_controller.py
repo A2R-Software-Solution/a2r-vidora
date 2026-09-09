@@ -4,9 +4,11 @@ import uuid
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.rate_limit import enforce_question_rate_limit
+from app.core.config import settings
 from app.deps import get_current_user_id, get_db
 from app.integration.embedding_client import embed_text
 from app.integration.groq_client import generate_answer
+from app.integration.groq_client import GroqRequestError
 from app.schemas.qa_logs_schema import QALogResponse, QuestionRequest
 from app.services.qa_log_service import QALogService
 from app.services.video_service import (
@@ -23,6 +25,8 @@ async def ask_question(
     user_id: uuid.UUID | None = Depends(get_current_user_id),
     _rate_limit: None = Depends(enforce_question_rate_limit),
 ) -> QALogResponse:
+    if not settings.ai_enabled:
+        raise HTTPException(status_code=503, detail="AI processing is temporarily paused.")
     service = QALogService(db)
     try:
         log = await service.ask(
@@ -38,6 +42,8 @@ async def ask_question(
         raise HTTPException(status_code=status.HTTP_410_GONE, detail=str(exc)) from exc
     except VideoAccessDeniedError as exc:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
+    except GroqRequestError as exc:
+        raise HTTPException(status_code=503, detail="AI provider temporarily unavailable.") from exc
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
 
@@ -49,17 +55,20 @@ async def list_qa_logs(
     db: AsyncSession = Depends(get_db),
     user_id: uuid.UUID | None = Depends(get_current_user_id),
     search: str | None = Query(default=None),
-    limit: int = Query(default=20, le=100),
+    limit: int = Query(default=20, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
 ) -> dict:
     service = QALogService(db)
-    logs, total = await service.list_for_video(
-        video_id,
-        requesting_user_id=user_id,
-        search=search,
-        limit=limit,
-        offset=offset,
-    )
+    try:
+        logs, total = await service.list_for_video(
+            video_id, requesting_user_id=user_id, search=search, limit=limit, offset=offset,
+        )
+    except VideoNotFoundError as exc:
+        raise HTTPException(status_code=404, detail="Video not found.") from exc
+    except VideoExpiredError as exc:
+        raise HTTPException(status_code=410, detail="Video expired.") from exc
+    except VideoAccessDeniedError as exc:
+        raise HTTPException(status_code=403, detail="Video access denied.") from exc
     return {
         "items": [QALogResponse.model_validate(log) for log in logs],
         "total": total,

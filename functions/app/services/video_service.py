@@ -42,6 +42,10 @@ class VideoAccessDeniedError(Exception):
     """Raised when a user attempts to access a video they do not own."""
 
 
+class SubmissionConflictError(Exception):
+    """An idempotency key was reused for a different submission."""
+
+
 class VideoService:
     """Business logic layer for video submission and lifecycle."""
 
@@ -94,6 +98,36 @@ class VideoService:
                 f"User {user_id} does not own video {video_id}."
             )
 
+        # Only on an explicit read/retry: no scheduled polling invocations.
+        # New submissions start immediately and have a 300-second platform cap.
+        cutoff = datetime.now(timezone.utc) - timedelta(minutes=10)
+        if video.status == VideoStatus.PROCESSING and video.created_at < cutoff:
+            await self._repo.fail_stale(video_id, cutoff)
+            await self._db.commit()
+            await self._db.refresh(video)
+        return video
+
+    async def submit_once(self, payload: VideoCreate, *, user_id: uuid.UUID | None,
+                          request_id: uuid.UUID) -> tuple[Video, bool]:
+        youtube_id = extract_youtube_id(payload.youtube_url)
+        created = await self._repo.create_once(
+            request_id, user_id=user_id, youtube_id=youtube_id,
+            youtube_url=f"https://www.youtube.com/watch?v={youtube_id}",
+            expires_at=datetime.now(timezone.utc) + timedelta(hours=settings.video_retention_hours),
+        )
+        await self._db.commit()
+        video = await self.get_for_user(request_id, user_id=user_id)
+        if video.user_id != user_id or video.youtube_id != youtube_id:
+            raise SubmissionConflictError("Request identifier already used for another submission.")
+        return video, created
+
+    async def get_for_processing(self, video_id: uuid.UUID) -> Video:
+        """Fetch a queued video without applying end-user ownership checks."""
+        video = await self._repo.get_by_id(video_id)
+        if video is None:
+            raise VideoNotFoundError(f"Video {video_id} not found.")
+        if self._is_expired(video):
+            raise VideoExpiredError("Video expired.")
         return video
 
     async def list_for_user(self, user_id: uuid.UUID) -> list[Video]:

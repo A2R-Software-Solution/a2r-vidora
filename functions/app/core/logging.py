@@ -20,3 +20,4 @@ def setup_logging() -> None:
 
 
 logger = logging.getLogger(settings.app_name)
+logger.setLevel(logging.INFO)

@@ -11,7 +11,7 @@ import yt_dlp
 from app.core.logging import logger
 from app.integration import secret_manager_client
 
-_MAX_DURATION_SECONDS = 4 * 60 * 60  # 4 hours — sane upper bound, avoids runaway jobs
+MAX_VIDEO_DURATION_SECONDS = 35 * 60
 
 
 class DownloadError(Exception):
@@ -20,6 +20,10 @@ class DownloadError(Exception):
 
 class VideoTooLongError(Exception):
     """Raised when a video's duration exceeds the platform's processing limit."""
+
+
+class UnsupportedVideoError(Exception):
+    """Raised when a live or duration-less video cannot be processed safely."""
 
 
 def _resolve_js_runtime() -> dict:
@@ -91,7 +95,7 @@ def _run_download(youtube_url: str, output_dir: str) -> DownloadResult:
                 {
                     "key": "FFmpegExtractAudio",
                     "preferredcodec": "mp3",
-                    "preferredquality": "128",
+                    "preferredquality": "64",
                 }
             ],
             "noplaylist": True,
@@ -101,10 +105,31 @@ def _run_download(youtube_url: str, output_dir: str) -> DownloadResult:
             "logger": _YtDlpLogger(),
             "cookiefile": cookie_file.name,
             "js_runtimes": _resolve_js_runtime(),
+            "socket_timeout": 20,
+            "retries": 2,
+            "fragment_retries": 2,
         }
 
         try:
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                # Check metadata before spending bandwidth on the audio.
+                probe_info = ydl.extract_info(youtube_url, download=False)
+                if not probe_info:
+                    raise DownloadError("yt-dlp returned no video metadata.")
+
+                live_status = probe_info.get("live_status")
+                if probe_info.get("is_live") or live_status in {"is_live", "is_upcoming"}:
+                    raise UnsupportedVideoError("Live and upcoming streams are not supported.")
+
+                probe_duration = probe_info.get("duration")
+                if probe_duration is None:
+                    raise UnsupportedVideoError("Video duration is unavailable.")
+                if probe_duration > MAX_VIDEO_DURATION_SECONDS:
+                    raise VideoTooLongError(
+                        f"Video duration {probe_duration}s exceeds the "
+                        f"{MAX_VIDEO_DURATION_SECONDS}s limit."
+                    )
+
                 info = ydl.extract_info(youtube_url, download=True)
         except yt_dlp.utils.DownloadError as exc:
             raise DownloadError(f"yt-dlp failed for {youtube_url}: {exc}") from exc
@@ -124,9 +149,11 @@ def _run_download(youtube_url: str, output_dir: str) -> DownloadResult:
         Path(cookie_file.name).unlink(missing_ok=True)
 
     duration = info.get("duration")
-    if duration is not None and duration > _MAX_DURATION_SECONDS:
+    if duration is None:
+        raise UnsupportedVideoError("Downloaded video duration is unavailable.")
+    if duration > MAX_VIDEO_DURATION_SECONDS:
         raise VideoTooLongError(
-            f"Video duration {duration}s exceeds the {_MAX_DURATION_SECONDS}s limit."
+            f"Video duration {duration}s exceeds the {MAX_VIDEO_DURATION_SECONDS}s limit."
         )
 
     video_id = info["id"]

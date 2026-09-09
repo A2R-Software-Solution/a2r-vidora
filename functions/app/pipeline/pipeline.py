@@ -10,21 +10,20 @@ On any failure, the video is moved to FAILED rather than left stuck
 in PROCESSING, and the exception is re-raised so the caller (route /
 background task runner) can log/alert on it.
 
-This module is synchronous-call-order but async in execution — it does
-NOT itself handle "run this in the background off the request"; that
-concern belongs to the caller (see checkpoint item #6, not yet done).
-For now this is invoked directly and will block the request until
-async/background execution is wired in.
+New submissions await this pipeline inside the HTTP invocation. A legacy
+task worker remains compatible with previously queued jobs.
 """
 
 from __future__ import annotations
 
 import uuid
+import asyncio
+from time import monotonic
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logging import logger
-from app.models.video_model import Video
+from app.models.video_model import Video, VideoStatus
 from app.pipeline import chunker, embedder, summarizer, transcriber
 from app.pipeline.youtube_downloader import download_audio, make_temp_dir
 from app.services.transcript_chunk_service import TranscriptChunkService
@@ -50,11 +49,27 @@ async def run_pipeline(video_id: uuid.UUID, youtube_url: str, *, db: AsyncSessio
     """
     video_service = VideoService(db)
     chunk_service = TranscriptChunkService(db)
+    video: Video | None = None
+    started = monotonic()
+    stage = "lookup"
 
-    video = await video_service.get_for_user(video_id, user_id=None)
+    def record_stage(next_stage: str) -> None:
+        nonlocal stage
+        stage = next_stage
+        logger.info("analysis_stage video_id=%s stage=%s elapsed_seconds=%.2f",
+                       video_id, stage, monotonic() - started)
 
     try:
+        video = await video_service.get_for_processing(video_id)
+
+        # Cloud Tasks may redeliver a task after a response/network failure.
+        # A completed job is already durable and must not incur API costs twice.
+        if video.status == VideoStatus.COMPLETED:
+            logger.info(f"Skipping already-completed video {video.id}")
+            return video
+
         with make_temp_dir() as tmp_dir:
+            record_stage("download")
             download_result = await download_audio(youtube_url, output_dir=tmp_dir)
 
             video = await video_service.mark_metadata(
@@ -63,20 +78,35 @@ async def run_pipeline(video_id: uuid.UUID, youtube_url: str, *, db: AsyncSessio
                 duration=download_result.duration,
             )
 
+            record_stage("transcribe")
             segments = await transcriber.transcribe(download_result.audio_path)
 
         chunks = chunker.chunk_segments(segments)
+        record_stage("embed")
         embedded_chunks = await embedder.embed_chunks(chunks)
 
         await chunk_service.replace_all_for_video(video.id, embedded_chunks)
 
+        record_stage("summarize")
         summary = await summarizer.summarize(embedded_chunks)
 
         video = await video_service.mark_completed(video, summary=summary)
+        record_stage("completed")
         logger.info(f"Pipeline completed for video {video.id}")
         return video
 
-    except Exception as exc:
-        logger.exception(f"Pipeline failed for video {video.id}: {exc}")
-        await video_service.mark_failed(video)
-        raise PipelineError(f"Ingestion pipeline failed for video {video.id}") from exc
+    except (Exception, asyncio.CancelledError) as exc:
+        logger.error("analysis_failed video_id=%s stage=%s elapsed_seconds=%.2f error_type=%s",
+                     video_id, stage, monotonic() - started, type(exc).__name__)
+        if video is not None:
+            try:
+                # A failed flush leaves the SQLAlchemy session unusable until
+                # rollback. Re-fetch before recording the terminal status.
+                await db.rollback()
+                video = await video_service.get_for_processing(video_id)
+                await video_service.mark_failed(video)
+            except Exception:
+                logger.exception(f"Could not mark video {video_id} as failed")
+        if isinstance(exc, asyncio.CancelledError):
+            raise
+        raise PipelineError(f"Ingestion pipeline failed for video {video_id}") from exc

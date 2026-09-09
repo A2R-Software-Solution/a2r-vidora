@@ -7,3 +7,8 @@ venv/
 
 secrets/
 *firebase-service-account.json
+
+# Environment files
+.env
+.env.*
+/models/

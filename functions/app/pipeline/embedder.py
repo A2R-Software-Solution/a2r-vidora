@@ -9,14 +9,8 @@ on a pipeline-stage interface rather than the client directly.
 
 from __future__ import annotations
 
-import asyncio
-
 from app.core.logging import logger
-from app.integration.embedding_client import embed_text
-
-# Caps concurrent in-flight embedding calls so a long video doesn't
-# spawn hundreds of simultaneous CPU-bound thread-executor tasks.
-_MAX_CONCURRENT_EMBEDDINGS = 8
+from app.integration.embedding_client import embed_texts
 
 
 async def embed_chunks(chunks: list[dict]) -> list[dict]:
@@ -25,20 +19,13 @@ async def embed_chunks(chunks: list[dict]) -> list[dict]:
     returns the same dicts with an "embedding" key (list[float], 384-dim)
     added, ready for transcript_chunk_service.replace_all_for_video().
 
-    Runs embeddings concurrently (bounded by a semaphore) rather than
-    sequentially, since embed_text is I/O-executor-bound per call.
+    Encodes chunks in batches with one cached model and bounded batch memory.
     """
     if not chunks:
         return []
 
-    semaphore = asyncio.Semaphore(_MAX_CONCURRENT_EMBEDDINGS)
-
-    async def embed_one(chunk: dict) -> dict:
-        async with semaphore:
-            vector = await embed_text(chunk["chunk_text"])
-        return {**chunk, "embedding": vector}
-
     logger.info(f"Embedding {len(chunks)} chunks")
-    embedded = await asyncio.gather(*(embed_one(chunk) for chunk in chunks))
+    vectors = await embed_texts([chunk["chunk_text"] for chunk in chunks])
+    embedded = [{**chunk, "embedding": vector} for chunk, vector in zip(chunks, vectors, strict=True)]
     logger.info(f"Embedded {len(embedded)} chunks")
     return embedded

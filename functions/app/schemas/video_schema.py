@@ -13,7 +13,6 @@ from app.utils.youtube import extract_youtube_id
 # ---------------------------------------------------------------------------
 
 _YOUTUBE_URL_MAX_LEN: int = 500
-_MAX_DURATION_SECONDS: int = 3 * 60 * 60  # 3 hour cap, per README abuse controls
 
 
 # ---------------------------------------------------------------------------

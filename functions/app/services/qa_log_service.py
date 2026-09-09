@@ -148,6 +148,7 @@ class QALogService:
         route that returns another user's logs (see access control
         table in the test plan, section 10).
         """
+        await self._video_service.get_for_user(video_id, user_id=requesting_user_id)
         return await self._repo.list_by_video(
             video_id,
             user_id=requesting_user_id,

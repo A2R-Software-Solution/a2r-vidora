@@ -3,13 +3,16 @@
     {
       "source": "functions",
       "codebase": "default",
+      "predeploy": ["python functions/scripts/check_model.py"],
       "disallowLegacyRuntimeConfig": true,
       "ignore": [
         "venv",
+        "secrets",
         ".git",
         "firebase-debug.log",
         "firebase-debug.*.log",
-        "*.local"
+        "*.local",
+        "**/.cache/**"
       ],
       "runtime": "python311"
     }

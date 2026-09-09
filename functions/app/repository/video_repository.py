@@ -3,7 +3,8 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
-from sqlalchemy import select
+from sqlalchemy import select, update
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.video_model import Video, VideoStatus
@@ -18,6 +19,20 @@ class VideoRepository:
     async def get_by_id(self, video_id: uuid.UUID) -> Video | None:
         result = await self._db.execute(select(Video).where(Video.id == video_id))
         return result.scalar_one_or_none()
+
+    async def create_once(self, video_id: uuid.UUID, **values) -> bool:
+        """Only the insert winner may start expensive processing, across instances."""
+        result = await self._db.execute(
+            insert(Video).values(id=video_id, status=VideoStatus.PROCESSING, **values)
+            .on_conflict_do_nothing(index_elements=[Video.id]).returning(Video.id)
+        )
+        return result.scalar_one_or_none() is not None
+
+    async def fail_stale(self, video_id: uuid.UUID, before: datetime) -> None:
+        await self._db.execute(update(Video).where(
+            Video.id == video_id, Video.status == VideoStatus.PROCESSING,
+            Video.created_at < before,
+        ).values(status=VideoStatus.FAILED))
 
     async def list_by_user(self, user_id: uuid.UUID) -> list[Video]:
         result = await self._db.execute(

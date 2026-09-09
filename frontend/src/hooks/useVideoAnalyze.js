@@ -32,7 +32,17 @@ export function useVideoAnalyze() {
       localStorage.removeItem(PENDING_KEY);
       return data;
     } catch (err) {
-      setError(err?.response?.data?.detail || err.message || "Analysis failed.");
+      const detail = err?.response?.data?.detail;
+      // A failed idempotent job cannot be resumed. Remove only its local key so
+      // the user's next explicit click creates a new job. Do not auto-retry:
+      // retrying could create unexpected paid AI work.
+      if (err?.response?.status === 409 && detail === "This submission previously failed. You can submit it again.") {
+        localStorage.removeItem(PENDING_KEY);
+        localStorage.removeItem(VIDEO_ID_STORAGE_KEY);
+        setError("Previous analysis failed. Please click Analyze Video again to start a new attempt.");
+      } else {
+        setError(detail || err.message || "Analysis failed.");
+      }
       throw err;
     } finally {
       submitting.current = false;

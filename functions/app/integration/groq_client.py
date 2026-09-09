@@ -1,10 +1,14 @@
 from __future__ import annotations
 
-from functools import lru_cache
+from collections.abc import Awaitable, Callable
+import asyncio
+from itertools import count
+from html import escape
 from pathlib import Path
+from typing import TypeVar
 
 from groq import AsyncGroq
-from groq import GroqError
+from groq import APIConnectionError, APITimeoutError, GroqError, InternalServerError, RateLimitError
 
 from app.core.config import settings
 from app.core.logging import logger
@@ -14,7 +18,10 @@ STT_MODEL = "whisper-large-v3"
 
 _ANSWER_MAX_TOKENS = 1024
 _ANSWER_TEMPERATURE = 0.2
-_REQUEST_TIMEOUT_SECONDS = 30.0
+_REQUEST_TIMEOUT_SECONDS = 60.0
+_request_counter = count()
+_T = TypeVar("_T")
+_RETRYABLE_ERRORS = (RateLimitError, InternalServerError, APIConnectionError, APITimeoutError)
 
 _SYSTEM_PROMPT = (
     "You are VidoraAI's video Q&A assistant. Answer the user's question "
@@ -53,19 +60,67 @@ class EmptyTranscriptionError(Exception):
     """Raised when Groq STT returns no usable transcription for an audio file."""
 
 
-@lru_cache
-def _get_client() -> AsyncGroq:
-    return AsyncGroq(api_key=settings.groq_api_key, timeout=_REQUEST_TIMEOUT_SECONDS)
+def _get_client(api_key: str) -> AsyncGroq:
+    # Keep each pipeline stage within the function's overall execution budget.
+    # The SDK otherwise retries twice, allowing one call to consume roughly
+    # three times the configured timeout.
+    return AsyncGroq(
+        api_key=api_key,
+        timeout=_REQUEST_TIMEOUT_SECONDS,
+        max_retries=0,
+    )
+
+
+def _api_keys() -> tuple[str, ...]:
+    keys = (settings.groq_api_key, settings.groq_api_key_fallback)
+    return tuple(dict.fromkeys(key.strip() for key in keys if key and key.strip()))
+
+
+async def _try_groq_clients(
+    operation: Callable[[AsyncGroq], Awaitable[_T]],
+) -> _T:
+    """Round-robin requests and try the other account on transient errors."""
+    keys = _api_keys()
+    if not keys:
+        raise GroqRequestError("No Groq API key is configured.")
+
+    start = next(_request_counter) % len(keys)
+    last_error: GroqError | None = None
+
+    for offset in range(len(keys)):
+        try:
+            # Cloud Functions' ASGI bridge creates separate event loops per
+            # invocation. Do not reuse async HTTP pools across those loops.
+            async with _get_client(keys[(start + offset) % len(keys)]) as client:
+                return await operation(client)
+        except _RETRYABLE_ERRORS as exc:
+            last_error = exc
+            if offset + 1 < len(keys):
+                logger.warning("Groq request failed; trying the next configured account.")
+                continue
+            raise
+
+    # Kept for type checkers; the loop either returns or raises.
+    raise last_error or GroqRequestError("Groq request failed.")
+
+
+async def _with_groq_client(operation: Callable[[AsyncGroq], Awaitable[_T]]) -> _T:
+    try:
+        # Includes both accounts: fallback cannot double the stage deadline.
+        async with asyncio.timeout(_REQUEST_TIMEOUT_SECONDS):
+            return await _try_groq_clients(operation)
+    except TimeoutError:
+        raise GroqRequestError("AI provider deadline exceeded.") from None
 
 
 def _build_user_message(question: str, context_chunks: list[str]) -> str:
     if context_chunks:
-        joined = "\n---\n".join(chunk.strip() for chunk in context_chunks if chunk.strip())
+        joined = "\n---\n".join(escape(chunk.strip()) for chunk in context_chunks if chunk.strip())
         context_block = f"<transcript_context>\n{joined}\n</transcript_context>"
     else:
         context_block = "<transcript_context>\n(no relevant excerpts found)\n</transcript_context>"
 
-    return f"{context_block}\n\n<user_question>\n{question.strip()}\n</user_question>"
+    return f"{context_block}\n\n<user_question>\n{escape(question.strip())}\n</user_question>"
 
 
 _SUMMARY_SYSTEM_PROMPT = (
@@ -104,22 +159,23 @@ async def generate_summary(full_transcript_text: str) -> str:
     if len(text) > _SUMMARY_MAX_INPUT_CHARS:
         text = text[:_SUMMARY_MAX_INPUT_CHARS]
 
-    client = _get_client()
-    user_message = f"<transcript_context>\n{text}\n</transcript_context>"
+    user_message = f"<transcript_context>\n{escape(text)}\n</transcript_context>"
 
     try:
-        response = await client.chat.completions.create(
-            model=CHAT_MODEL,
-            messages=[
-                {"role": "system", "content": _SUMMARY_SYSTEM_PROMPT},
-                {"role": "user", "content": user_message},
-            ],
-            max_tokens=_SUMMARY_MAX_TOKENS,
-            temperature=_ANSWER_TEMPERATURE,
+        response = await _with_groq_client(
+            lambda client: client.chat.completions.create(
+                model=CHAT_MODEL,
+                messages=[
+                    {"role": "system", "content": _SUMMARY_SYSTEM_PROMPT},
+                    {"role": "user", "content": user_message},
+                ],
+                max_tokens=_SUMMARY_MAX_TOKENS,
+                temperature=_ANSWER_TEMPERATURE,
+            )
         )
     except GroqError as exc:
-        logger.error(f"Groq summary generation failed: {exc}")
-        raise GroqRequestError(f"Groq summary generation failed: {exc}") from exc
+        logger.error("Groq summary failed: %s", type(exc).__name__)
+        raise GroqRequestError("AI summary provider unavailable.") from None
 
     summary = (response.choices[0].message.content or "").strip()
     if not summary:
@@ -141,22 +197,23 @@ async def generate_answer(question: str, context_chunks: list[str]) -> str:
     if not question or not question.strip():
         raise ValueError("question must not be empty.")
 
-    client = _get_client()
     user_message = _build_user_message(question, context_chunks)
 
     try:
-        response = await client.chat.completions.create(
-            model=CHAT_MODEL,
-            messages=[
-                {"role": "system", "content": _SYSTEM_PROMPT},
-                {"role": "user", "content": user_message},
-            ],
-            max_tokens=_ANSWER_MAX_TOKENS,
-            temperature=_ANSWER_TEMPERATURE,
+        response = await _with_groq_client(
+            lambda client: client.chat.completions.create(
+                model=CHAT_MODEL,
+                messages=[
+                    {"role": "system", "content": _SYSTEM_PROMPT},
+                    {"role": "user", "content": user_message},
+                ],
+                max_tokens=_ANSWER_MAX_TOKENS,
+                temperature=_ANSWER_TEMPERATURE,
+            )
         )
     except GroqError as exc:
-        logger.error(f"Groq chat completion failed: {exc}")
-        raise GroqRequestError(f"Groq chat completion failed: {exc}") from exc
+        logger.error("Groq answer failed: %s", type(exc).__name__)
+        raise GroqRequestError("AI answer provider unavailable.") from None
 
     answer = (response.choices[0].message.content or "").strip()
     if not answer:
@@ -174,20 +231,21 @@ async def transcribe_audio(audio_file_path: str) -> list[dict]:
     dicts, in chronological order. Raises EmptyTranscriptionError if
     Whisper returns no segments, GroqRequestError on API failure.
     """
-    client = _get_client()
     path = Path(audio_file_path)
 
     try:
         audio_bytes = path.read_bytes()
-        response = await client.audio.transcriptions.create(
-            file=(path.name, audio_bytes, "audio/mpeg"),
-            model=STT_MODEL,
-            response_format="verbose_json",
-            timestamp_granularities=["segment"],
+        response = await _with_groq_client(
+            lambda client: client.audio.transcriptions.create(
+                file=(path.name, audio_bytes, "audio/mpeg"),
+                model=STT_MODEL,
+                response_format="verbose_json",
+                timestamp_granularities=["segment"],
+            )
         )
     except GroqError as exc:
-        logger.error(f"Groq transcription failed: {exc}")
-        raise GroqRequestError(f"Groq transcription failed: {exc}") from exc
+        logger.error("Groq transcription failed: %s", type(exc).__name__)
+        raise GroqRequestError("AI transcription provider unavailable.") from None
 
     segments = getattr(response, "segments", None) or []
     if not segments:

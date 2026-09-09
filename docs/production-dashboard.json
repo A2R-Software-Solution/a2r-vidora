@@ -1,0 +1,49 @@
+{
+  "name": "projects/vidoraai-2bbce/dashboards/vidora-production",
+  "displayName": "Vidora production operations",
+  "gridLayout": {
+    "columns": "2",
+    "widgets": [
+      {
+        "title": "API requests per minute (all statuses)",
+        "xyChart": {
+          "dataSets": [{
+            "timeSeriesQuery": {"timeSeriesFilter": {
+              "filter": "resource.type=\"cloud_run_revision\" AND resource.labels.service_name=\"api\" AND metric.type=\"run.googleapis.com/request_count\"",
+              "aggregation": {"alignmentPeriod": "60s", "perSeriesAligner": "ALIGN_SUM", "crossSeriesReducer": "REDUCE_SUM"}
+            }}, "plotType": "LINE"
+          }]
+        }
+      },
+      {
+        "title": "API server errors per minute",
+        "xyChart": {
+          "dataSets": [{
+            "timeSeriesQuery": {"timeSeriesFilter": {
+              "filter": "resource.type=\"cloud_run_revision\" AND resource.labels.service_name=\"api\" AND metric.type=\"run.googleapis.com/request_count\" AND metric.labels.response_code_class=\"5xx\"",
+              "aggregation": {"alignmentPeriod": "60s", "perSeriesAligner": "ALIGN_SUM", "crossSeriesReducer": "REDUCE_SUM"}
+            }}, "plotType": "LINE"
+          }]
+        }
+      },
+      {
+        "title": "API request latency p95 (all routes, not analysis-only)",
+        "xyChart": {
+          "dataSets": [{
+            "timeSeriesQuery": {"timeSeriesFilter": {
+              "filter": "resource.type=\"cloud_run_revision\" AND resource.labels.service_name=\"api\" AND metric.type=\"run.googleapis.com/request_latencies\"",
+              "aggregation": {"alignmentPeriod": "300s", "perSeriesAligner": "ALIGN_PERCENTILE_95"}
+            }}, "plotType": "LINE"
+          }]
+        }
+      },
+      {
+        "title": "Operational interpretation",
+        "text": {
+          "format": "MARKDOWN",
+          "content": "These are existing platform metrics; this dashboard adds no application polling. All-route latency is not video processing latency. Correlate analysis_stage/analysis_failed logs by video_id. Missing traffic is not proof of health. Alerts require a verified notification channel. Budget alerts are notifications, not spending caps."
+        }
+      }
+    ]
+  }
+}

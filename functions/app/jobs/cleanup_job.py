@@ -11,12 +11,18 @@ from __future__ import annotations
 from app.core.logging import logger
 from app.db.session import AsyncSessionLocal
 from app.services.video_service import VideoService
+from sqlalchemy import delete, func
+from app.models.rate_limit_model import RateLimitBucket
 
 
 async def run_cleanup() -> int:
     async with AsyncSessionLocal() as db:
         service = VideoService(db)
         purged_count = await service.purge_expired()
+        await db.execute(delete(RateLimitBucket).where(
+            RateLimitBucket.window_start < func.extract("epoch", func.now()) - 86400,
+        ))
+        await db.commit()
         return purged_count
 
 

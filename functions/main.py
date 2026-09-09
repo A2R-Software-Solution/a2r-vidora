@@ -1,15 +1,24 @@
 import asyncio
 import os
+import uuid
 
 from asgiref.sync import async_to_sync
 from firebase_admin import initialize_app, credentials
-from firebase_functions import https_fn, scheduler_fn
-from firebase_functions.options import MemoryOption, set_global_options
+from firebase_functions import https_fn, scheduler_fn, tasks_fn
+from firebase_functions.options import (
+    MemoryOption,
+    RateLimits,
+    RetryConfig,
+    set_global_options,
+)
 
 
 from app.core.config import settings
 from app.jobs.cleanup_job import run_cleanup
 from app.main import app as fastapi_app
+from app.pipeline.pipeline import PipelineError, run_pipeline
+from app.pipeline.youtube_downloader import UnsupportedVideoError, VideoTooLongError
+from app.db.session import AsyncSessionLocal
 
 set_global_options(
     max_instances=10,
@@ -85,14 +94,51 @@ def _wsgi_app(environ, start_response):
     return [response["body"]]
 
 
-@https_fn.on_request(secrets=["GROQ_API_KEY", "DATABASE_URL"])
+@https_fn.on_request(concurrency=2, secrets=["GROQ_API_KEY", "GROQ_API_KEY_FALLBACK", "DATABASE_URL"])
 def api(req: https_fn.Request) -> https_fn.Response:
+    # Warm the same Gen 2 function used by real API requests, but stop before
+    # FastAPI creates request-scoped dependencies (including a DB session) or
+    # dispatches any business logic.
+    if req.method == "POST" and req.args.get("warmup", "").lower() == "true":
+        return https_fn.Response(
+            '{"warm":true}',
+            status=200,
+            content_type="application/json",
+            headers={"Access-Control-Allow-Origin": "*"},
+        )
+
     return https_fn.Response.from_app(_wsgi_app, req.environ)
 
 
 @https_fn.on_request()
 def ping(req: https_fn.Request) -> https_fn.Response:
     return https_fn.Response("pong", status=200)
+
+
+async def _process_video(data: dict) -> None:
+    video_id = data.get("video_id")
+    youtube_url = data.get("youtube_url")
+    if not video_id or not youtube_url:
+        raise ValueError("Task payload requires video_id and youtube_url.")
+
+    async with AsyncSessionLocal() as db:
+        await run_pipeline(uuid.UUID(video_id), youtube_url, db=db)
+
+
+@tasks_fn.on_task_dispatched(
+    secrets=["GROQ_API_KEY", "GROQ_API_KEY_FALLBACK", "DATABASE_URL"],
+    retry_config=RetryConfig(max_attempts=1),
+    rate_limits=RateLimits(max_concurrent_dispatches=3),
+)
+def processvideo(request) -> None:
+    try:
+        asyncio.run(_process_video(request.data))
+    except PipelineError as exc:
+        # Duration violations are permanent input errors; retrying would only
+        # repeat the same metadata lookup. Transient failures remain retryable.
+        if isinstance(exc.__cause__, (VideoTooLongError, UnsupportedVideoError)):
+            return
+        raise
 
 
 @scheduler_fn.on_schedule(
