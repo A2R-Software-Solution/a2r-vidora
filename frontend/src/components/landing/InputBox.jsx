@@ -60,7 +60,9 @@ export default function InputBox({ onAnalyze, loading }) {
         <span><span className="provider-icon drive">▲</span> Google Drive</span>
         <span>⋯ And more</span>
       </div>
-      <div className="hint reveal-up delay-4">Just paste the link. No login. No hassle.</div>
+      <div className="hint reveal-up delay-4">
+        Free beta supports YouTube videos up to 35 minutes.
+      </div>
     </>
   );
 }

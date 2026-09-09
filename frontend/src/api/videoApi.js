@@ -1,7 +1,20 @@
 import apiClient from "./client";
 
-export const analyzeVideo = (payload) => {
-  return apiClient.post("/videos/analyze", payload);
+export const analyzeVideo = (payload, requestId) => {
+  return apiClient.post("/videos/analyze", payload, {
+    timeout: 310000,
+    headers: { "Idempotency-Key": requestId },
+  });
+};
+
+export const warmUpVideoAnalysis = () => {
+  return apiClient.post("/videos/analyze", "", {
+    params: { warmup: true },
+    // A CORS-safelisted content type avoids an unnecessary preflight while
+    // the backend ignores the warm-up body entirely.
+    headers: { "Content-Type": "text/plain" },
+    timeout: 10000,
+  });
 };
 
 export const getVideos = (videoId) => {
