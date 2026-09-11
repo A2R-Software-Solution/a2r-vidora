@@ -6,7 +6,7 @@ import { useVideoAnalyze } from "../hooks/useVideoAnalyze";
 import { warmUpVideoAnalysis } from "../api/videoApi";
 
 export default function LandingPage({ onAnalyzed, compact }) {
-  const { submitVideo, restoreVideo, loading, error } = useVideoAnalyze();
+  const { submitVideo, restoreVideo, loading, restoring, hasPreviousVideo, error, clearError } = useVideoAnalyze();
   const warmupStarted = useRef(false);
 
   useEffect(() => {
@@ -29,14 +29,15 @@ export default function LandingPage({ onAnalyzed, compact }) {
 
   return (
     <Hero compact={compact}>
-      <InputBox onAnalyze={handleAnalyze} loading={loading} />
-      <button type="button" disabled={loading} onClick={async () => {
-        const recovered = await restoreVideo();
-        if (recovered) onAnalyzed(recovered);
-      }}>Check previous analysis</button>
+      <InputBox onAnalyze={handleAnalyze} loading={loading} restoring={restoring} error={error} onClearError={clearError} />
+      {hasPreviousVideo && !loading && (
+        <button className="resume-analysis" type="button" onClick={async () => {
+          const recovered = await restoreVideo();
+          if (recovered) onAnalyzed(recovered);
+        }}>Resume previous analysis</button>
+      )}
       <p className="hint">AI answers may be inaccurate. Verify important details against the video.
         Only submit content you have permission to process.</p>
-      {error && <div className="error-text">{error}</div>}
       {!compact && <Features />}
     </Hero>
   );

@@ -13,7 +13,10 @@ export const warmUpVideoAnalysis = () => {
     // A CORS-safelisted content type avoids an unnecessary preflight while
     // the backend ignores the warm-up body entirely.
     headers: { "Content-Type": "text/plain" },
-    timeout: 10000,
+    // A cold model load plus the first database handshake can take longer than
+    // 10 seconds.  This request is fire-and-forget, but it must be allowed to
+    // complete so that the following analysis uses the warmed instance.
+    timeout: 30000,
   });
 };
 

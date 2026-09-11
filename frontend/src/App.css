@@ -71,6 +71,35 @@ h1 span { color: #ff6b35; }
   font-size: 15px;
 }
 
+.analysis-status {
+  max-width: 720px;
+  margin: 12px auto 0;
+  padding: 12px 16px;
+  border: 1px solid #f0d9c5;
+  border-radius: 12px;
+  background: #fff0e4;
+  color: #6b4936;
+  font-size: 13px;
+  line-height: 1.5;
+  text-align: center;
+}
+.analysis-status strong { display: block; font-weight: 600; }
+.analysis-status span { display: block; margin-top: 3px; }
+.analysis-error { background: #fff2ed; border-color: #e9b3a2; color: #923b27; }
+.input-wrap:has(input[aria-invalid="true"]) { border-color: #b6472b; }
+.resume-analysis {
+  margin-top: 8px;
+  padding: 6px 10px;
+  background: transparent;
+  color: #79533d;
+  font-size: 13px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  border-radius: 4px;
+}
+.resume-analysis:hover { color: #a33d17; }
+.resume-analysis:focus-visible { outline: 2px solid #a33d17; outline-offset: 2px; }
+
 .providers {
   display: flex;
   justify-content: center;

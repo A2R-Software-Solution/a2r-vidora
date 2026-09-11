@@ -5,6 +5,7 @@ import uuid
 from asgiref.sync import async_to_sync
 from firebase_admin import initialize_app, credentials
 from firebase_functions import https_fn, scheduler_fn, tasks_fn
+from sqlalchemy import text
 from firebase_functions.options import (
     MemoryOption,
     RateLimits,
@@ -19,6 +20,7 @@ from app.main import app as fastapi_app
 from app.pipeline.pipeline import PipelineError, run_pipeline
 from app.pipeline.youtube_downloader import UnsupportedVideoError, VideoTooLongError
 from app.db.session import AsyncSessionLocal
+from app.integration.embedding_client import embed_text
 
 set_global_options(
     max_instances=10,
@@ -31,6 +33,18 @@ if settings.google_credentials_path and os.path.exists(settings.google_credentia
     initialize_app(credentials.Certificate(settings.google_credentials_path))
 else:
     initialize_app()
+
+
+async def _warm_reusable_resources() -> None:
+    """Prime resources that are reused by every analysis in this instance.
+
+    External work (YouTube download and Groq requests) is deliberately excluded:
+    it is per-video work, costs money, and cannot be cached safely.  The small
+    embedding call both loads the bundled model and verifies it can run.
+    """
+    await embed_text("warmup")
+    async with AsyncSessionLocal() as db:
+        await db.execute(text("SELECT 1"))
 
 
 def _wsgi_app(environ, start_response):
@@ -94,12 +108,16 @@ def _wsgi_app(environ, start_response):
     return [response["body"]]
 
 
-@https_fn.on_request(concurrency=2, secrets=["GROQ_API_KEY", "GROQ_API_KEY_FALLBACK", "DATABASE_URL"])
+@https_fn.on_request(
+    concurrency=2,
+    secrets=["GROQ_API_KEY", "GROQ_API_KEY_FALLBACK", "DATABASE_URL"],
+)
 def api(req: https_fn.Request) -> https_fn.Response:
-    # Warm the same Gen 2 function used by real API requests, but stop before
-    # FastAPI creates request-scoped dependencies (including a DB session) or
-    # dispatches any business logic.
+    # Prime the costly reusable resources without downloading a video or
+    # invoking Groq. The resources stay cached only while this autoscaled
+    # instance remains alive; it may later scale to zero when idle.
     if req.method == "POST" and req.args.get("warmup", "").lower() == "true":
+        asyncio.run(_warm_reusable_resources())
         return https_fn.Response(
             '{"warm":true}',
             status=200,

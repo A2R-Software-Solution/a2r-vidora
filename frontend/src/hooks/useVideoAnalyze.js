@@ -1,16 +1,26 @@
 import { useRef, useState } from "react";
 import { analyzeVideo, getVideos } from "../api/videoApi";
+import { isYouTubeVideoUrl, YOUTUBE_LINK_MESSAGE, friendlyApiError } from "../utils/videoInput";
 
 const VIDEO_ID_STORAGE_KEY = "vidora_video_id";
 const PENDING_KEY = "vidora_pending_analysis";
 
 export function useVideoAnalyze() {
   const [loading, setLoading] = useState(false);
+  const [restoring, setRestoring] = useState(false);
+  const [hasPreviousVideo, setHasPreviousVideo] = useState(
+    () => Boolean(localStorage.getItem(VIDEO_ID_STORAGE_KEY))
+  );
   const [error, setError] = useState(null);
   const [video, setVideo] = useState(null);
   const submitting = useRef(false);
 
   const submitVideo = async (youtubeUrl) => {
+    if (!isYouTubeVideoUrl(youtubeUrl)) {
+      setError(YOUTUBE_LINK_MESSAGE);
+      throw new Error(YOUTUBE_LINK_MESSAGE);
+    }
+    youtubeUrl = youtubeUrl.trim();
     if (submitting.current) throw new Error("Analysis is already running.");
     submitting.current = true;
     setLoading(true);
@@ -41,11 +51,12 @@ export function useVideoAnalyze() {
         localStorage.removeItem(VIDEO_ID_STORAGE_KEY);
         setError("Previous analysis failed. Please click Analyze Video again to start a new attempt.");
       } else {
-        setError(detail || err.message || "Analysis failed.");
+        setError(friendlyApiError(err));
       }
       throw err;
     } finally {
       submitting.current = false;
+      setHasPreviousVideo(Boolean(localStorage.getItem(VIDEO_ID_STORAGE_KEY)));
       setLoading(false);
     }
   };
@@ -54,6 +65,7 @@ export function useVideoAnalyze() {
   const restoreVideo = async () => {
     const id = localStorage.getItem(VIDEO_ID_STORAGE_KEY);
     if (!id) return null;
+    setRestoring(true);
     setLoading(true);
     setError(null);
     try {
@@ -75,14 +87,15 @@ export function useVideoAnalyze() {
     } catch (err) {
       if ([404, 410].includes(err?.response?.status)) {
         localStorage.removeItem(VIDEO_ID_STORAGE_KEY);
-      } else {
-        setError("Could not restore the previous video.");
       }
+      setError(friendlyApiError(err, "restore"));
       return null;
     } finally {
+      setHasPreviousVideo(Boolean(localStorage.getItem(VIDEO_ID_STORAGE_KEY)));
+      setRestoring(false);
       setLoading(false);
     }
   };
 
-  return { submitVideo, restoreVideo, video, loading, error };
+  return { submitVideo, restoreVideo, video, loading, restoring, hasPreviousVideo, error, clearError: () => setError(null) };
 }
