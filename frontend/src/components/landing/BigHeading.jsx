@@ -21,6 +21,13 @@ export default function BigHeading({ progress }) {
         }}
       >
         Understand any video<br />with AI, <span className="shimmer-text">instantly</span>.
+        <span
+          className="scroll-cue"
+          aria-hidden="true"
+          style={{ opacity: Math.max(0, 1 - progress * 8) }}
+        >
+          ∨
+        </span>
       </h1>
     </>
   );
