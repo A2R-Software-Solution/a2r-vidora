@@ -1,6 +1,7 @@
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
@@ -36,6 +37,26 @@ app.add_middleware(
 app.include_router(user_router)
 app.include_router(video_router)
 app.include_router(qa_log_router)
+
+
+@app.exception_handler(Exception)
+async def report_unhandled_exception(request: Request, exc: Exception) -> JSONResponse:
+    """Emit one safe, searchable event for unexpected API failures.
+
+    Cloud Monitoring alerts on this event and on 5xx request logs.  Do not log
+    request bodies here: video URLs, credentials and other user input must not
+    be copied into operational alert emails.
+    """
+    logger.exception(
+        "unhandled_request_error method=%s path=%s error_type=%s",
+        request.method,
+        request.url.path,
+        type(exc).__name__,
+    )
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "An unexpected server error occurred."},
+    )
 
 
 @app.get("/health")

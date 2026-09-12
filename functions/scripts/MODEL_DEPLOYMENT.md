@@ -36,8 +36,13 @@ Deploy the backend before publishing the updated frontend. Analyze now awaits
 the pipeline and returns its completed result on the same HTTP request. The UI
 does not poll. Existing processvideo stays deployed for old queued jobs; new
 submissions do not enqueue tasks. Refresh/connection loss can lose the response;
-there is no automatic resubmission or completion notification. No minInstances
-is configured and warm-up does not guarantee an instance stays alive.
+there is no automatic resubmission or completion notification.
+
+The frontend's `?warmup=true` request loads the bundled embedding model, runs a
+small inference and verifies database connectivity. It intentionally does not
+download YouTube media or call Groq, since those are per-video external work.
+This is best-effort only: without a reserved minimum instance, an idle API
+container may scale to zero and its next request can be cold.
 
 Analysis has a 270-second application timeout within the 300-second platform
 limit. Cancellation attempts to record failed status. Blocking executor work

@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
 import { askQuestion, getQaHistory } from "../api/videoApi";
+import { friendlyApiError } from "../utils/videoInput";
 
 const MAX_QUESTIONS = 5;
 
@@ -16,7 +17,7 @@ export function useVideoQA(videoId) {
       const response = await getQaHistory(videoId);
       setMessages(response.data.items);
     } catch (err) {
-      setError(err?.response?.data?.detail || "Failed to load Q&A history");
+      setError(friendlyApiError(err, "qa"));
     } finally {
       setLoading(false);
     }
@@ -34,7 +35,7 @@ export function useVideoQA(videoId) {
       setMessages((prev) => [...prev, response.data]);
       return response.data;
     } catch (err) {
-      setError(err?.response?.data?.detail || "Failed to get answer");
+      setError(friendlyApiError(err, "qa"));
       throw err;
     } finally {
       setLoading(false);
