@@ -427,3 +427,153 @@ h1 span { color: #ff6b35; }
 .reveal-on-scroll.delay-0.in-view { transition-delay: 0s; }
 .reveal-on-scroll.delay-1.in-view { transition-delay: 0.12s; }
 .reveal-on-scroll.delay-2.in-view { transition-delay: 0.24s; }
+
+
+/* ===== RESPONSIVE ===== */
+
+@media (max-width: 900px) {
+  .workspace {
+    grid-template-columns: 1fr;
+  }
+  .video {
+    border-right: 0;
+    border-bottom: 1px solid #f0e0d0;
+  }
+  .preview {
+    padding: 0 12px 60px;
+  }
+  .video, .chat {
+    padding: 18px;
+  }
+  .pin-heading {
+    font-size: clamp(36px, 7vw, 60px);
+  }
+}
+
+@media (max-width: 640px) {
+  .hero {
+    padding: 32px 16px 24px;
+  }
+  h1 {
+    font-size: 28px;
+    letter-spacing: -1px;
+  }
+  .sub {
+    font-size: 14px;
+    padding: 0 8px;
+  }
+  .badge {
+    font-size: 12px;
+    padding: 6px 10px;
+  }
+  .input-wrap {
+    flex-direction: column;
+    gap: 8px;
+    padding: 8px;
+    border-radius: 14px;
+  }
+  .analyze {
+    padding: 12px;
+    width: 100%;
+  }
+  .providers {
+    gap: 14px;
+    flex-wrap: wrap;
+    font-size: 12px;
+  }
+  .chat-tabs {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .question-counter {
+    margin-left: 0;
+    width: 100%;
+    text-align: left;
+    order: 3;
+  }
+  /* Pinned scroll-heading breaks on mobile — fall back to normal flow */
+  .pin-heading-spacer {
+    height: auto;
+  }
+  .pin-heading {
+    position: static;
+    left: auto;
+    transform: none !important;
+    width: 100%;
+    padding: 40px 16px 0;
+    font-size: 34px;
+    line-height: 1.2;
+  }
+  .hero-lower {
+    position: static;
+    left: auto;
+    transform: none !important;
+    width: 100%;
+    padding: 16px 16px 24px;
+  }
+}
+
+/* Small-screen refinements */
+@media (max-width: 760px) {
+  .page { padding-top: 60px; }
+
+  .preview {
+    padding: 0 12px 76px;
+  }
+
+  .preview-card { border-radius: 14px; }
+  .preview-head { padding: 13px 16px; }
+
+  .video,
+  .chat { padding: 16px; }
+
+  .video-title { margin-top: 12px; }
+  .messages { min-height: 160px; margin-top: 18px; }
+  .ask { margin-top: 16px; padding-top: 14px; }
+}
+
+@media (max-width: 640px) {
+  .hero-compact { padding: 24px 16px 20px; }
+  .hero-compact h1 { font-size: clamp(28px, 9vw, 34px); }
+
+  .input-wrap {
+    align-items: stretch;
+    padding: 8px;
+  }
+
+  .input-icon { display: none; }
+  .input-wrap input { min-height: 46px; padding: 12px 10px; }
+  .analyze { min-height: 46px; }
+
+  .features {
+    column-gap: 16px;
+    row-gap: 10px;
+    margin: 16px 0 36px;
+  }
+
+  .providers { justify-content: flex-start; }
+  .hint { line-height: 1.45; }
+
+  .chat-tabs { font-size: 13px; }
+  .chat-tab.new-video { margin-left: 0; }
+  .user-msg, .ai-msg { max-width: 100%; }
+
+  .bug-report-button { width: 40px; height: 40px; }
+}
+
+@media (max-width: 380px) {
+  nav { padding: 0 16px; }
+  .signup { padding: 9px 11px; }
+  .logo-icon { width: 30px; height: 30px; }
+  .providers { gap: 10px; }
+  .pin-heading { font-size: 30px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

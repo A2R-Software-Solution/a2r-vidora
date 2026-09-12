@@ -177,3 +177,12 @@ input::placeholder { color: #b0a89e; }
   .video { border-right: 0; border-bottom: 1px solid #f0e0d0; }
   .reel-grid { grid-template-columns: 1fr; }
 }
+@media (max-width: 640px) {
+  nav {
+    padding: 0 5%;
+    height: 60px;
+  }
+  .logo {
+    font-size: 17px;
+  }
+}
