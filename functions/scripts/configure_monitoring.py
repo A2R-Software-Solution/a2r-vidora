@@ -1,19 +1,15 @@
-"""Configure production email alerts and an external uptime check.
+"""Configure production error email alerts without recurring health requests.
 
-Explicit invocation makes external changes. No runtime polling is installed.
+Explicit invocation makes external changes. Uptime checks are intentionally not created.
 """
 import argparse
 import shutil
 import subprocess
-from urllib.parse import urlparse
 import requests
 
 PROJECT = "vidoraai-2bbce"
 BASE = f"https://monitoring.googleapis.com/v3/projects/{PROJECT}"
 ERROR_POLICY_TITLE = "Vidora production processing errors"
-UPTIME_POLICY_TITLE = "Vidora production API unavailable"
-UPTIME_CHECK_TITLE = "Vidora production API health"
-API_HEALTH_URL = "https://api-c4rcflddjq-uc.a.run.app/health"
 
 
 def main():
@@ -81,38 +77,6 @@ def main():
         policy = call("POST", "/alertPolicies", json=error_policy_body)
         print("Policy created:", policy["name"])
 
-    parsed = urlparse(API_HEALTH_URL)
-    checks = listing("/uptimeCheckConfigs", "uptimeCheckConfigs")
-    check = next((c for c in checks if c.get("displayName") == UPTIME_CHECK_TITLE), None)
-    check_body = {
-        "displayName": UPTIME_CHECK_TITLE,
-        "monitoredResource": {"type": "uptime_url", "labels": {"project_id": PROJECT, "host": parsed.netloc}},
-        "httpCheck": {"path": parsed.path, "port": 443, "useSsl": True, "validateSsl": True},
-        "period": "60s", "timeout": "10s", "checkerType": "STATIC_IP_CHECKERS",
-    }
-    if check:
-        check = call("PATCH", "/" + check["name"].split("/", 2)[-1], json=check_body)
-        print("Uptime check updated:", check["name"])
-    else:
-        check = call("POST", "/uptimeCheckConfigs", json=check_body)
-        print("Uptime check created:", check["name"])
-
-    check_id = check["name"].rsplit("/", 1)[-1]
-
-    uptime_policy_body = {
-        "displayName": UPTIME_POLICY_TITLE, "enabled": True, "combiner": "OR",
-        "notificationChannels": channels,
-        "documentation": {"mimeType": "text/markdown", "content": "The external health check failed for five minutes. Check Cloud Run revision health, request logs and recent deployments. Do not include secrets or user content in incident reports."},
-        "conditions": [{"displayName": "Health endpoint failed for five minutes", "conditionThreshold": {"filter": f'metric.type="monitoring.googleapis.com/uptime_check/check_passed" AND resource.type="uptime_url" AND metric.label."check_id"="{check_id}"', "comparison": "COMPARISON_LT", "thresholdValue": 1, "duration": "300s", "trigger": {"count": 1}}}],
-        "alertStrategy": {"autoClose": "1800s"},
-    }
-    uptime_policy = next((p for p in policies if p.get("displayName") == UPTIME_POLICY_TITLE), None)
-    if uptime_policy:
-        policy = call("PATCH", "/" + uptime_policy["name"].split("/", 2)[-1], json=uptime_policy_body)
-        print("Uptime policy updated:", policy["name"])
-    else:
-        policy = call("POST", "/alertPolicies", json=uptime_policy_body)
-        print("Uptime policy created:", policy["name"])
     print("Email receipt must still be verified by recipients.")
 
 
