@@ -11,4 +11,5 @@ secrets/
 # Environment files
 .env
 .env.*
+!.env.example
 /models/

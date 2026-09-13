@@ -110,7 +110,7 @@ def _wsgi_app(environ, start_response):
 
 @https_fn.on_request(
     concurrency=2,
-    secrets=["GROQ_API_KEY", "GROQ_API_KEY_FALLBACK", "DATABASE_URL"],
+    secrets=["GROQ_API_KEY", "GROQ_API_KEY_FALLBACK", "DATABASE_URL", "RECAPTCHA_SECRET_KEY"],
 )
 def api(req: https_fn.Request) -> https_fn.Response:
     # Prime the costly reusable resources without downloading a video or

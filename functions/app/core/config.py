@@ -23,6 +23,9 @@ class Settings(BaseSettings):
     database_url: str | None = None
     groq_api_key: str | None = None
     groq_api_key_fallback: str | None = None
+    recaptcha_secret_key: str | None = None
+    recaptcha_min_score: float = 0.5
+    recaptcha_allowed_hostnames_csv: str = ""
     google_credentials_path: str | None = None
     
     gcp_project_id: str | None = None
@@ -31,6 +34,14 @@ class Settings(BaseSettings):
     @property
     def is_production(self) -> bool:
         return self.environment.lower() == "production"
+
+    @property
+    def recaptcha_allowed_hostnames(self) -> set[str]:
+        return {
+            hostname.strip().lower()
+            for hostname in self.recaptcha_allowed_hostnames_csv.split(",")
+            if hostname.strip()
+        }
 
 
 @lru_cache

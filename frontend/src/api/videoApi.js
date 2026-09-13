@@ -1,9 +1,14 @@
 import apiClient from "./client";
+import { getRecaptchaToken } from "../utils/recaptcha";
 
-export const analyzeVideo = (payload, requestId) => {
+export const analyzeVideo = async (payload, requestId) => {
+  const recaptchaToken = await getRecaptchaToken("analyze_video");
   return apiClient.post("/videos/analyze", payload, {
     timeout: 310000,
-    headers: { "Idempotency-Key": requestId },
+    headers: {
+      "Idempotency-Key": requestId,
+      ...(recaptchaToken ? { "X-Recaptcha-Token": recaptchaToken } : {}),
+    },
   });
 };
 

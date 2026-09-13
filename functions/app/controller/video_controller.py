@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logging import logger
 from app.core.config import settings
+from app.core.recaptcha import verify_recaptcha
 from app.core.rate_limit import enforce_submit_rate_limit
 from app.deps import get_current_user_id, get_db
 from app.schemas.video_schema import VideoCreate, VideoResponse
@@ -42,12 +43,14 @@ async def _enqueue_video_processing(video_id: uuid.UUID, youtube_url: str) -> No
 async def submit_video(
     payload: VideoCreate,
     idempotency_key: uuid.UUID | None = Header(default=None),
+    recaptcha_token: str | None = Header(default=None, alias="X-Recaptcha-Token"),
     db: AsyncSession = Depends(get_db),
     user_id: uuid.UUID | None = Depends(get_current_user_id),
     _rate_limit: None = Depends(enforce_submit_rate_limit),
 ) -> VideoResponse:
     if not settings.ai_enabled:
         raise HTTPException(status_code=503, detail="AI processing is temporarily paused.")
+    await verify_recaptcha(recaptcha_token, expected_action="analyze_video")
     service = VideoService(db)
     try:
         video, created = await service.submit_once(
