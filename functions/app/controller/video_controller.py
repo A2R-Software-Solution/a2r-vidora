@@ -28,7 +28,7 @@ _VIDEO_PROCESSING_TASK = settings.video_processing_task
 async def _enqueue_video_processing(video_id: uuid.UUID, youtube_url: str) -> None:
     queue = admin_functions.task_queue(_VIDEO_PROCESSING_TASK)
     options = admin_functions.TaskOptions(
-        dispatch_deadline_seconds=settings.function_timeout_seconds,
+        dispatch_deadline_seconds=settings.vidora_function_timeout_seconds,
         task_id=f"video-{video_id.hex}",
     )
     await asyncio.to_thread(

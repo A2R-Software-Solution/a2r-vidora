@@ -23,10 +23,10 @@ from app.db.session import AsyncSessionLocal
 from app.integration.embedding_client import embed_text
 
 set_global_options(
-    max_instances=settings.function_max_instances,
-    memory=MemoryOption(settings.function_memory_mb),
-    cpu=settings.function_cpu,
-    timeout_sec=settings.function_timeout_seconds,
+    max_instances=settings.vidora_function_max_instances,
+    memory=MemoryOption(settings.vidora_function_memory_mb),
+    cpu=settings.vidora_function_cpu,
+    timeout_sec=settings.vidora_function_timeout_seconds,
 )
 
 if settings.google_credentials_path and os.path.exists(settings.google_credentials_path):
@@ -109,7 +109,7 @@ def _wsgi_app(environ, start_response):
 
 
 @https_fn.on_request(
-    concurrency=settings.function_concurrency,
+    concurrency=settings.vidora_function_concurrency,
     secrets=["GROQ_API_KEY", "GROQ_API_KEY_FALLBACK", "DATABASE_URL", "RECAPTCHA_SECRET_KEY"],
 )
 def api(req: https_fn.Request) -> https_fn.Response:
