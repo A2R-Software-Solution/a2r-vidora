@@ -6,6 +6,7 @@ from typing import Awaitable, Callable
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.models.qa_log_model import QALog
 from app.repository.qa_log_repository import QALogRepository
 from app.services.transcript_chunk_service import TranscriptChunkService
@@ -14,7 +15,7 @@ from app.services.video_service import VideoService
 EmbedFn = Callable[[str], Awaitable[list[float]]]
 AnswerFn = Callable[[str, list[str]], Awaitable[str]]
 
-_MAX_QUESTION_LEN = 2000
+_MAX_QUESTION_LEN = settings.max_question_chars
 _NO_CONTEXT_ANSWER = "I couldn't find anything relevant to that question in this video."
 
 # Matches timestamps like "0:45", "00:45", "1:47:30" — used to detect

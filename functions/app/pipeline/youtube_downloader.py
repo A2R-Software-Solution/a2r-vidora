@@ -8,10 +8,11 @@ from pathlib import Path
 
 import yt_dlp
 
+from app.core.config import settings
 from app.core.logging import logger
 from app.integration import secret_manager_client
 
-MAX_VIDEO_DURATION_SECONDS = 35 * 60
+MAX_VIDEO_DURATION_SECONDS = settings.max_video_duration_seconds
 
 
 class DownloadError(Exception):
@@ -95,7 +96,7 @@ def _run_download(youtube_url: str, output_dir: str) -> DownloadResult:
                 {
                     "key": "FFmpegExtractAudio",
                     "preferredcodec": "mp3",
-                    "preferredquality": "64",
+                    "preferredquality": settings.audio_quality,
                 }
             ],
             "noplaylist": True,
@@ -105,9 +106,9 @@ def _run_download(youtube_url: str, output_dir: str) -> DownloadResult:
             "logger": _YtDlpLogger(),
             "cookiefile": cookie_file.name,
             "js_runtimes": _resolve_js_runtime(),
-            "socket_timeout": 20,
-            "retries": 2,
-            "fragment_retries": 2,
+            "socket_timeout": settings.download_timeout_seconds,
+            "retries": settings.download_retries,
+            "fragment_retries": settings.download_retries,
         }
 
         try:

@@ -4,12 +4,13 @@ from pathlib import Path
 from threading import Lock
 from typing import TYPE_CHECKING
 
+from app.core.config import settings
 from app.core.logging import logger
 
 if TYPE_CHECKING:
     from sentence_transformers import SentenceTransformer
 
-MODEL_NAME = "all-MiniLM-L6-v2"
+MODEL_NAME = settings.embedding_model
 EMBEDDING_DIM = 384
 MODEL_PATH = Path(__file__).resolve().parents[2] / "models" / MODEL_NAME
 _model_lock = Lock()
@@ -37,7 +38,7 @@ def _encode(text: str) -> list[float]:
 def _encode_batch(texts: list[str]) -> list[list[float]]:
     with _model_lock:
         model = _get_model()
-        return model.encode(texts, batch_size=32, convert_to_numpy=True,
+        return model.encode(texts, batch_size=settings.embedding_batch_size, convert_to_numpy=True,
                             normalize_embeddings=True).tolist()
 
 

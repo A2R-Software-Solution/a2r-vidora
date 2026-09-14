@@ -13,8 +13,8 @@ from fastapi import HTTPException, status
 from app.core.config import settings
 from app.core.logging import logger
 
-_VERIFY_URL = "https://www.google.com/recaptcha/api/siteverify"
-_TIMEOUT_SECONDS = 5
+_VERIFY_URL = settings.recaptcha_verify_url
+_TIMEOUT_SECONDS = settings.recaptcha_timeout_seconds
 
 
 def _verify_token(token: str) -> dict:

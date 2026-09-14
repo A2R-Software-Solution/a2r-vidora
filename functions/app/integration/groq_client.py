@@ -13,12 +13,12 @@ from groq import APIConnectionError, APITimeoutError, GroqError, InternalServerE
 from app.core.config import settings
 from app.core.logging import logger
 
-CHAT_MODEL = "openai/gpt-oss-20b"
-STT_MODEL = "whisper-large-v3"
+CHAT_MODEL = settings.chat_model
+STT_MODEL = settings.stt_model
 
-_ANSWER_MAX_TOKENS = 1024
-_ANSWER_TEMPERATURE = 0.2
-_REQUEST_TIMEOUT_SECONDS = 60.0
+_ANSWER_MAX_TOKENS = settings.answer_max_tokens
+_ANSWER_TEMPERATURE = settings.answer_temperature
+_REQUEST_TIMEOUT_SECONDS = settings.provider_timeout_seconds
 _request_counter = count()
 _T = TypeVar("_T")
 _RETRYABLE_ERRORS = (RateLimitError, InternalServerError, APIConnectionError, APITimeoutError)
@@ -140,8 +140,8 @@ _SUMMARY_SYSTEM_PROMPT = (
     "4. Write 3-5 sentences, plain prose, no headers or bullet points."
 )
 
-_SUMMARY_MAX_TOKENS = 400
-_SUMMARY_MAX_INPUT_CHARS = 20_000  # keeps very long transcripts within a safe prompt budget
+_SUMMARY_MAX_TOKENS = settings.summary_max_tokens
+_SUMMARY_MAX_INPUT_CHARS = settings.summary_max_input_chars  # keeps very long transcripts within a safe prompt budget
 
 
 async def generate_summary(full_transcript_text: str) -> str:

@@ -3,7 +3,8 @@ import { useVideoQA } from "../../hooks/useVideoQA";
 import MessageBubble from "./MessageBubble";
 import TimestampChip from "./TimestampChip";
 
-const MAX_CHARS = 100;
+import { config } from "../../config";
+const MAX_CHARS = config.maxQuestionChars;
 
 export default function ChatPanel({ videoId, onSeek }) {
   const { messages, fetchHistory, askVideo, loading, error, limitReached, questionCount } = useVideoQA(videoId);
@@ -37,7 +38,7 @@ export default function ChatPanel({ videoId, onSeek }) {
       <div className="chat-tabs">
         <span className="chat-tab active">✨ AI Answer</span>
         <span className="chat-tab">💬 Chat</span>
-        <span className="question-counter">{questionCount}/5 questions</span>
+        <span className="question-counter">{questionCount}/{config.maxQuestions} questions</span>
       </div>
 
       <div className="messages">

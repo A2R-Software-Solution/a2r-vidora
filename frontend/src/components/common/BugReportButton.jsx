@@ -1,4 +1,5 @@
-const BUG_REPORT_URL = "https://forms.gle/Xw7KJ5noMo2DFTRd6";
+import { config } from "../../config";
+const BUG_REPORT_URL = config.bugReportUrl;
 
 export default function BugReportButton() {
   return (

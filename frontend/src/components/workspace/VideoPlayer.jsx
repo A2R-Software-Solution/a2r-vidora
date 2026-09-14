@@ -1,5 +1,6 @@
 import { forwardRef, useEffect, useRef } from "react";
 import { extractYouTubeId } from "../../utils/youtube";
+import { config } from "../../config";
 
 const VideoPlayer = forwardRef(function VideoPlayer(
   { title, duration, status, youtubeUrl },
@@ -22,7 +23,7 @@ const VideoPlayer = forwardRef(function VideoPlayer(
       createPlayer();
     } else {
       const tag = document.createElement("script");
-      tag.src = "https://www.youtube.com/iframe_api";
+      tag.src = config.youtubePlayerScriptUrl;
       document.body.appendChild(tag);
       window.onYouTubeIframeAPIReady = createPlayer;
     }

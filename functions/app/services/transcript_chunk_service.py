@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import uuid
+from app.core.config import settings
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -12,12 +13,12 @@ _EMBEDDING_DIM = 384
 
 def _top_k_for_duration(duration_seconds: int | None) -> int:
     if duration_seconds is None:
-        return 5
-    if duration_seconds <= 600:
-        return 5
-    if duration_seconds <= 1800:
-        return 8
-    return 12
+        return settings.retrieval_short_k
+    if duration_seconds <= settings.retrieval_short_seconds:
+        return settings.retrieval_short_k
+    if duration_seconds <= settings.retrieval_medium_seconds:
+        return settings.retrieval_medium_k
+    return settings.retrieval_long_k
 
 
 class ChunkDimensionMismatchError(Exception):

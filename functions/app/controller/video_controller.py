@@ -22,13 +22,13 @@ from app.services.video_service import (
 from app.models.video_model import VideoStatus
 
 
-_VIDEO_PROCESSING_TASK = "processvideo"
+_VIDEO_PROCESSING_TASK = settings.video_processing_task
 
 
 async def _enqueue_video_processing(video_id: uuid.UUID, youtube_url: str) -> None:
     queue = admin_functions.task_queue(_VIDEO_PROCESSING_TASK)
     options = admin_functions.TaskOptions(
-        dispatch_deadline_seconds=300,
+        dispatch_deadline_seconds=settings.function_timeout_seconds,
         task_id=f"video-{video_id.hex}",
     )
     await asyncio.to_thread(
@@ -74,7 +74,7 @@ async def submit_video(
         )
 
     try:
-        async with asyncio.timeout(270):
+        async with asyncio.timeout(settings.analysis_timeout_seconds):
             video = await run_pipeline(video.id, video.youtube_url, db=db)
     except TimeoutError as exc:
         raise HTTPException(
@@ -84,7 +84,7 @@ async def submit_video(
     except PipelineError as exc:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail="Video processing failed. Please try again later with a supported video up to 35 minutes.",
+            detail=f"Video processing failed. Please try again later with a supported video up to {settings.max_video_duration_seconds / 60:g} minutes.",
         ) from exc
 
     return VideoResponse.model_validate(video)

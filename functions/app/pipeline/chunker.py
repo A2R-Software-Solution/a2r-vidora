@@ -11,13 +11,14 @@ retrieval precision).
 
 from __future__ import annotations
 
+from app.core.config import settings
 from app.core.logging import logger
 
 # Target chunk size in characters — MiniLM handles short passages well;
 # this keeps each chunk close to one coherent thought without being
 # so small that retrieval loses context.
-_TARGET_CHUNK_CHARS = 500
-_MAX_CHUNK_CHARS = 800
+_TARGET_CHUNK_CHARS = settings.target_chunk_chars
+_MAX_CHUNK_CHARS = settings.max_chunk_chars
 
 
 class EmptySegmentsError(Exception):

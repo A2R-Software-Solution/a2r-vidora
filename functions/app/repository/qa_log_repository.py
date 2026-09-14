@@ -1,4 +1,5 @@
 import uuid
+from app.core.config import settings
 
 from sqlalchemy import delete as sa_delete
 from sqlalchemy import func, select
@@ -46,7 +47,7 @@ class QALogRepository:
         *,
         user_id: uuid.UUID | None = None,
         search: str | None = None,
-        limit: int = 20,
+        limit: int = settings.qa_page_size,
         offset: int = 0,
     ) -> tuple[list[QALog], int]:
         """

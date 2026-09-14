@@ -9,7 +9,7 @@ from google.cloud import secretmanager
 from app.core.config import settings
 from app.core.logging import logger
 
-_CACHE_TTL_SECONDS = 30 * 60  # 30 min — cookies don't change often; avoids a Secret Manager call every request
+_CACHE_TTL_SECONDS = settings.cookie_cache_ttl_seconds  # 30 min — cookies don't change often; avoids a Secret Manager call every request
 
 
 @dataclass

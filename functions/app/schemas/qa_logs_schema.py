@@ -5,7 +5,9 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-_MAX_QUESTION_LEN: int = 2000  # abuse guard before hitting the embedding model
+from app.core.config import settings
+
+_MAX_QUESTION_LEN: int = settings.max_question_chars  # abuse guard before hitting the embedding model
 
 
 class _QALogBase(BaseModel):

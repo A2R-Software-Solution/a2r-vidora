@@ -1,4 +1,5 @@
-const SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
+import { config } from "../config";
+const SITE_KEY = config.recaptchaSiteKey;
 const SCRIPT_ID = "google-recaptcha-v3";
 
 let scriptPromise;
@@ -10,7 +11,7 @@ function loadRecaptcha() {
   scriptPromise = new Promise((resolve, reject) => {
     const script = document.createElement("script");
     script.id = SCRIPT_ID;
-    script.src = `https://www.google.com/recaptcha/api.js?render=${encodeURIComponent(SITE_KEY)}`;
+    script.src = `${config.recaptchaScriptUrl}?render=${encodeURIComponent(SITE_KEY)}`;
     script.async = true;
     script.onload = () => resolve(window.grecaptcha);
     script.onerror = () => reject(new Error("Bot protection could not load. Please try again."));
@@ -22,7 +23,7 @@ function loadRecaptcha() {
 
 export async function getRecaptchaToken(action) {
   if (!SITE_KEY) {
-    if (import.meta.env.PROD) {
+    if (config.isProduction) {
       throw new Error("Bot protection is not configured. Please try again later.");
     }
     return null;

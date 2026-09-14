@@ -16,11 +16,11 @@ from app.deps import get_current_user_id
 from app.core.config import settings
 from app.core.distributed_rate_limit import admit
 
-_VIDEO_SUBMIT_LIMIT = 5
-_VIDEO_SUBMIT_WINDOW_SECONDS = 600
+_VIDEO_SUBMIT_LIMIT = settings.submit_limit
+_VIDEO_SUBMIT_WINDOW_SECONDS = settings.submit_window_seconds
 
-_QUESTION_LIMIT = 10
-_QUESTION_WINDOW_SECONDS = 600
+_QUESTION_LIMIT = settings.question_limit
+_QUESTION_WINDOW_SECONDS = settings.question_window_seconds
 
 _buckets: dict[str, deque[float]] = defaultdict(deque)
 _bucket_lock = Lock()
@@ -42,10 +42,10 @@ def _check_locked(key: str, *, limit: int, window_seconds: int) -> None:
     now = time.monotonic()
     # Bound memory under high-cardinality client traffic. Never evict active
     # entries to admit a new client (that would bypass the limiter).
-    if key not in _buckets and len(_buckets) >= 10000:
-        for stale in [k for k, v in _buckets.items() if not v or now - v[-1] > 600]:
+    if key not in _buckets and len(_buckets) >= settings.rate_limit_max_buckets:
+        for stale in [k for k, v in _buckets.items() if not v or now - v[-1] > max(_VIDEO_SUBMIT_WINDOW_SECONDS, _QUESTION_WINDOW_SECONDS)]:
             del _buckets[stale]
-        if len(_buckets) >= 10000:
+        if len(_buckets) >= settings.rate_limit_max_buckets:
             raise HTTPException(status_code=503, detail="Service busy. Please try later.")
     bucket = _buckets[key]
 

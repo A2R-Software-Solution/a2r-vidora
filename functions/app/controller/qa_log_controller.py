@@ -55,7 +55,7 @@ async def list_qa_logs(
     db: AsyncSession = Depends(get_db),
     user_id: uuid.UUID | None = Depends(get_current_user_id),
     search: str | None = Query(default=None),
-    limit: int = Query(default=20, ge=1, le=100),
+    limit: int = Query(default=settings.qa_page_size, ge=1, le=settings.qa_max_page_size),
     offset: int = Query(default=0, ge=0),
 ) -> dict:
     service = QALogService(db)

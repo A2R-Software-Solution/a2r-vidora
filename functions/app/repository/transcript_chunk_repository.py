@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import uuid
+from app.core.config import settings
 
 from sqlalchemy import delete as sa_delete
 from sqlalchemy import select, text
@@ -8,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.transcript_chunk_model import TranscriptChunk
 
-_RRF_K = 60  # standard RRF smoothing constant
+_RRF_K = settings.retrieval_rrf_k
 
 
 class TranscriptChunkRepository:
@@ -55,7 +56,7 @@ class TranscriptChunkRepository:
         self,
         video_id: uuid.UUID,
         query_embedding: list[float],
-        limit: int = 5,
+        limit: int = settings.retrieval_short_k,
     ) -> list[TranscriptChunk]:
         """
         Cosine-similarity search scoped to a single video_id — never
@@ -100,7 +101,7 @@ class TranscriptChunkRepository:
         query_embedding: list[float],
         query_text: str,
         *,
-        top_k: int = 5,
+        top_k: int = settings.retrieval_short_k,
     ) -> list[TranscriptChunk]:
         """
         Combines pgvector semantic search and Postgres full-text search
@@ -108,7 +109,7 @@ class TranscriptChunkRepository:
         the two signals. Scoped to a single video_id, same as
         search_similar().
         """
-        candidate_pool = max(top_k * 4, 20)
+        candidate_pool = max(top_k * settings.retrieval_candidate_multiplier, settings.retrieval_min_candidates)
 
         sql = text(
             """

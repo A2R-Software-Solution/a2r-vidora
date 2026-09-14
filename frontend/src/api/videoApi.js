@@ -1,10 +1,11 @@
 import apiClient from "./client";
+import { config } from "../config";
 import { getRecaptchaToken } from "../utils/recaptcha";
 
 export const analyzeVideo = async (payload, requestId) => {
   const recaptchaToken = await getRecaptchaToken("analyze_video");
   return apiClient.post("/videos/analyze", payload, {
-    timeout: 310000,
+    timeout: config.analysisTimeoutMs,
     headers: {
       "Idempotency-Key": requestId,
       ...(recaptchaToken ? { "X-Recaptcha-Token": recaptchaToken } : {}),
@@ -21,7 +22,7 @@ export const warmUpVideoAnalysis = () => {
     // A cold model load plus the first database handshake can take longer than
     // 10 seconds.  This request is fire-and-forget, but it must be allowed to
     // complete so that the following analysis uses the warmed instance.
-    timeout: 30000,
+    timeout: config.warmupTimeoutMs,
   });
 };
 

@@ -2,7 +2,8 @@ import { useState, useCallback } from "react";
 import { askQuestion, getQaHistory } from "../api/videoApi";
 import { friendlyApiError } from "../utils/videoInput";
 
-const MAX_QUESTIONS = 5;
+import { config } from "../config";
+const MAX_QUESTIONS = config.maxQuestions;
 
 export function useVideoQA(videoId) {
   const [messages, setMessages] = useState([]);

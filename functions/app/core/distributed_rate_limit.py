@@ -10,6 +10,7 @@ from fastapi import HTTPException
 from sqlalchemy import BigInteger, cast, func
 from sqlalchemy.dialects.postgresql import insert
 
+from app.core.config import settings
 from app.db.session import AsyncSessionLocal
 from app.models.rate_limit_model import RateLimitBucket
 
@@ -29,7 +30,7 @@ def admission_statement(key: str, limit: int, window_seconds: int):
 
 async def admit(key: str, *, limit: int, window_seconds: int) -> None:
     try:
-        async with asyncio.timeout(5):
+        async with asyncio.timeout(settings.admission_timeout_seconds):
             async with AsyncSessionLocal() as db:
                 result = await db.execute(admission_statement(key, limit, window_seconds))
                 allowed = result.scalar_one_or_none() is not None

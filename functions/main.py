@@ -23,10 +23,10 @@ from app.db.session import AsyncSessionLocal
 from app.integration.embedding_client import embed_text
 
 set_global_options(
-    max_instances=10,
-    memory=MemoryOption.GB_2,
-    cpu=1,
-    timeout_sec=300,
+    max_instances=settings.function_max_instances,
+    memory=MemoryOption(settings.function_memory_mb),
+    cpu=settings.function_cpu,
+    timeout_sec=settings.function_timeout_seconds,
 )
 
 if settings.google_credentials_path and os.path.exists(settings.google_credentials_path):
@@ -109,13 +109,10 @@ def _wsgi_app(environ, start_response):
 
 
 @https_fn.on_request(
-    concurrency=2,
+    concurrency=settings.function_concurrency,
     secrets=["GROQ_API_KEY", "GROQ_API_KEY_FALLBACK", "DATABASE_URL", "RECAPTCHA_SECRET_KEY"],
 )
 def api(req: https_fn.Request) -> https_fn.Response:
-    # Prime the costly reusable resources without downloading a video or
-    # invoking Groq. The resources stay cached only while this autoscaled
-    # instance remains alive; it may later scale to zero when idle.
     if req.method == "POST" and req.args.get("warmup", "").lower() == "true":
         asyncio.run(_warm_reusable_resources())
         return https_fn.Response(
@@ -145,8 +142,8 @@ async def _process_video(data: dict) -> None:
 
 @tasks_fn.on_task_dispatched(
     secrets=["GROQ_API_KEY", "GROQ_API_KEY_FALLBACK", "DATABASE_URL"],
-    retry_config=RetryConfig(max_attempts=1),
-    rate_limits=RateLimits(max_concurrent_dispatches=3),
+    retry_config=RetryConfig(max_attempts=settings.task_max_attempts),
+    rate_limits=RateLimits(max_concurrent_dispatches=settings.task_max_concurrent_dispatches),
 )
 def processvideo(request) -> None:
     try:
@@ -160,7 +157,7 @@ def processvideo(request) -> None:
 
 
 @scheduler_fn.on_schedule(
-    schedule="every 24 hours", secrets=["GROQ_API_KEY", "DATABASE_URL"]
+    schedule=settings.cleanup_schedule, secrets=["GROQ_API_KEY", "DATABASE_URL"]
 )
 def cleanup_expired_videos(event: scheduler_fn.ScheduledEvent) -> None:
     asyncio.run(run_cleanup())
