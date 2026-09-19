@@ -1,4 +1,4 @@
-from fastapi import Depends, HTTPException, status
+from fastapi import Request, Response, Depends, HTTPException, status
 import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -13,7 +13,8 @@ from app.services.user_service import (
 
 
 async def create_or_get_user(
-    payload: UserCreate, db: AsyncSession = Depends(get_db)
+    payload: UserCreate, db: AsyncSession = Depends(get_db),
+    *, request: Request, response: Response,
 ) -> UserResponse:
     service = UserService(db)
     try:
@@ -25,7 +26,8 @@ async def create_or_get_user(
 
 
 async def get_user(
-    user_id: uuid.UUID, db: AsyncSession = Depends(get_db)
+    user_id: uuid.UUID, db: AsyncSession = Depends(get_db),
+    *, request: Request, response: Response,
 ) -> UserResponse:
     service = UserService(db)
     try:

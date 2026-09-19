@@ -1,11 +1,11 @@
-from fastapi import Depends, HTTPException, Query, status
+from fastapi import Request, Response, Depends, HTTPException, Query, status
 import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.rate_limit import enforce_question_rate_limit
 from app.core.config import settings
-from app.deps import get_current_user_id, get_db
+from app.deps import get_db
+from app.core.rate_limit import rate_limit_user
 from app.integration.embedding_client import embed_text
 from app.integration.groq_client import generate_answer
 from app.integration.groq_client import GroqRequestError
@@ -22,8 +22,8 @@ async def ask_question(
     video_id: uuid.UUID,
     payload: QuestionRequest,
     db: AsyncSession = Depends(get_db),
-    user_id: uuid.UUID | None = Depends(get_current_user_id),
-    _rate_limit: None = Depends(enforce_question_rate_limit),
+    user_id: uuid.UUID | None = Depends(rate_limit_user),
+    *, request: Request, response: Response,
 ) -> QALogResponse:
     if not settings.ai_enabled:
         raise HTTPException(status_code=503, detail="AI processing is temporarily paused.")
@@ -53,10 +53,11 @@ async def ask_question(
 async def list_qa_logs(
     video_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    user_id: uuid.UUID | None = Depends(get_current_user_id),
+    user_id: uuid.UUID | None = Depends(rate_limit_user),
     search: str | None = Query(default=None),
     limit: int = Query(default=settings.qa_page_size, ge=1, le=settings.qa_max_page_size),
     offset: int = Query(default=0, ge=0),
+    *, request: Request, response: Response,
 ) -> dict:
     service = QALogService(db)
     try:

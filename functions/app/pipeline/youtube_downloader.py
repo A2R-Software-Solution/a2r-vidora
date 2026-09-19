@@ -19,6 +19,22 @@ class DownloadError(Exception):
     """Raised when yt-dlp fails to fetch audio or metadata for a video."""
 
 
+class YouTubeBotChallengeError(DownloadError):
+    """YouTube temporarily refused the server's download session."""
+
+
+def is_youtube_bot_challenge(message: str) -> bool:
+    normalized = message.casefold().translate({
+        ord("\u2018"): "'",
+        ord("\u2019"): "'",
+        ord("\u02bc"): "'",
+    })
+    return "sign in" in normalized and (
+        "confirm you're not a bot" in normalized
+        or "confirm you are not a bot" in normalized
+    )
+
+
 class VideoTooLongError(Exception):
     """Raised when a video's duration exceeds the platform's processing limit."""
 
@@ -133,6 +149,8 @@ def _run_download(youtube_url: str, output_dir: str) -> DownloadResult:
 
                 info = ydl.extract_info(youtube_url, download=True)
         except yt_dlp.utils.DownloadError as exc:
+            if is_youtube_bot_challenge(str(exc)):
+                raise YouTubeBotChallengeError("YouTube session temporarily unavailable.") from exc
             raise DownloadError(f"yt-dlp failed for {youtube_url}: {exc}") from exc
         finally:
             # yt-dlp rewrites the cookiefile in-place if YouTube handed it

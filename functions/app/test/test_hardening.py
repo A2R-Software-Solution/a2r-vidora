@@ -5,7 +5,7 @@ import uuid
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock, patch
 
-from fastapi import HTTPException
+from fastapi import HTTPException, Request, Response
 from sqlalchemy.dialects import postgresql
 from app.controller import video_controller as controller
 from app.integration import groq_client as groq
@@ -14,43 +14,43 @@ from app.repository.video_repository import VideoRepository
 from app.services.qa_log_service import QALogService
 from app.services.video_service import VideoAccessDeniedError
 from app.schemas.video_schema import VideoCreate
-from app.core.distributed_rate_limit import admission_statement, admit
 
 
 class HardeningTests(unittest.IsolatedAsyncioTestCase):
-    async def test_shared_limiter_commits_admitted_request(self):
-        db = AsyncMock()
-        db.execute.return_value = Mock(scalar_one_or_none=Mock(return_value=1))
-        context = AsyncMock()
-        context.__aenter__.return_value = db
-        with patch("app.core.distributed_rate_limit.AsyncSessionLocal", return_value=context):
-            await admit("test", limit=5, window_seconds=600)
-        db.commit.assert_awaited_once()
-
-    async def test_shared_limiter_rejects_exhausted_budget(self):
-        db = AsyncMock()
-        db.execute.return_value = Mock(scalar_one_or_none=Mock(return_value=None))
-        context = AsyncMock()
-        context.__aenter__.return_value = db
-        with patch("app.core.distributed_rate_limit.AsyncSessionLocal", return_value=context):
+    async def test_youtube_bot_failure_has_specific_safe_api_code(self):
+        from app.pipeline.youtube_downloader import YouTubeBotChallengeError
+        saved = SimpleNamespace(id=uuid.uuid4(), youtube_url="https://youtu.be/yYF2Vf1Gc14")
+        failure = controller.PipelineError("internal pipeline details")
+        failure.__cause__ = YouTubeBotChallengeError("private downloader details")
+        service = Mock(submit_once=AsyncMock(return_value=(saved, True)))
+        with patch.object(controller, "VideoService", return_value=service), patch.object(controller, "verify_recaptcha", AsyncMock()), patch.object(controller, "run_pipeline", AsyncMock(side_effect=failure)):
             with self.assertRaises(HTTPException) as caught:
-                await admit("test", limit=5, window_seconds=600)
-        self.assertEqual(caught.exception.status_code, 429)
-        self.assertEqual(caught.exception.headers["Retry-After"], "600")
+                await controller.submit_video(VideoCreate(youtube_url=saved.youtube_url),
+                    db=Mock(), user_id=None, request=Request({"type": "http"}), response=Response())
+        self.assertEqual(caught.exception.status_code, 503)
+        self.assertEqual(caught.exception.detail["code"], "YOUTUBE_SESSION_UNAVAILABLE")
+        self.assertNotIn("private", str(caught.exception.detail))
 
-    async def test_shared_limiter_has_atomic_conditional_increment(self):
-        statement = admission_statement("submit:ip:example", 5, 600)
-        sql = str(statement.compile(dialect=postgresql.dialect()))
-        self.assertIn("ON CONFLICT (scope_key, window_start) DO UPDATE", sql)
-        self.assertIn("WHERE rate_limit_buckets.requests <", sql)
-        self.assertNotIn("submit:ip:example", str(statement.compile().params))
-
-    async def test_shared_limiter_fails_closed_when_store_unavailable(self):
-        with patch("app.core.distributed_rate_limit.AsyncSessionLocal", side_effect=RuntimeError("private DB info")):
-            with self.assertRaises(HTTPException) as caught:
-                await admit("test", limit=5, window_seconds=600)
-            self.assertEqual(caught.exception.status_code, 503)
-            self.assertNotIn("private", caught.exception.detail)
+    async def test_downloader_classifies_bot_challenge_and_cleans_cookies(self):
+        import tempfile
+        from pathlib import Path
+        import yt_dlp
+        from app.pipeline import youtube_downloader as downloader
+        for text, expected in [
+            ("Sign in to confirm you're not a bot", downloader.YouTubeBotChallengeError),
+            ("Sign in to confirm you\u2019re not a bot", downloader.YouTubeBotChallengeError),
+            ("Sign in to confirm your age", downloader.DownloadError),
+            ("This video is private", downloader.DownloadError),
+        ]:
+            with self.subTest(text=text), tempfile.TemporaryDirectory() as directory:
+                ydl = Mock()
+                ydl.extract_info.side_effect = yt_dlp.utils.DownloadError(text)
+                manager = Mock(__enter__=Mock(return_value=ydl), __exit__=Mock(return_value=False))
+                with patch.object(downloader.secret_manager_client, "get_youtube_cookie", return_value=("test", "cookies")), patch.object(downloader.yt_dlp, "YoutubeDL", return_value=manager), patch.object(downloader, "_resolve_js_runtime", return_value={}):
+                    with self.assertRaises(expected) as caught:
+                        downloader._run_download("https://youtu.be/yYF2Vf1Gc14", directory)
+                    self.assertIs(type(caught.exception), expected)
+                self.assertEqual(list(Path(directory).iterdir()), [])
 
     async def test_fresh_submission_runs_once_with_canonical_url(self):
         saved = SimpleNamespace(id=uuid.uuid4(), youtube_url="https://www.youtube.com/watch?v=yYF2Vf1Gc14")
@@ -58,7 +58,7 @@ class HardeningTests(unittest.IsolatedAsyncioTestCase):
         with patch.object(controller, "VideoService", return_value=service), patch.object(controller.VideoResponse, "model_validate", return_value="completed"), patch.object(controller, "run_pipeline", new_callable=AsyncMock, return_value=saved) as run:
             db = Mock()
             result = await controller.submit_video(VideoCreate(youtube_url="https://youtu.be/yYF2Vf1Gc14"),
-                                                   saved.id, db=db, user_id=None, _rate_limit=None)
+                                                   saved.id, db=db, user_id=None, request=Request({"type": "http"}), response=Response())
             self.assertEqual(result, "completed")
             run.assert_awaited_once_with(saved.id, saved.youtube_url, db=db)
 
@@ -66,7 +66,7 @@ class HardeningTests(unittest.IsolatedAsyncioTestCase):
         with patch.object(controller.settings, "ai_enabled", False), patch.object(controller, "VideoService") as service:
             with self.assertRaises(HTTPException) as caught:
                 await controller.submit_video(VideoCreate(youtube_url="https://youtu.be/yYF2Vf1Gc14"),
-                                              uuid.uuid4(), db=Mock(), user_id=None, _rate_limit=None)
+                                              uuid.uuid4(), db=Mock(), user_id=None, request=Request({"type": "http"}), response=Response())
             self.assertEqual(caught.exception.status_code, 503)
             service.assert_not_called()
 
@@ -83,7 +83,7 @@ class HardeningTests(unittest.IsolatedAsyncioTestCase):
         with patch.object(controller, "VideoService", return_value=service), patch.object(controller, "run_pipeline", new_callable=AsyncMock) as run:
             with self.assertRaises(HTTPException) as caught:
                 await controller.submit_video(VideoCreate(youtube_url="https://youtu.be/yYF2Vf1Gc14"),
-                                              uuid.uuid4(), db=Mock(), user_id=None, _rate_limit=None)
+                                              uuid.uuid4(), db=Mock(), user_id=None, request=Request({"type": "http"}), response=Response())
             self.assertEqual(caught.exception.status_code, 409)
             run.assert_not_awaited()
 
@@ -92,7 +92,7 @@ class HardeningTests(unittest.IsolatedAsyncioTestCase):
         with patch.object(controller, "VideoService", return_value=service), patch.object(controller, "run_pipeline", new_callable=AsyncMock) as run:
             with self.assertRaises(HTTPException) as caught:
                 await controller.submit_video(VideoCreate(youtube_url="https://youtu.be/yYF2Vf1Gc14"),
-                                              uuid.uuid4(), db=Mock(), user_id=None, _rate_limit=None)
+                                              uuid.uuid4(), db=Mock(), user_id=None, request=Request({"type": "http"}), response=Response())
             self.assertEqual(caught.exception.status_code, 409)
             self.assertEqual(caught.exception.detail, "This submission previously failed. You can submit it again.")
             run.assert_not_awaited()
@@ -102,7 +102,7 @@ class HardeningTests(unittest.IsolatedAsyncioTestCase):
         service = Mock(submit_once=AsyncMock(return_value=(saved, False)))
         with patch.object(controller, "VideoService", return_value=service), patch.object(controller.VideoResponse, "model_validate", return_value="saved"), patch.object(controller, "run_pipeline", new_callable=AsyncMock) as run:
             result = await controller.submit_video(VideoCreate(youtube_url="https://youtu.be/yYF2Vf1Gc14"),
-                                                   uuid.uuid4(), db=Mock(), user_id=None, _rate_limit=None)
+                                                   uuid.uuid4(), db=Mock(), user_id=None, request=Request({"type": "http"}), response=Response())
             self.assertEqual(result, "saved")
             run.assert_not_awaited()
 

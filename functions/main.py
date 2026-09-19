@@ -127,7 +127,8 @@ def api(req: https_fn.Request) -> https_fn.Response:
 
 @https_fn.on_request()
 def ping(req: https_fn.Request) -> https_fn.Response:
-    return https_fn.Response("pong", status=200)
+    environ = dict(req.environ, PATH_INFO="/ping")
+    return https_fn.Response.from_app(_wsgi_app, environ)
 
 
 async def _process_video(data: dict) -> None:

@@ -1,25 +1,29 @@
 # Offline embeddings and single-request analysis
 
-## Release gate: shared rate-limit migration
+## Route rate limits
 
-Before deploying this revision, back up the database and apply migrations from
-`functions` with the intended DATABASE_URL securely configured:
-`python -m alembic upgrade head`. Verify `python -m alembic current` reports
-`6c10a9e721df`. Do not print or commit the database URL. Test this in staging first.
-The new additive table is required by the production admission guard and cleanup;
-deploying without it causes admission to fail closed with HTTP 503. Migration
-was applied and verified on production on 2026-09-09 after a private backup;
-see docs/RELEASE_2026-09-09.md at repository root for the release evidence.
+Every application API route uses an explicit SlowAPI wrapping at route registration. No rate-limit
+middleware or controller admission dependency is used. Analyze allows SUBMIT_LIMIT
+requests per SUBMIT_WINDOW_SECONDS; questions use QUESTION_LIMIT and
+QUESTION_WINDOW_SECONDS across all video IDs. Reads allow 50/minute, user creation
+10/minute, and health/ping 50/minute. The existing Firebase warmup bypass remains
+unlimited and does not consume the analyze budget.
 
-Run `python -m unittest app.test.test_hardening -v` and
-`python scripts/check_model.py` before deployment. The optional
-`python scripts/evaluate_ai.py` uses real Groq quota and needs human review of
-its output; offline regression tests are not evidence of model answer quality.
+Counters use memory only, in production and development. They reset on restart and
+are independent per process/instance; there is no Redis or PostgreSQL limiter.
+The old rate_limit_buckets migration remains in history but is no longer used.
+429 responses retain the detail field and include Retry-After and rate-limit headers,
+which CORS exposes to the frontend.
 
-Production uses shared database fixed-window budgets. Local development uses
-in-memory limits. Rejected requests still reach the function and may be billable;
-this guard limits expensive work, not invocation billing. Validate trusted client
-identity/proxy behavior and concurrent admission in staging before release.
+RATE_LIMIT_TRUSTED_PROXY_HOPS defaults to 0 (ignore forwarded headers). The direct
+Cloud Run deployment sets 1 to select the rightmost X-Forwarded-For entry. Verify
+this against the actual ingress chain in staging; an additional load balancer
+requires a matching trusted suffix count. Never enable this on a publicly reachable
+unproxied server or select the arbitrary leftmost value. Authenticated video and
+Q&A routes use the verified account ID instead of the IP.
+
+Run `python -m unittest discover -s app/test -p "test_*.py" -v` from functions
+before deploying. Rejected requests still reach the function and may be billable.
 
 ## Model and request behavior
 

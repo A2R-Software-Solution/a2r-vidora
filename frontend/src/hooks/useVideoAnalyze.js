@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { analyzeVideo, getVideos } from "../api/videoApi";
-import { isYouTubeVideoUrl, YOUTUBE_LINK_MESSAGE, friendlyApiError } from "../utils/videoInput";
+import { isYouTubeVideoUrl, YOUTUBE_LINK_MESSAGE, friendlyApiError, isYouTubeSessionUnavailable } from "../utils/videoInput";
 
 const VIDEO_ID_STORAGE_KEY = "vidora_video_id";
 const PENDING_KEY = "vidora_pending_analysis";
@@ -11,6 +11,7 @@ export function useVideoAnalyze() {
   const [hasPreviousVideo, setHasPreviousVideo] = useState(
     () => Boolean(localStorage.getItem(VIDEO_ID_STORAGE_KEY))
   );
+  const [youtubeUnavailable, setYoutubeUnavailable] = useState(false);
   const [error, setError] = useState(null);
   const [video, setVideo] = useState(null);
   const submitting = useRef(false);
@@ -43,6 +44,11 @@ export function useVideoAnalyze() {
       return data;
     } catch (err) {
       const detail = err?.response?.data?.detail;
+      if (isYouTubeSessionUnavailable(err)) {
+        setYoutubeUnavailable(true);
+        localStorage.removeItem(PENDING_KEY);
+        localStorage.removeItem(VIDEO_ID_STORAGE_KEY);
+      }
       // A failed idempotent job cannot be resumed. Remove only its local key so
       // the user's next explicit click creates a new job. Do not auto-retry:
       // retrying could create unexpected paid AI work.
@@ -97,5 +103,5 @@ export function useVideoAnalyze() {
     }
   };
 
-  return { submitVideo, restoreVideo, video, loading, restoring, hasPreviousVideo, error, clearError: () => setError(null) };
+  return { youtubeUnavailable, dismissUnavailable: () => { setYoutubeUnavailable(false); setError(null); }, submitVideo, restoreVideo, video, loading, restoring, hasPreviousVideo, error, clearError: () => setError(null) };
 }

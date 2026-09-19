@@ -1,12 +1,13 @@
 import { useEffect, useRef } from "react";
 import Hero from "../components/landing/Hero";
 import InputBox from "../components/landing/InputBox";
+import YouTubeUnavailable from "../components/landing/YouTubeUnavailable";
 import Features from "../components/landing/Features";
 import { useVideoAnalyze } from "../hooks/useVideoAnalyze";
 import { warmUpVideoAnalysis } from "../api/videoApi";
 
 export default function LandingPage({ onAnalyzed, compact }) {
-  const { submitVideo, restoreVideo, loading, restoring, hasPreviousVideo, error, clearError } = useVideoAnalyze();
+  const { submitVideo, restoreVideo, loading, restoring, hasPreviousVideo, error, clearError, youtubeUnavailable, dismissUnavailable } = useVideoAnalyze();
   const warmupStarted = useRef(false);
 
   useEffect(() => {
@@ -29,8 +30,8 @@ export default function LandingPage({ onAnalyzed, compact }) {
 
   return (
     <Hero compact={compact}>
-      <InputBox onAnalyze={handleAnalyze} loading={loading} restoring={restoring} error={error} onClearError={clearError} />
-      {hasPreviousVideo && !loading && (
+      {youtubeUnavailable ? <YouTubeUnavailable onDismiss={dismissUnavailable} /> : <InputBox onAnalyze={handleAnalyze} loading={loading} restoring={restoring} error={error} onClearError={clearError} />}
+      {hasPreviousVideo && !loading && !youtubeUnavailable && (
         <button className="resume-analysis" type="button" onClick={async () => {
           const recovered = await restoreVideo();
           if (recovered) onAnalyzed(recovered);

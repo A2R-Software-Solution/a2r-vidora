@@ -17,6 +17,7 @@ export function isYouTubeVideoUrl(value) {
 
 // API details can contain internal text or objects. Only display our own copy.
 export function friendlyApiError(error, context = "analyze") {
+  if (isYouTubeSessionUnavailable(error)) return YOUTUBE_UNAVAILABLE_MESSAGE;
   const status = error?.response?.status;
   if (["ECONNABORTED", "ETIMEDOUT"].includes(error?.code)) return "This is taking longer than expected. Please try again in a moment.";
   if (error?.code === "ERR_NETWORK") return "We couldn’t connect. Please check your internet connection and try again.";
@@ -30,4 +31,12 @@ export function friendlyApiError(error, context = "analyze") {
   if (status >= 500) return "Our system couldn’t complete your request right now. Please try again in a few moments.";
   return context === "analyze" ? "We couldn’t analyze this video. Please try again with a public YouTube video up to 35 minutes long."
     : "We couldn’t complete your request. Please try again in a moment.";
+}
+
+
+export const YOUTUBE_UNAVAILABLE_MESSAGE = "Oops! YouTube access is temporarily unavailable. Please try again later. Report the issue and leave your email so we can follow up. Thanks for your support!";
+
+export function isYouTubeSessionUnavailable(error) {
+  return error?.response?.status === 503 &&
+    error?.response?.data?.detail?.code === "YOUTUBE_SESSION_UNAVAILABLE";
 }

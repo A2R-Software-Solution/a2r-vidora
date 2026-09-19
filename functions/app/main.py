@@ -4,6 +4,9 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 
+from slowapi.errors import RateLimitExceeded
+from app.core.rate_limit import limiter, rate_limit_exceeded
+from app.routes.health_routes import router as health_router
 from app.core.config import settings
 from app.core.logging import logger, setup_logging
 from app.routes.user_routes import router as user_router
@@ -20,6 +23,8 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title=settings.app_name, lifespan=lifespan)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded)
 
 app.add_middleware(
     CORSMiddleware,
@@ -27,8 +32,10 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["Retry-After", "X-RateLimit-Limit", "X-RateLimit-Remaining", "X-RateLimit-Reset"],
 )
 
+app.include_router(health_router)
 app.include_router(user_router)
 app.include_router(video_router)
 app.include_router(qa_log_router)
@@ -52,8 +59,3 @@ async def report_unhandled_exception(request: Request, exc: Exception) -> JSONRe
         status_code=500,
         content={"detail": "An unexpected server error occurred."},
     )
-
-
-@app.get("/health")
-async def health():
-    return {"status": "ok"}

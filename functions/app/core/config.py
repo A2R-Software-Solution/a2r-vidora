@@ -46,8 +46,8 @@ class Settings(BaseSettings):
     submit_window_seconds: int = Field(gt=0)
     question_limit: int = Field(gt=0)
     question_window_seconds: int = Field(gt=0)
-    rate_limit_max_buckets: int = Field(gt=0)
-    admission_timeout_seconds: float
+    # Enable only behind a trusted proxy; count forwarded entries from the right.
+    rate_limit_trusted_proxy_hops: int = Field(default=0, ge=0)
     recaptcha_verify_url: str
     recaptcha_timeout_seconds: float
     cookie_cache_ttl_seconds: int = Field(gt=0)

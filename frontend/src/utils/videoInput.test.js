@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { isYouTubeVideoUrl, friendlyApiError, YOUTUBE_LINK_MESSAGE } from "./videoInput.js";
+import { isYouTubeVideoUrl, friendlyApiError, YOUTUBE_LINK_MESSAGE, isYouTubeSessionUnavailable } from "./videoInput.js";
 
 test("accepts supported YouTube video links and share parameters", () => {
   for (const url of [
@@ -37,4 +37,15 @@ test("all API errors produce safe text, including structured validation details"
   assert.match(friendlyApiError({ code: "ERR_NETWORK" }), /internet/);
   assert.match(friendlyApiError({ code: "ECONNABORTED" }), /longer/);
   assert.ok(!friendlyApiError(new Error("INTERNAL_SECRET")).includes("INTERNAL_SECRET"));
+});
+
+
+test("only the explicit YouTube session error enables the outage UI", () => {
+  const outage = { response: { status: 503, data: { detail: { code: "YOUTUBE_SESSION_UNAVAILABLE" } } } };
+  assert.equal(isYouTubeSessionUnavailable(outage), true);
+  assert.match(friendlyApiError(outage), /Report the issue/);
+  for (const error of [{ response: { status: 429 } }, { response: { status: 503 } },
+    { response: { status: 502, data: outage.response.data } }, new Error("bot")]) {
+    assert.equal(isYouTubeSessionUnavailable(error), false);
+  }
 });

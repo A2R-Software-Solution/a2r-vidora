@@ -22,28 +22,6 @@ EXPECTED = "5a08b732d74f"
 TARGET = "6c10a9e721df"
 
 
-async def verify_concurrency(url):
-    import hashlib
-    import uuid
-    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-    from app.core.distributed_rate_limit import admission_statement
-    key = "release-check:" + uuid.uuid4().hex
-    digest = hashlib.sha256(key.encode()).hexdigest()
-    engine = create_async_engine(url, poolclass=NullPool, connect_args={"statement_cache_size": 0})
-    async def attempt():
-        async with engine.begin() as db:
-            return (await db.execute(admission_statement(key, 5, 3600))).scalar_one_or_none() is not None
-    try:
-        results = await asyncio.gather(*(attempt() for _ in range(12)))
-        if sum(results) != 5:
-            raise RuntimeError("Concurrent budget assertion failed")
-        print("Shared database concurrency: 5 admitted, 7 rejected across 12 connections.")
-    finally:
-        async with engine.begin() as db:
-            await db.execute(text("DELETE FROM rate_limit_buckets WHERE scope_key=:key"), {"key": digest})
-        await engine.dispose()
-
-
 async def revision(url):
     engine = create_async_engine(url, poolclass=NullPool, connect_args={"statement_cache_size": 0})
     try:
@@ -56,7 +34,6 @@ async def revision(url):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--apply", action="store_true")
-    parser.add_argument("--verify-concurrency", action="store_true")
     args = parser.parse_args()
     os.chdir(Path(__file__).resolve().parents[1])
     cli = shutil.which("gcloud")
@@ -68,8 +45,6 @@ def main():
     print("Database revision:", versions)
     if versions == [TARGET]:
         print("Already migrated; no changes.")
-        if args.verify_concurrency:
-            asyncio.run(verify_concurrency(url))
         return
     if versions != [EXPECTED]:
         raise RuntimeError("Unexpected schema revision; refusing migration")

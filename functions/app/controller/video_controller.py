@@ -1,17 +1,18 @@
 import asyncio
 import uuid
 
-from fastapi import Depends, Header, HTTPException, Query, status
+from fastapi import Request, Response, Depends, Header, HTTPException, Query, status
 from firebase_admin import functions as admin_functions
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logging import logger
 from app.core.config import settings
 from app.core.recaptcha import verify_recaptcha
-from app.core.rate_limit import enforce_submit_rate_limit
-from app.deps import get_current_user_id, get_db
+from app.deps import get_db
+from app.core.rate_limit import rate_limit_user
 from app.schemas.video_schema import VideoCreate, VideoResponse
 from app.pipeline.pipeline import PipelineError, run_pipeline
+from app.pipeline.youtube_downloader import YouTubeBotChallengeError
 from app.services.video_service import (
     VideoAccessDeniedError,
     VideoExpiredError,
@@ -45,8 +46,8 @@ async def submit_video(
     idempotency_key: uuid.UUID | None = Header(default=None),
     recaptcha_token: str | None = Header(default=None, alias="X-Recaptcha-Token"),
     db: AsyncSession = Depends(get_db),
-    user_id: uuid.UUID | None = Depends(get_current_user_id),
-    _rate_limit: None = Depends(enforce_submit_rate_limit),
+    user_id: uuid.UUID | None = Depends(rate_limit_user),
+    *, request: Request, response: Response,
 ) -> VideoResponse:
     if not settings.ai_enabled:
         raise HTTPException(status_code=503, detail="AI processing is temporarily paused.")
@@ -82,6 +83,14 @@ async def submit_video(
             detail="Analysis exceeded the processing time limit. Please try a shorter video.",
         ) from exc
     except PipelineError as exc:
+        if isinstance(exc.__cause__, YouTubeBotChallengeError):
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail={
+                    "code": "YOUTUBE_SESSION_UNAVAILABLE",
+                    "message": "YouTube access is temporarily unavailable. Please try again later.",
+                },
+            ) from exc
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail=f"Video processing failed. Please try again later with a supported video up to {settings.max_video_duration_seconds / 60:g} minutes.",
@@ -93,7 +102,8 @@ async def submit_video(
 async def list_videos(
     video_id: uuid.UUID | None = Query(default=None),
     db: AsyncSession = Depends(get_db),
-    user_id: uuid.UUID | None = Depends(get_current_user_id),
+    user_id: uuid.UUID | None = Depends(rate_limit_user),
+    *, request: Request, response: Response,
 ) -> list[VideoResponse]:
     service = VideoService(db)
 
