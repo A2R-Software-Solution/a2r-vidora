@@ -3,15 +3,15 @@ app/pipeline/pipeline.py
 
 Orchestrates the full video-ingestion flow for a single video:
 
-    download -> mark_metadata -> transcribe -> chunk -> embed
-             -> replace_all_for_video -> summarize -> mark_completed
+    download -> mark_metadata -> VAD/merge -> bounded parallel chunk STT
+             -> timestamp/overlap assembly -> text chunk -> embed -> summarize
+             -> atomically replace_all_for_video + mark_completed
 
 On any failure, the video is moved to FAILED rather than left stuck
 in PROCESSING, and the exception is re-raised so the caller (route /
 background task runner) can log/alert on it.
 
-New submissions await this pipeline inside the HTTP invocation. A legacy
-task worker remains compatible with previously queued jobs.
+Cloud Tasks invokes this worker after the API has persisted and queued a job.
 """
 
 from __future__ import annotations
@@ -19,12 +19,14 @@ from __future__ import annotations
 import uuid
 import asyncio
 from time import monotonic
+from pathlib import Path
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logging import logger
+from app.core.config import settings
 from app.models.video_model import Video, VideoStatus
-from app.pipeline import chunker, embedder, summarizer, transcriber
+from app.pipeline import audio_chunker, chunker, embedder, summarizer, transcriber
 from app.pipeline.youtube_downloader import download_audio, make_temp_dir
 from app.services.transcript_chunk_service import TranscriptChunkService
 from app.services.video_service import VideoService
@@ -53,9 +55,13 @@ async def run_pipeline(video_id: uuid.UUID, youtube_url: str, *, db: AsyncSessio
     started = monotonic()
     stage = "lookup"
 
-    def record_stage(next_stage: str) -> None:
+    async def record_stage(next_stage: str, *, total_chunks: int | None = None,
+                           completed_chunks: int | None = None) -> None:
         nonlocal stage
         stage = next_stage
+        if video is not None:
+            await video_service.mark_progress(video, stage=stage, total_chunks=total_chunks,
+                                              completed_chunks=completed_chunks)
         logger.info("analysis_stage video_id=%s stage=%s elapsed_seconds=%.2f",
                        video_id, stage, monotonic() - started)
 
@@ -69,7 +75,7 @@ async def run_pipeline(video_id: uuid.UUID, youtube_url: str, *, db: AsyncSessio
             return video
 
         with make_temp_dir() as tmp_dir:
-            record_stage("download")
+            await record_stage("download")
             download_result = await download_audio(youtube_url, output_dir=tmp_dir)
 
             video = await video_service.mark_metadata(
@@ -78,20 +84,27 @@ async def run_pipeline(video_id: uuid.UUID, youtube_url: str, *, db: AsyncSessio
                 duration=download_result.duration,
             )
 
-            record_stage("transcribe")
-            segments = await transcriber.transcribe(download_result.audio_path)
+            await record_stage("vad_chunking")
+            batch = await audio_chunker.prepare_audio_async(
+                download_result.audio_path, output_root=Path(tmp_dir),
+                settings=settings.vad, source_id=video_id,
+            )
+            logger.info("audio_chunks_ready video_id=%s count=%s", video_id, len(batch.chunks))
+            await record_stage("chunk_transcription", total_chunks=len(batch.chunks))
+            segments = await transcriber.transcribe_chunks(batch)
+            await record_stage("chunk_transcription", total_chunks=len(batch.chunks), completed_chunks=len(batch.chunks))
 
         chunks = chunker.chunk_segments(segments)
-        record_stage("embed")
+        await record_stage("embed")
         embedded_chunks = await embedder.embed_chunks(chunks)
 
-        await chunk_service.replace_all_for_video(video.id, embedded_chunks)
-
-        record_stage("summarize")
+        await record_stage("summarize")
         summary = await summarizer.summarize(embedded_chunks)
 
+        await record_stage("persist")
+        await chunk_service.replace_all_for_video(video.id, embedded_chunks, commit=False)
         video = await video_service.mark_completed(video, summary=summary)
-        record_stage("completed")
+        await record_stage("completed", completed_chunks=video.processing_total_chunks)
         logger.info(f"Pipeline completed for video {video.id}")
         return video
 

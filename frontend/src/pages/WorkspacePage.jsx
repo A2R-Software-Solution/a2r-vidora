@@ -1,9 +1,26 @@
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import VideoPlayer from "../components/workspace/VideoPlayer";
 import ChatPanel from "../components/workspace/ChatPanel";
+import { getVideos } from "../api/videoApi";
 
 export default function WorkspacePage({ video }) {
   const playerRef = useRef(null);
+  const [currentVideo, setCurrentVideo] = useState(video);
+
+  useEffect(() => {
+    setCurrentVideo(video);
+  }, [video]);
+
+  useEffect(() => {
+    if (currentVideo?.status !== "processing") return undefined;
+    const timer = setInterval(async () => {
+      try {
+        const { data } = await getVideos(currentVideo.id);
+        if (data?.[0]) setCurrentVideo(data[0]);
+      } catch { /* The next poll can recover a transient network error. */ }
+    }, 3000);
+    return () => clearInterval(timer);
+  }, [currentVideo?.id, currentVideo?.status]);
 
   const handleSeek = (seconds) => {
     playerRef.current?.seekTo(seconds);
@@ -37,12 +54,12 @@ export default function WorkspacePage({ video }) {
         <div className="workspace">
           <VideoPlayer
             ref={playerRef}
-            title={video?.title}
-            duration={video?.duration}
-            status={video?.status}
-            youtubeUrl={video?.youtube_url}
+            title={currentVideo?.title}
+            duration={currentVideo?.duration}
+            status={currentVideo?.status}
+            youtubeUrl={currentVideo?.youtube_url}
           />
-          <ChatPanel videoId={video?.id} onSeek={handleSeek} />
+          <ChatPanel videoId={currentVideo?.id} onSeek={handleSeek} ready={currentVideo?.status === "completed"} progress={currentVideo} />
         </div>
       </div>
     </section>

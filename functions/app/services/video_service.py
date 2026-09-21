@@ -148,6 +148,13 @@ class VideoService:
         await self._db.commit()
         return video
 
+    async def mark_progress(self, video: Video, *, stage: str, total_chunks: int | None = None,
+                            completed_chunks: int | None = None) -> Video:
+        video = await self._repo.update_progress(video, stage=stage, total_chunks=total_chunks,
+                                                 completed_chunks=completed_chunks)
+        await self._db.commit()
+        return video
+
     async def mark_failed(self, video: Video) -> Video:
         updated = await self._repo.update_status(video, VideoStatus.FAILED)
         await self._db.commit()

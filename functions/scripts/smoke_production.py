@@ -1,9 +1,9 @@
-"""Bounded live smoke check. --analyze runs one paid analysis, never polls.
+"""Bounded live smoke check. --analyze submits then polls one paid analysis.
 
 Prints status/timing only, not transcripts, secrets or provider error bodies.
 """
 import argparse
-from time import perf_counter
+from time import perf_counter, sleep
 import uuid
 import requests
 
@@ -28,12 +28,19 @@ def main():
     request_id = str(uuid.uuid4())
     print("Smoke video id:", request_id, flush=True)
     start = perf_counter()
-    response = requests.post(BASE + "/videos/analyze", json={"youtube_url": "https://youtu.be/yYF2Vf1Gc14"}, headers={"Idempotency-Key": request_id}, timeout=310)
+    response = requests.post(BASE + "/videos/analyze", json={"youtube_url": "https://youtu.be/1aA1WGON49E"}, headers={"Idempotency-Key": request_id}, timeout=30)
     print("Analysis HTTP:", response.status_code, "seconds:", round(perf_counter()-start, 2), flush=True)
     assert response.status_code == 200, "Analysis failed; inspect correlated server logs"
     data = response.json()
-    assert data["status"] == "completed", "Analysis not completed"
-    response = requests.post(BASE + "/videos/analyze", json={"youtube_url": "https://youtu.be/yYF2Vf1Gc14"}, headers={"Idempotency-Key": request_id}, timeout=30)
+    assert data["status"] == "processing", "Analysis was not queued"
+    deadline = perf_counter() + 300
+    while data["status"] == "processing" and perf_counter() < deadline:
+        sleep(3)
+        response = requests.get(BASE + "/videos", params={"video_id": request_id}, timeout=30)
+        assert response.status_code == 200, "Queued analysis lookup failed"
+        data = response.json()[0]
+    assert data["status"] == "completed", "Analysis did not complete"
+    response = requests.post(BASE + "/videos/analyze", json={"youtube_url": "https://youtu.be/1aA1WGON49E"}, headers={"Idempotency-Key": request_id}, timeout=30)
     assert response.status_code == 200 and response.json()["id"] == request_id, "Idempotency replay failed"
     print("Completed replay: same saved result", flush=True)
 

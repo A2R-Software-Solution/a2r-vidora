@@ -81,6 +81,9 @@ class VideoResponse(_VideoBase):
     duration: int | None = Field(..., description="Video duration in seconds.")
     status: VideoStatus = Field(..., description="Processing state.")
     summary: str | None = Field(..., description="LLM-generated summary, null until completed.")
+    processing_stage: str = Field(..., description="Safe current worker stage for processing UI.")
+    processing_total_chunks: int = Field(..., ge=0)
+    processing_completed_chunks: int = Field(..., ge=0)
     created_at: datetime = Field(..., description="UTC timestamp video was submitted.")
     expires_at: datetime = Field(..., description="UTC timestamp data will be deleted.")
 

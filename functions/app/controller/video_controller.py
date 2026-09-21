@@ -11,8 +11,6 @@ from app.core.recaptcha import verify_recaptcha
 from app.deps import get_db
 from app.core.rate_limit import rate_limit_user
 from app.schemas.video_schema import VideoCreate, VideoResponse
-from app.pipeline.pipeline import PipelineError, run_pipeline
-from app.pipeline.youtube_downloader import YouTubeBotChallengeError
 from app.services.video_service import (
     VideoAccessDeniedError,
     VideoExpiredError,
@@ -75,27 +73,15 @@ async def submit_video(
         )
 
     try:
-        async with asyncio.timeout(settings.analysis_timeout_seconds):
-            video = await run_pipeline(video.id, video.youtube_url, db=db)
-    except TimeoutError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_504_GATEWAY_TIMEOUT,
-            detail="Analysis exceeded the processing time limit. Please try a shorter video.",
-        ) from exc
-    except PipelineError as exc:
-        if isinstance(exc.__cause__, YouTubeBotChallengeError):
-            raise HTTPException(
-                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail={
-                    "code": "YOUTUBE_SESSION_UNAVAILABLE",
-                    "message": "YouTube access is temporarily unavailable. Please try again later.",
-                },
-            ) from exc
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"Video processing failed. Please try again later with a supported video up to {settings.max_video_duration_seconds / 60:g} minutes.",
-        ) from exc
+        await _enqueue_video_processing(video.id, video.youtube_url)
+    except Exception as exc:
+        # The row has already been committed. Do not leave a job that cannot
+        # be dispatched indefinitely in PROCESSING.
+        logger.exception("video_enqueue_failed video_id=%s", video.id)
+        await service.mark_failed(video)
+        raise HTTPException(status_code=503, detail="Video processing queue is temporarily unavailable.") from exc
 
+    # Return promptly; clients poll GET /videos?video_id=... for status.
     return VideoResponse.model_validate(video)
 
 

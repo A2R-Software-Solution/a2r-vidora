@@ -1,0 +1,9 @@
+# Shared production and local-preview VAD dependencies.
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.9.1+cpu
+torchaudio==2.9.1+cpu
+# 6.2.2 imports its sequence API at package startup, which requires ONNX Runtime
+# even when this POC chooses the TorchScript detector.
+silero-vad[onnx-cpu]==6.2.2
+numpy
+pydantic-settings

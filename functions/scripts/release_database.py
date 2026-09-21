@@ -18,8 +18,8 @@ from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy.pool import NullPool
 
 PROJECT = "vidoraai-2bbce"
-EXPECTED = "5a08b732d74f"
-TARGET = "6c10a9e721df"
+EXPECTED = "6c10a9e721df"
+TARGET = "2d7b9a6c4e10"
 
 
 async def revision(url):

@@ -222,6 +222,26 @@ async def generate_answer(question: str, context_chunks: list[str]) -> str:
     return answer
 
 
+async def transcribe_audio_words(audio_file_path: str) -> list[dict]:
+    """Transcribe a VAD WAV chunk with local word timings for overlap assembly."""
+    path = Path(audio_file_path)
+    try:
+        response = await _with_groq_client(
+            lambda client: client.audio.transcriptions.create(
+                file=(path.name, path.read_bytes(), "audio/wav"), model=STT_MODEL,
+                response_format="verbose_json", timestamp_granularities=["word"],
+            )
+        )
+    except GroqError as exc:
+        logger.error("Groq chunk transcription failed: %s", type(exc).__name__)
+        raise GroqRequestError("AI transcription provider unavailable.") from None
+    words = getattr(response, "words", None)
+    text = (getattr(response, "text", "") or "").strip()
+    if words is None or (not words and text):
+        raise GroqRequestError("Transcription provider did not return required word timestamps.")
+    return [word if isinstance(word, dict) else word.model_dump() for word in words]
+
+
 async def transcribe_audio(audio_file_path: str) -> list[dict]:
     """
     Transcribe an audio file via Groq Whisper, returning segment-level

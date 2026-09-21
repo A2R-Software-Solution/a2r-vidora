@@ -81,6 +81,17 @@ class VideoRepository:
         await self._db.refresh(video)
         return video
 
+    async def update_progress(self, video: Video, *, stage: str, total_chunks: int | None = None,
+                              completed_chunks: int | None = None) -> Video:
+        video.processing_stage = stage
+        if total_chunks is not None:
+            video.processing_total_chunks = total_chunks
+        if completed_chunks is not None:
+            video.processing_completed_chunks = completed_chunks
+        await self._db.flush()
+        await self._db.refresh(video)
+        return video
+
     async def delete(self, video: Video) -> None:
         await self._db.delete(video)
         await self._db.flush()

@@ -1,5 +1,12 @@
 # Offline embeddings and single-request analysis
 
+Ingestion now uses Silero VAD audio chunks followed by **sequential** Groq word-
+timestamp STT and ordered overlap assembly. See `../../docs/VAD_CHUNKING.md`.
+Install the updated production requirements (which include `requirements-vad.txt`)
+and verify FFmpeg is available in the runtime. No DB migration or new queue is
+required for this stage. The existing request timeout still covers every chunk;
+measure long-video latency before rollout.
+
 ## Route rate limits
 
 Every application API route uses an explicit SlowAPI wrapping at route registration. No rate-limit

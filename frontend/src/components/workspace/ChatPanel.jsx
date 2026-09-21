@@ -6,14 +6,14 @@ import TimestampChip from "./TimestampChip";
 import { config } from "../../config";
 const MAX_CHARS = config.maxQuestionChars;
 
-export default function ChatPanel({ videoId, onSeek }) {
+export default function ChatPanel({ videoId, onSeek, ready = true, progress }) {
   const { messages, fetchHistory, askVideo, loading, error, limitReached, questionCount } = useVideoQA(videoId);
   const [question, setQuestion] = useState("");
   const [charError, setCharError] = useState("");
 
   useEffect(() => {
-    fetchHistory();
-  }, [fetchHistory]);
+    if (ready) fetchHistory();
+  }, [fetchHistory, ready]);
 
   const handleAsk = async () => {
     const trimmed = question.trim();
@@ -41,7 +41,16 @@ export default function ChatPanel({ videoId, onSeek }) {
         <span className="question-counter">{questionCount}/{config.maxQuestions} questions</span>
       </div>
 
-      <div className="messages">
+      {!ready && <div className="messages"><div className="message ai"><b>Processing your video</b><br />
+        {progress?.processing_stage === "queued" && "Your analysis is queued."}
+        {progress?.processing_stage === "download" && "Downloading and preparing audio."}
+        {progress?.processing_stage === "vad_chunking" && "Detecting speech and creating audio chunks."}
+        {progress?.processing_stage === "chunk_transcription" && `Transcribing ${progress?.processing_total_chunks || 0} speech chunks in parallel.`}
+        {progress?.processing_stage === "embed" && "Making the transcript searchable."}
+        {progress?.processing_stage === "summarize" && "Generating the video summary."}
+        {progress?.processing_stage === "persist" && "Saving your analysis."}
+      </div></div>}
+      {ready && <div className="messages">
         {messages.map((msg, idx) => (
           <div key={msg.id || idx}>
             <MessageBubble role="user" text={msg.question} />
@@ -56,12 +65,12 @@ export default function ChatPanel({ videoId, onSeek }) {
             </MessageBubble>
           </div>
         ))}
-      </div>
+      </div>}
 
       {error && <div className="error-text">{error}</div>}
       {charError && <div className="error-text">{charError}</div>}
 
-      {limitReached ? (
+      {!ready ? <div className="ask-hint">Questions unlock automatically when analysis is complete.</div> : limitReached ? (
         <div className="limit-reached-text">
           You've asked {messages.length} questions — limit reached for this video.
         </div>

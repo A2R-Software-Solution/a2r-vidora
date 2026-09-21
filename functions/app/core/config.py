@@ -3,9 +3,11 @@ from functools import lru_cache
 from pathlib import Path
 from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from app.core.vad_config import VadSettings
 
 
 class Settings(BaseSettings):
+    vad: VadSettings = Field(default_factory=VadSettings)
     model_config = SettingsConfigDict(
         env_file=Path(__file__).resolve().parents[2] / ".env",
         env_file_encoding="utf-8",
@@ -37,6 +39,7 @@ class Settings(BaseSettings):
     cors_origins_csv: str
     chat_model: str
     stt_model: str
+    stt_concurrency: int = Field(default=3, ge=1, le=5)
     answer_max_tokens: int = Field(gt=0)
     answer_temperature: float
     provider_timeout_seconds: float

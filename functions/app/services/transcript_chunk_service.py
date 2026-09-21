@@ -36,6 +36,7 @@ class TranscriptChunkService:
         self,
         video_id: uuid.UUID,
         chunks: list[dict],
+        *, commit: bool = True,
     ) -> list[TranscriptChunk]:
         """
         Re-processing rule from the test plan: old chunks must be
@@ -68,7 +69,8 @@ class TranscriptChunkService:
         ]
 
         created = await self._repo.bulk_create(new_chunks)
-        await self._db.commit()
+        if commit:
+            await self._db.commit()
         return created
 
     async def list_for_video(self, video_id: uuid.UUID) -> list[TranscriptChunk]:

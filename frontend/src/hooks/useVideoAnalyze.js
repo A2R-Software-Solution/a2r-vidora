@@ -35,12 +35,7 @@ export function useVideoAnalyze() {
       }
       localStorage.setItem(VIDEO_ID_STORAGE_KEY, pending.id);
       const { data } = await analyzeVideo({ youtube_url: youtubeUrl }, pending.id);
-      if (data.status !== "completed") {
-        throw new Error("Analysis is not ready. Please try again later.");
-      }
       setVideo(data);
-      localStorage.setItem(VIDEO_ID_STORAGE_KEY, data.id);
-      localStorage.removeItem(PENDING_KEY);
       return data;
     } catch (err) {
       const detail = err?.response?.data?.detail;

@@ -1,10 +1,10 @@
 """
 app/pipeline/chunker.py
 
-Groups Whisper's natural segment boundaries into transcript chunks
+Groups timestamped transcript words/segments into retrieval text chunks
 sized for retrieval — NOT fixed 30-second windows. Whisper already
-splits on speech pauses/sentence boundaries; we merge small adjacent
-segments up to a target character budget so chunks are neither too
+provides timestamps; after VAD chunk STT/assembly we merge adjacent
+words up to a target character budget so chunks are neither too
 granular (poor semantic content per chunk) nor too coarse (poor
 retrieval precision).
 """

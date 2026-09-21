@@ -17,19 +17,16 @@ from app.schemas.video_schema import VideoCreate
 
 
 class HardeningTests(unittest.IsolatedAsyncioTestCase):
-    async def test_youtube_bot_failure_has_specific_safe_api_code(self):
-        from app.pipeline.youtube_downloader import YouTubeBotChallengeError
+    async def test_queue_failure_marks_job_failed_without_leaking_details(self):
         saved = SimpleNamespace(id=uuid.uuid4(), youtube_url="https://youtu.be/yYF2Vf1Gc14")
-        failure = controller.PipelineError("internal pipeline details")
-        failure.__cause__ = YouTubeBotChallengeError("private downloader details")
-        service = Mock(submit_once=AsyncMock(return_value=(saved, True)))
-        with patch.object(controller, "VideoService", return_value=service), patch.object(controller, "verify_recaptcha", AsyncMock()), patch.object(controller, "run_pipeline", AsyncMock(side_effect=failure)):
+        service = Mock(submit_once=AsyncMock(return_value=(saved, True)), mark_failed=AsyncMock())
+        with patch.object(controller, "VideoService", return_value=service), patch.object(controller, "verify_recaptcha", AsyncMock()), patch.object(controller, "_enqueue_video_processing", AsyncMock(side_effect=RuntimeError("private queue details"))):
             with self.assertRaises(HTTPException) as caught:
                 await controller.submit_video(VideoCreate(youtube_url=saved.youtube_url),
                     db=Mock(), user_id=None, request=Request({"type": "http"}), response=Response())
         self.assertEqual(caught.exception.status_code, 503)
-        self.assertEqual(caught.exception.detail["code"], "YOUTUBE_SESSION_UNAVAILABLE")
         self.assertNotIn("private", str(caught.exception.detail))
+        service.mark_failed.assert_awaited_once_with(saved)
 
     async def test_downloader_classifies_bot_challenge_and_cleans_cookies(self):
         import tempfile
@@ -52,15 +49,15 @@ class HardeningTests(unittest.IsolatedAsyncioTestCase):
                     self.assertIs(type(caught.exception), expected)
                 self.assertEqual(list(Path(directory).iterdir()), [])
 
-    async def test_fresh_submission_runs_once_with_canonical_url(self):
+    async def test_fresh_submission_enqueues_canonical_url(self):
         saved = SimpleNamespace(id=uuid.uuid4(), youtube_url="https://www.youtube.com/watch?v=yYF2Vf1Gc14")
         service = Mock(submit_once=AsyncMock(return_value=(saved, True)))
-        with patch.object(controller, "VideoService", return_value=service), patch.object(controller.VideoResponse, "model_validate", return_value="completed"), patch.object(controller, "run_pipeline", new_callable=AsyncMock, return_value=saved) as run:
+        with patch.object(controller, "VideoService", return_value=service), patch.object(controller.VideoResponse, "model_validate", return_value="processing"), patch.object(controller, "_enqueue_video_processing", new_callable=AsyncMock) as enqueue:
             db = Mock()
             result = await controller.submit_video(VideoCreate(youtube_url="https://youtu.be/yYF2Vf1Gc14"),
                                                    saved.id, db=db, user_id=None, request=Request({"type": "http"}), response=Response())
-            self.assertEqual(result, "completed")
-            run.assert_awaited_once_with(saved.id, saved.youtube_url, db=db)
+            self.assertEqual(result, "processing")
+            enqueue.assert_awaited_once_with(saved.id, saved.youtube_url)
 
     async def test_pause_prevents_new_analysis(self):
         with patch.object(controller.settings, "ai_enabled", False), patch.object(controller, "VideoService") as service:
@@ -80,31 +77,31 @@ class HardeningTests(unittest.IsolatedAsyncioTestCase):
     async def test_existing_processing_submission_never_restarts_pipeline(self):
         service = Mock()
         service.submit_once = AsyncMock(return_value=(SimpleNamespace(status=VideoStatus.PROCESSING), False))
-        with patch.object(controller, "VideoService", return_value=service), patch.object(controller, "run_pipeline", new_callable=AsyncMock) as run:
+        with patch.object(controller, "VideoService", return_value=service), patch.object(controller, "_enqueue_video_processing", new_callable=AsyncMock) as enqueue:
             with self.assertRaises(HTTPException) as caught:
                 await controller.submit_video(VideoCreate(youtube_url="https://youtu.be/yYF2Vf1Gc14"),
                                               uuid.uuid4(), db=Mock(), user_id=None, request=Request({"type": "http"}), response=Response())
             self.assertEqual(caught.exception.status_code, 409)
-            run.assert_not_awaited()
+            enqueue.assert_not_awaited()
 
     async def test_existing_failed_submission_allows_browser_to_reset_key(self):
         service = Mock(submit_once=AsyncMock(return_value=(SimpleNamespace(status=VideoStatus.FAILED), False)))
-        with patch.object(controller, "VideoService", return_value=service), patch.object(controller, "run_pipeline", new_callable=AsyncMock) as run:
+        with patch.object(controller, "VideoService", return_value=service), patch.object(controller, "_enqueue_video_processing", new_callable=AsyncMock) as enqueue:
             with self.assertRaises(HTTPException) as caught:
                 await controller.submit_video(VideoCreate(youtube_url="https://youtu.be/yYF2Vf1Gc14"),
                                               uuid.uuid4(), db=Mock(), user_id=None, request=Request({"type": "http"}), response=Response())
             self.assertEqual(caught.exception.status_code, 409)
             self.assertEqual(caught.exception.detail, "This submission previously failed. You can submit it again.")
-            run.assert_not_awaited()
+            enqueue.assert_not_awaited()
 
     async def test_completed_retry_returns_saved_result(self):
         saved = SimpleNamespace(status=VideoStatus.COMPLETED)
         service = Mock(submit_once=AsyncMock(return_value=(saved, False)))
-        with patch.object(controller, "VideoService", return_value=service), patch.object(controller.VideoResponse, "model_validate", return_value="saved"), patch.object(controller, "run_pipeline", new_callable=AsyncMock) as run:
+        with patch.object(controller, "VideoService", return_value=service), patch.object(controller.VideoResponse, "model_validate", return_value="saved"), patch.object(controller, "_enqueue_video_processing", new_callable=AsyncMock) as enqueue:
             result = await controller.submit_video(VideoCreate(youtube_url="https://youtu.be/yYF2Vf1Gc14"),
                                                    uuid.uuid4(), db=Mock(), user_id=None, request=Request({"type": "http"}), response=Response())
             self.assertEqual(result, "saved")
-            run.assert_not_awaited()
+            enqueue.assert_not_awaited()
 
     async def test_postgres_insert_uses_atomic_conflict_guard(self):
         db = Mock(execute=AsyncMock(return_value=Mock(scalar_one_or_none=Mock(return_value=None))))
