@@ -76,7 +76,10 @@ async def run_pipeline(video_id: uuid.UUID, youtube_url: str, *, db: AsyncSessio
 
         with make_temp_dir() as tmp_dir:
             await record_stage("download")
-            download_result = await download_audio(youtube_url, output_dir=tmp_dir)
+            duration_limit = (settings.max_video_duration_seconds if video.user_id is not None
+                              else settings.anonymous_max_video_duration_seconds)
+            download_result = await download_audio(youtube_url, output_dir=tmp_dir,
+                                                   max_duration_seconds=duration_limit)
 
             video = await video_service.mark_metadata(
                 video,

@@ -14,7 +14,9 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--analyze", action="store_true")
     args = parser.parse_args()
-    response = requests.post(BASE + "/videos/analyze?warmup=true", headers={"Content-Type": "text/plain"}, timeout=60)
+    # Explicit empty body makes requests emit Content-Length: 0; Google Front
+    # End rejects a POST without it before the Firebase function is reached.
+    response = requests.post(BASE + "/videos/analyze?warmup=true", data="", headers={"Content-Type": "text/plain"}, timeout=60)
     assert response.status_code == 200 and response.json() == {"warm": True}, "Warm-up failed"
     print("Warm-up: 200", flush=True)
     response = requests.get(BASE + "/health", timeout=30)

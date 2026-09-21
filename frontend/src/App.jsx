@@ -1,4 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { onAuthStateChanged } from "firebase/auth";
+import { auth } from "./firebase";
+import AuthModal from "./components/auth/AuthModal";
 import Navbar from "./components/layout/Navbar";
 import LandingPage from "./pages/LandingPage";
 import WorkspacePage from "./pages/WorkspacePage";
@@ -8,6 +11,10 @@ import "./App.css";
 
 function App() {
   const [video, setVideo] = useState(null);
+  const [user, setUser] = useState(null);
+  const [authOpen, setAuthOpen] = useState(false);
+
+  useEffect(() => onAuthStateChanged(auth, setUser), []);
 
   return (
     <div className="page">
@@ -18,10 +25,11 @@ function App() {
         <span className="bubble b4"></span>
       </div>
       <SpotlightGlow />
-      <Navbar onHome={() => setVideo(null)} />
+      <Navbar onHome={() => setVideo(null)} user={user} onAuth={() => setAuthOpen(true)} />
       <LandingPage onAnalyzed={setVideo} compact={!!video} />
       {video && <WorkspacePage video={video} />}
       <BugReportButton />
+      {authOpen && <AuthModal onClose={() => setAuthOpen(false)} />}
     </div>
   );
 }

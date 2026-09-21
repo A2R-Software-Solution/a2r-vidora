@@ -12,7 +12,6 @@ from app.core.config import settings
 from app.core.logging import logger
 from app.integration import secret_manager_client
 
-MAX_VIDEO_DURATION_SECONDS = settings.max_video_duration_seconds
 
 
 class DownloadError(Exception):
@@ -93,7 +92,7 @@ class DownloadResult:
     duration: int | None
 
 
-def _run_download(youtube_url: str, output_dir: str) -> DownloadResult:
+def _run_download(youtube_url: str, output_dir: str, max_duration_seconds: int) -> DownloadResult:
     """Synchronous yt-dlp call — executed off the event loop by the caller."""
     output_template = str(Path(output_dir) / "%(id)s.%(ext)s")
 
@@ -141,10 +140,10 @@ def _run_download(youtube_url: str, output_dir: str) -> DownloadResult:
                 probe_duration = probe_info.get("duration")
                 if probe_duration is None:
                     raise UnsupportedVideoError("Video duration is unavailable.")
-                if probe_duration > MAX_VIDEO_DURATION_SECONDS:
+                if probe_duration > max_duration_seconds:
                     raise VideoTooLongError(
                         f"Video duration {probe_duration}s exceeds the "
-                        f"{MAX_VIDEO_DURATION_SECONDS}s limit."
+                        f"{max_duration_seconds}s limit."
                     )
 
                 info = ydl.extract_info(youtube_url, download=True)
@@ -170,9 +169,9 @@ def _run_download(youtube_url: str, output_dir: str) -> DownloadResult:
     duration = info.get("duration")
     if duration is None:
         raise UnsupportedVideoError("Downloaded video duration is unavailable.")
-    if duration > MAX_VIDEO_DURATION_SECONDS:
+    if duration > max_duration_seconds:
         raise VideoTooLongError(
-            f"Video duration {duration}s exceeds the {MAX_VIDEO_DURATION_SECONDS}s limit."
+            f"Video duration {duration}s exceeds the {max_duration_seconds}s limit."
         )
 
     video_id = info["id"]
@@ -187,7 +186,7 @@ def _run_download(youtube_url: str, output_dir: str) -> DownloadResult:
     )
 
 
-async def download_audio(youtube_url: str, *, output_dir: str) -> DownloadResult:
+async def download_audio(youtube_url: str, *, output_dir: str, max_duration_seconds: int | None = None) -> DownloadResult:
     """
     Downloads best-available audio for `youtube_url` into `output_dir`
     as an mp3, and returns its path plus title/duration metadata.
@@ -198,7 +197,8 @@ async def download_audio(youtube_url: str, *, output_dir: str) -> DownloadResult
     """
     logger.info(f"Downloading audio for {youtube_url}")
     loop = asyncio.get_running_loop()
-    result = await loop.run_in_executor(None, _run_download, youtube_url, output_dir)
+    limit = max_duration_seconds or settings.max_video_duration_seconds
+    result = await loop.run_in_executor(None, _run_download, youtube_url, output_dir, limit)
     logger.info(f"Downloaded audio: {result.audio_path} (duration={result.duration}s)")
     return result
 

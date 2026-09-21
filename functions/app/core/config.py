@@ -55,6 +55,7 @@ class Settings(BaseSettings):
     recaptcha_timeout_seconds: float
     cookie_cache_ttl_seconds: int = Field(gt=0)
     max_video_duration_seconds: int = Field(gt=0)
+    anonymous_max_video_duration_seconds: int = Field(default=1800, gt=0)
     download_timeout_seconds: float
     download_retries: int = Field(ge=0)
     audio_quality: str
@@ -99,6 +100,8 @@ class Settings(BaseSettings):
             raise ValueError("TARGET_CHUNK_CHARS must not exceed MAX_CHUNK_CHARS")
         if self.analysis_timeout_seconds >= self.vidora_function_timeout_seconds:
             raise ValueError("ANALYSIS_TIMEOUT_SECONDS must be below VIDORA_FUNCTION_TIMEOUT_SECONDS")
+        if self.anonymous_max_video_duration_seconds > self.max_video_duration_seconds:
+            raise ValueError("ANONYMOUS_MAX_VIDEO_DURATION_SECONDS must not exceed MAX_VIDEO_DURATION_SECONDS")
         return self
 
     @property

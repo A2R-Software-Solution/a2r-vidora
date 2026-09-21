@@ -1,5 +1,6 @@
 import axios from "axios";
 import { config } from "../config";
+import { auth } from "../firebase";
 
 const apiClient = axios.create({
   baseURL: config.apiBaseUrl,
@@ -15,5 +16,11 @@ apiClient.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+apiClient.interceptors.request.use(async (request) => {
+  const user = auth.currentUser;
+  if (user) request.headers.Authorization = `Bearer ${await user.getIdToken()}`;
+  return request;
+});
 
 export default apiClient;

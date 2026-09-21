@@ -68,11 +68,12 @@ body {
 }
 
 nav {
+  --nav-edge: clamp(20px, 7vw, 134px);
   height: 72px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 7%;
+  padding-inline: var(--nav-edge);
   background: transparent;
   position: fixed;
   top: 0;
@@ -179,7 +180,7 @@ input::placeholder { color: #b0a89e; }
 }
 @media (max-width: 640px) {
   nav {
-    padding: 0 5%;
+    --nav-edge: 5%;
     height: 60px;
   }
   .logo {
