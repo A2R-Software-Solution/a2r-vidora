@@ -9,7 +9,7 @@ from pathlib import Path
 import yt_dlp
 
 from app.core.config import settings
-from app.core.logging import logger
+from app.middleware.logging import logger
 from app.integration import secret_manager_client
 
 

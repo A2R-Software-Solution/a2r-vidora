@@ -8,7 +8,7 @@ from slowapi.errors import RateLimitExceeded
 from app.core.rate_limit import limiter, rate_limit_exceeded
 from app.routes.health_routes import router as health_router
 from app.core.config import settings
-from app.core.logging import logger, setup_logging
+from app.middleware.logging import logger, setup_logging
 from app.routes.user_routes import router as user_router
 from app.routes.video_routes import router as video_router
 from app.routes.qa_log_routes import router as qa_log_router

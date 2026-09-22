@@ -9,7 +9,7 @@ directly — mirrors the embedder.py / embedding_client split.
 
 from __future__ import annotations
 
-from app.core.logging import logger
+from app.middleware.logging import logger
 from app.integration.groq_client import generate_summary
 
 

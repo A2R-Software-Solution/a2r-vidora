@@ -1,6 +1,7 @@
 import BigHeading from "./BigHeading";
 import { useScrollPin } from "../../hooks/usescrollpin";
 import { useRevealOnScroll } from "../../hooks/useRevealOnScroll";
+import "./Hero.css";
 
 const START_TOP_VH = 100;
 const END_TOP_PX = 220;
@@ -25,32 +26,35 @@ export default function Hero({ children, compact }) {
   }
 
   const revealClass = contentInView ? "reveal-on-scroll in-view" : "reveal-on-scroll";
-  const topValue = `calc(${START_TOP_VH - progress * START_TOP_VH}vh + ${
-    END_TOP_PX * progress
-  }px)`;
+  const contentOffset = `translateY(calc(${START_TOP_VH * (1 - progress)}svh - ${
+    END_TOP_PX * (1 - progress)
+  }px))`;
 
   return (
-    <>
-      <BigHeading progress={progress} />
-      <div className="hero-blob" aria-hidden="true" />
-      <div className="hero-tagline hero-tagline-right" aria-hidden="true">
-        Turn any video<br />into <span>knowledge</span>
+    <section className="hero-scene" aria-label="Analyze a YouTube video">
+      <div className="hero-stage">
+        <BigHeading progress={progress} />
+        <div className="hero-blob" aria-hidden="true" />
+        <div className="hero-tagline hero-tagline-right" aria-hidden="true">
+          Turn any video<br />into <span>knowledge</span>
+        </div>
+        <div className="hero-tagline hero-tagline-left" aria-hidden="true">
+          From hours<br />of watching...
+          <svg className="tagline-arrow draw-arrow" viewBox="0 0 60 50" fill="none">
+            <path d="M5 5 Q 30 10, 40 40" stroke="#ff6b35" strokeWidth="2" strokeLinecap="round" />
+            <path d="M32 34 L40 40 L34 28" stroke="#ff6b35" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </div>
+        <div className="hero hero-lower" ref={contentRef} style={{ transform: contentOffset }}>
+          <div className={`badge ${revealClass} delay-0`}>AI-powered video intelligence</div>
+          <p className={`sub ${revealClass} delay-1`}>
+            Paste a YouTube video and ask questions, find exact moments,
+            get summaries, or turn long-form videos into ready-to-use Shorts.
+          </p>
+          <div className={`${revealClass} delay-2`}>{children}</div>
+        </div>
       </div>
-      <div className="hero-tagline hero-tagline-left" aria-hidden="true">
-        From hours<br />of watching...
-        <svg className="tagline-arrow draw-arrow" viewBox="0 0 60 50" fill="none">
-          <path d="M5 5 Q 30 10, 40 40" stroke="#ff6b35" strokeWidth="2" strokeLinecap="round" />
-          <path d="M32 34 L40 40 L34 28" stroke="#ff6b35" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      </div>
-      <section className="hero hero-lower" ref={contentRef} style={{ top: topValue }}>
-        <div className={`badge ${revealClass} delay-0`}>AI-powered video intelligence</div>
-        <p className={`sub ${revealClass} delay-1`}>
-          Paste a YouTube video and ask questions, find exact moments,
-          get summaries, or turn long-form videos into ready-to-use Shorts.
-        </p>
-        <div className={`${revealClass} delay-2`}>{children}</div>
-      </section>
-    </>
+      <div className="hero-release-track" aria-hidden="true" />
+    </section>
   );
 }

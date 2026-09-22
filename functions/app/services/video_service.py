@@ -21,7 +21,7 @@ from datetime import datetime, timedelta, timezone
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
-from app.core.logging import logger
+from app.middleware.logging import logger
 from app.models.video_model import Video, VideoStatus
 from app.repository.qa_log_repository import QALogRepository
 from app.repository.transcript_chunk_repository import TranscriptChunkRepository

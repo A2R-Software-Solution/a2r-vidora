@@ -11,7 +11,7 @@ from urllib.request import Request, urlopen
 from fastapi import HTTPException, status
 
 from app.core.config import settings
-from app.core.logging import logger
+from app.middleware.logging import logger
 
 _VERIFY_URL = settings.recaptcha_verify_url
 _TIMEOUT_SECONDS = settings.recaptcha_timeout_seconds

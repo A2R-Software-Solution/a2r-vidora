@@ -5,7 +5,7 @@ from threading import Lock
 from typing import TYPE_CHECKING
 
 from app.core.config import settings
-from app.core.logging import logger
+from app.middleware.logging import logger
 
 if TYPE_CHECKING:
     from sentence_transformers import SentenceTransformer

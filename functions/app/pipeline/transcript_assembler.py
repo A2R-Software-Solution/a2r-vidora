@@ -1,6 +1,7 @@
 """Map independently transcribed VAD chunks back onto the original video clock."""
 import math
 
+from app.middleware.logging import logger
 from app.pipeline.audio_chunker import AudioChunk, SAMPLE_RATE
 
 
@@ -22,9 +23,18 @@ def assemble_words(chunks: tuple[AudioChunk, ...], results: dict[str, list[dict]
         for word in results[chunk.id]:
             text = word["word"].strip()
             local_start, local_end = float(word["start"]), float(word["end"])
+            # Provider word clocks occasionally contain an outlier even when
+            # the remainder of the chunk is valid.  Do not discard an entire
+            # video for one such word: retain valid words and surface enough
+            # metadata to investigate the provider response in logs.
             if (not math.isfinite(local_start) or not math.isfinite(local_end)
                     or local_start < 0 or local_end < local_start or local_end > end - start + 0.25):
-                raise ValueError("Invalid STT word timestamp")
+                logger.warning(
+                    "chunk_stt_word_skipped chunk_id=%s sequence=%s "
+                    "local_start=%s local_end=%s chunk_duration=%s",
+                    chunk.id, chunk.sequence_number, local_start, local_end, end - start,
+                )
+                continue
             word_start = min(start + local_start, end)
             word_end = min(start + local_end, end)
             # Assign overlap to just one side; never dedup phrases globally,

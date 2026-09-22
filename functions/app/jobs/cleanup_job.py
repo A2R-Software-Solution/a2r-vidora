@@ -8,7 +8,7 @@ context — invoked by a scheduled trigger (wired in main.py separately).
 
 from __future__ import annotations
 
-from app.core.logging import logger
+from app.middleware.logging import logger
 from app.db.session import AsyncSessionLocal
 from app.services.video_service import VideoService
 

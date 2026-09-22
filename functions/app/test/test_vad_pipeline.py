@@ -36,15 +36,22 @@ class AssemblyTests(unittest.TestCase):
         self.assertEqual([s["text"] for s in assembled], ["start", "left", "right", "again", "again"])
         self.assertEqual([s["start"] for s in assembled], [10, 39.1, 39.6, 49, 81])
 
-    def test_missing_results_bad_sequence_and_invalid_times_fail(self):
+    def test_missing_results_and_bad_sequence_fail(self):
         chunks = (chunk(0, 0, 10), chunk(1, 20, 30))
         with self.assertRaises(ValueError):
             assemble_words(chunks, {"chunk-0": []})
         with self.assertRaises(ValueError):
             assemble_words((chunk(1, 0, 10),), {"chunk-1": []})
+
+    def test_invalid_word_timestamps_are_skipped_without_losing_valid_words(self):
+        valid = {"word": "good", "start": 1, "end": 2}
         for start, end in [(-1, 1), (2, 1), (0, float("nan")), (0, 11)]:
-            with self.subTest(start=start, end=end), self.assertRaises(ValueError):
-                assemble_words((chunks[0],), {"chunk-0": [{"word": "bad", "start": start, "end": end}]})
+            with self.subTest(start=start, end=end):
+                assembled = assemble_words(
+                    (chunk(0, 0, 10),),
+                    {"chunk-0": [valid, {"word": "bad", "start": start, "end": end}]},
+                )
+                self.assertEqual(assembled, [{"text": "good", "start": 1, "end": 2}])
 
 
 class ChunkTranscriptionTests(unittest.IsolatedAsyncioTestCase):
@@ -70,8 +77,8 @@ class ChunkTranscriptionTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(peak, min(settings.stt_concurrency, len(chunks)))
         self.assertEqual(provider.await_count, 3)
         self.assertEqual([s["start"] for s in segments], [1, 11, 21])
-        with patch.object(transcriber, "transcribe_audio_words", AsyncMock(side_effect=[[], RuntimeError("network")])) as provider:
-            with self.assertRaises(RuntimeError):
+        with patch.object(transcriber, "transcribe_audio_words", AsyncMock(side_effect=[[], RuntimeError("network"), []])) as provider:
+            with self.assertRaises(ExceptionGroup):
                 await transcriber.transcribe_chunks(batch)
         self.assertGreaterEqual(provider.await_count, 2)
         self.assertLessEqual(provider.await_count, len(chunks))
@@ -95,10 +102,13 @@ class IngestionWiringTests(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
         self.stack = ExitStack()
         self.addCleanup(self.stack.close)
-        self.video = SimpleNamespace(id=uuid.uuid4(), status=VideoStatus.PROCESSING)
+        self.video = SimpleNamespace(
+            id=uuid.uuid4(), status=VideoStatus.PROCESSING, user_id=None,
+            processing_total_chunks=0,
+        )
         self.service = Mock(get_for_processing=AsyncMock(return_value=self.video),
             mark_metadata=AsyncMock(return_value=self.video), mark_completed=AsyncMock(return_value=self.video),
-            mark_failed=AsyncMock())
+            mark_failed=AsyncMock(), mark_progress=AsyncMock(return_value=self.video))
         self.chunks = Mock(replace_all_for_video=AsyncMock())
         self.db = Mock(rollback=AsyncMock())
         self.stack.enter_context(patch.object(pipeline, "VideoService", return_value=self.service))

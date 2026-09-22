@@ -23,7 +23,7 @@ from pathlib import Path
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.logging import logger
+from app.middleware.logging import logger, log_exception_group
 from app.core.config import settings
 from app.models.video_model import Video, VideoStatus
 from app.pipeline import audio_chunker, chunker, embedder, summarizer, transcriber
@@ -112,6 +112,12 @@ async def run_pipeline(video_id: uuid.UUID, youtube_url: str, *, db: AsyncSessio
         return video
 
     except (Exception, asyncio.CancelledError) as exc:
+        log_exception_group(
+            event="analysis_failure_detail",
+            exc=exc,
+            video_id=video_id,
+            stage=stage,
+        )
         logger.error("analysis_failed video_id=%s stage=%s elapsed_seconds=%.2f error_type=%s",
                      video_id, stage, monotonic() - started, type(exc).__name__)
         if video is not None:

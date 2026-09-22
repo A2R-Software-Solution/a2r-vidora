@@ -9,7 +9,7 @@ on a pipeline-stage interface rather than the client directly.
 
 from __future__ import annotations
 
-from app.core.logging import logger
+from app.middleware.logging import logger
 from app.integration.embedding_client import embed_texts
 
 

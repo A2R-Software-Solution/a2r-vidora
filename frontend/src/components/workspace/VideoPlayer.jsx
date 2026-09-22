@@ -32,6 +32,7 @@ const VideoPlayer = forwardRef(function VideoPlayer(
   useEffect(() => {
     if (ref) {
       ref.current = {
+        pause: () => playerRef.current?.pauseVideo?.(),
         seekTo: (seconds) => {
           playerRef.current?.seekTo(seconds, true);
           playerRef.current?.playVideo();

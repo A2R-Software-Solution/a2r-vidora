@@ -11,7 +11,7 @@ from groq import AsyncGroq
 from groq import APIConnectionError, APITimeoutError, GroqError, InternalServerError, RateLimitError
 
 from app.core.config import settings
-from app.core.logging import logger
+from app.middleware.logging import logger
 
 CHAT_MODEL = settings.chat_model
 STT_MODEL = settings.stt_model
@@ -233,7 +233,10 @@ async def transcribe_audio_words(audio_file_path: str) -> list[dict]:
             )
         )
     except GroqError as exc:
-        logger.error("Groq chunk transcription failed: %s", type(exc).__name__)
+        logger.error(
+            "groq_chunk_transcription_failed error_type=%s error_message=%s",
+            type(exc).__name__, str(exc), exc_info=True,
+        )
         raise GroqRequestError("AI transcription provider unavailable.") from None
     words = getattr(response, "words", None)
     text = (getattr(response, "text", "") or "").strip()

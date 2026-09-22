@@ -10,7 +10,7 @@ from __future__ import annotations
 from pathlib import Path
 import asyncio
 
-from app.core.logging import logger
+from app.middleware.logging import logger
 from app.core.config import settings
 from app.integration.groq_client import transcribe_audio, transcribe_audio_words, EmptyTranscriptionError
 from app.pipeline.audio_chunker import AudioBatch
@@ -32,7 +32,18 @@ async def transcribe_chunks(batch: AudioBatch) -> list[dict]:
             # TaskGroup cancels queued siblings if one chunk fails, preventing
             # unnecessary paid requests; in-flight provider requests may finish.
             logger.info("chunk_stt_started chunk_id=%s sequence=%s total=%s", chunk.id, chunk.sequence_number, len(batch.chunks))
-            words = await transcribe_audio_words(str(path))
+            try:
+                words = await transcribe_audio_words(str(path))
+            except BaseException as exc:
+                # The TaskGroup converts this into an ExceptionGroup upstream;
+                # record the responsible chunk before sibling tasks are cancelled.
+                logger.error(
+                    "chunk_stt_failed chunk_id=%s sequence=%s total=%s error_type=%s error_message=%s",
+                    chunk.id, chunk.sequence_number, len(batch.chunks),
+                    type(exc).__name__, str(exc),
+                    exc_info=(type(exc), exc, exc.__traceback__),
+                )
+                raise
             logger.info("chunk_stt_completed chunk_id=%s sequence=%s", chunk.id, chunk.sequence_number)
             return chunk.id, words
 

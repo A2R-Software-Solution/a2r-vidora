@@ -10,7 +10,7 @@ body {
 
 .bug-report-button {
   position: fixed;
-  right: 22px;
+  left: 22px;
   bottom: 22px;
   z-index: 60;
   display: grid;
@@ -43,7 +43,7 @@ body {
 }
 .bug-report-button::after {
   position: absolute;
-  right: calc(100% + 10px);
+  left: calc(100% + 10px);
   width: max-content;
   padding: 7px 10px;
   border-radius: 7px;
@@ -54,7 +54,7 @@ body {
   font-weight: 600;
   opacity: 0;
   pointer-events: none;
-  transform: translateX(4px);
+  transform: translateX(-4px);
   transition: opacity 0.2s ease, transform 0.2s ease;
 }
 .bug-report-button:hover::after,
@@ -64,10 +64,10 @@ body {
 }
 
 @media (max-width: 760px) {
-  .bug-report-button { right: 16px; bottom: 16px; }
+  .bug-report-button { left: 16px; bottom: 16px; }
 }
 
-nav {
+.site-navbar {
   --nav-edge: clamp(20px, 7vw, 134px);
   height: 72px;
   display: flex;
@@ -179,7 +179,7 @@ input::placeholder { color: #b0a89e; }
   .reel-grid { grid-template-columns: 1fr; }
 }
 @media (max-width: 640px) {
-  nav {
+  .site-navbar {
     --nav-edge: 5%;
     height: 60px;
   }

@@ -7,7 +7,7 @@ import YouTubeUnavailable from "../landing/YouTubeUnavailable";
 import { config } from "../../config";
 const MAX_CHARS = config.maxQuestionChars;
 
-export default function ChatPanel({ videoId, onSeek, ready = true, progress }) {
+export default function ChatPanel({ videoId, onSeek, ready = true, progress, active = true }) {
   const { messages, fetchHistory, askVideo, loading, error, limitReached, questionCount } = useVideoQA(videoId);
   const [question, setQuestion] = useState("");
   const [charError, setCharError] = useState("");
@@ -42,7 +42,7 @@ export default function ChatPanel({ videoId, onSeek, ready = true, progress }) {
         <span className="question-counter">{questionCount}/{config.maxQuestions} questions</span>
       </div>
 
-      {!ready && progress?.status === "failed" && progress?.processing_stage === "download" && <YouTubeUnavailable onDismiss={() => window.location.reload()} />}
+      {!ready && progress?.status === "failed" && progress?.processing_stage === "download" && <YouTubeUnavailable onDismiss={() => window.location.reload()} active={active} />}
       {!ready && !(progress?.status === "failed" && progress?.processing_stage === "download") && <div className="messages"><div className="message ai"><b>{progress?.status === "failed" ? "We couldn't process this video" : "Processing your video"}</b><br />
         {progress?.processing_stage === "queued" && "Your analysis is queued."}
         {progress?.processing_stage === "download" && "Downloading and preparing audio."}

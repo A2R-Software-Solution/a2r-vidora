@@ -5,7 +5,7 @@ from fastapi import Request, Response, Depends, Header, HTTPException, Query, st
 from firebase_admin import functions as admin_functions
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.logging import logger
+from app.middleware.logging import logger
 from app.core.config import settings
 from app.core.recaptcha import verify_recaptcha
 from app.deps import get_db

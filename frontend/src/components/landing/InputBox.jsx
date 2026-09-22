@@ -30,7 +30,6 @@ export default function InputBox({ onAnalyze, loading, restoring = false, error,
   const [validationError, setValidationError] = useState(null);
   const inputRef = useRef(null);
   const visibleError = validationError || error;
-  const btnRef = useRef(null);
 
   const handleAnalyze = () => {
     const trimmed = url.trim();
@@ -42,21 +41,6 @@ export default function InputBox({ onAnalyze, loading, restoring = false, error,
     }
     setValidationError(null);
     onAnalyze(trimmed);
-  };
-
-  const handleBtnMove = (e) => {
-    const btn = btnRef.current;
-    if (!btn) return;
-    const rect = btn.getBoundingClientRect();
-    const x = e.clientX - rect.left - rect.width / 2;
-    const y = e.clientY - rect.top - rect.height / 2;
-    btn.style.transform = `translate(${x * 0.25}px, ${y * 0.4}px)`;
-  };
-
-  const handleBtnLeave = () => {
-    const btn = btnRef.current;
-    if (!btn) return;
-    btn.style.transform = "translate(0, 0)";
   };
 
   return (
@@ -78,11 +62,8 @@ export default function InputBox({ onAnalyze, loading, restoring = false, error,
           disabled={loading}
         />
         <button
-          ref={btnRef}
-          className="analyze magnetic-btn"
+          className="analyze"
           onClick={handleAnalyze}
-          onMouseMove={handleBtnMove}
-          onMouseLeave={handleBtnLeave}
           disabled={loading}
           aria-label={loading ? (restoring ? "Retrieving previous analysis" : "Analyzing video") : undefined}
         >

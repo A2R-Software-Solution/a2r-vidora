@@ -6,7 +6,7 @@ import Features from "../components/landing/Features";
 import { useVideoAnalyze } from "../hooks/useVideoAnalyze";
 import { warmUpVideoAnalysis } from "../api/videoApi";
 
-export default function LandingPage({ onAnalyzed, compact }) {
+export default function LandingPage({ onAnalyzed, compact, active = true }) {
   const { submitVideo, restoreVideo, loading, restoring, hasPreviousVideo, error, clearError, youtubeUnavailable, dismissUnavailable } = useVideoAnalyze();
   const warmupStarted = useRef(false);
 
@@ -30,7 +30,7 @@ export default function LandingPage({ onAnalyzed, compact }) {
 
   return (
     <Hero compact={compact}>
-      {youtubeUnavailable ? <YouTubeUnavailable onDismiss={dismissUnavailable} /> : <InputBox onAnalyze={handleAnalyze} loading={loading} restoring={restoring} error={error} onClearError={clearError} />}
+      {youtubeUnavailable ? <YouTubeUnavailable onDismiss={dismissUnavailable} active={active} /> : <InputBox onAnalyze={handleAnalyze} loading={loading} restoring={restoring} error={error} onClearError={clearError} />}
       {hasPreviousVideo && !loading && !youtubeUnavailable && (
         <button className="resume-analysis" type="button" onClick={async () => {
           const recovered = await restoreVideo();
