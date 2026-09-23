@@ -1,7 +1,7 @@
 """Production VAD audio preparation, also runnable as a local listening preview."""
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 import hashlib
 import json
 from pathlib import Path
@@ -26,6 +26,8 @@ LOCAL_AUDIO_PATH = ""
 FUNCTIONS_ROOT = Path(__file__).resolve().parents[2]
 OUTPUT_ROOT = FUNCTIONS_ROOT / "audio-preview.local"
 SAMPLE_RATE = 16000
+SCAN_BLOCK_SECONDS = 1800
+SCAN_OVERLAP_SECONDS = 1
 
 
 _vad_lock = threading.Lock()
@@ -154,15 +156,49 @@ def prepare_audio(source: Path, *, output_root: Path,
         decode_audio(source, normalized, settings.max_audio_seconds)
         with wave.open(str(normalized), "rb") as audio:
             total_samples = audio.getnframes()
-            if not 0 < total_samples <= settings.max_audio_seconds * SAMPLE_RATE:
-                raise ValueError(f"Audio must be nonempty and at most {settings.max_audio_seconds} seconds")
-            pcm = audio.readframes(total_samples)
+        if not 0 < total_samples <= settings.max_audio_seconds * SAMPLE_RATE:
+            raise ValueError(f"Audio must be nonempty and at most {settings.max_audio_seconds} seconds")
         if verbose:
             print("Detecting speech with Silero VAD...", flush=True)
-        regions = detect_speech(pcm, settings)
-        source_hash = hashlib.sha256(pcm).hexdigest()
-        source_id = source_id or uuid.uuid5(uuid.NAMESPACE_URL, source_hash)
-        chunks = plan_vad_chunks(regions, total_samples, source_id, settings)
+        # Scan the on-disk normalized WAV in overlapping 30-minute windows.
+        # A multi-hour recording otherwise creates several full-size PCM,
+        # NumPy and Torch copies at once and can exhaust function memory.
+        block_samples = SCAN_BLOCK_SECONDS * SAMPLE_RATE
+        overlap_samples = SCAN_OVERLAP_SECONDS * SAMPLE_RATE
+        chunks = []
+        regions = []
+        digest = hashlib.sha256()
+        source_id = source_id or uuid.uuid5(uuid.NAMESPACE_URL, str(source))
+        with wave.open(str(normalized), "rb") as audio:
+            block_start = 0
+            while block_start < total_samples:
+                audio.setpos(block_start)
+                frames = audio.readframes(min(block_samples, total_samples - block_start))
+                local_samples = len(frames) // 2
+                if not local_samples:
+                    break
+                # Overlap is intentionally hashed once for a stable source digest.
+                digest.update(frames[(overlap_samples * 2 if block_start else 0):])
+                local_regions = detect_speech(frames, settings)
+                block_id = uuid.uuid5(source_id, f"block:{block_start}")
+                local_chunks = plan_vad_chunks(local_regions, local_samples, block_id, settings)
+                region_offset = len(regions)
+                regions.extend({"start": region["start"] + block_start,
+                                "end": region["end"] + block_start} for region in local_regions)
+                chunks.extend(replace(chunk,
+                    sequence_number=0,
+                    start_sample=chunk.start_sample + block_start,
+                    end_sample=chunk.end_sample + block_start,
+                    speech_start_sample=chunk.speech_start_sample + block_start,
+                    speech_end_sample=chunk.speech_end_sample + block_start,
+                    speech_region_indices=tuple(i + region_offset for i in chunk.speech_region_indices))
+                    for chunk in local_chunks)
+                if block_start + local_samples >= total_samples:
+                    break
+                block_start += local_samples - overlap_samples
+        source_hash = digest.hexdigest()
+        chunks = [replace(chunk, sequence_number=index) for index, chunk in
+                  enumerate(sorted(chunks, key=lambda chunk: (chunk.start_sample, chunk.end_sample)))]
         output_dir = Path(output_root) / f"{source.stem[:60]}_{uuid.uuid4().hex[:12]}"
         output_dir.mkdir(parents=True, exist_ok=False)
         manifest = {"source_file": source.name, "source_id": str(source_id), "pcm_sha256": source_hash,
@@ -178,11 +214,14 @@ def prepare_audio(source: Path, *, output_root: Path,
             start, end = chunk.start_sample / SAMPLE_RATE, chunk.end_sample / SAMPLE_RATE
             filename = f"chunk_{chunk.sequence_number:04d}_{start:.3f}s-{end:.3f}s.wav"
             paths.append(output_dir / filename)
+            with wave.open(str(normalized), "rb") as source_audio:
+                source_audio.setpos(chunk.start_sample)
+                frames = source_audio.readframes(chunk.end_sample - chunk.start_sample)
             with wave.open(str(output_dir / filename), "wb") as audio:
                 audio.setnchannels(1)
                 audio.setsampwidth(2)
                 audio.setframerate(SAMPLE_RATE)
-                audio.writeframes(pcm[chunk.start_sample * 2:chunk.end_sample * 2])
+                audio.writeframes(frames)
             manifest["chunks"].append({**asdict(chunk), "start_seconds": start, "end_seconds": end,
                                        "duration_seconds": end - start, "file": filename})
             if verbose:

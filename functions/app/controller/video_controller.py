@@ -1,8 +1,6 @@
-import asyncio
 import uuid
 
 from fastapi import Request, Response, Depends, Header, HTTPException, Query, status
-from firebase_admin import functions as admin_functions
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.middleware.logging import logger
@@ -19,24 +17,11 @@ from app.services.video_service import (
     SubmissionConflictError,
 )
 from app.models.video_model import VideoStatus
-
-
-_VIDEO_PROCESSING_TASK = settings.video_processing_task
+from app.integration.video_tasks import enqueue_video_processing
 
 
 async def _enqueue_video_processing(video_id: uuid.UUID, youtube_url: str) -> None:
-    queue = admin_functions.task_queue(_VIDEO_PROCESSING_TASK)
-    options = admin_functions.TaskOptions(
-        dispatch_deadline_seconds=settings.vidora_function_timeout_seconds,
-        task_id=f"video-{video_id.hex}",
-    )
-    await asyncio.to_thread(
-        queue.enqueue,
-        # The Python Admin SDK serializes this body as-is; the Firebase task
-        # handler requires the callable protocol's top-level data envelope.
-        {"data": {"video_id": str(video_id), "youtube_url": youtube_url}},
-        options,
-    )
+    await enqueue_video_processing(video_id, youtube_url)
 
 
 async def submit_video(

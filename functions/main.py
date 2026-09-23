@@ -143,6 +143,7 @@ async def _process_video(data: dict) -> None:
 
 @tasks_fn.on_task_dispatched(
     secrets=["GROQ_API_KEY", "GROQ_API_KEY_FALLBACK", "DATABASE_URL"],
+    timeout_sec=settings.task_function_timeout_seconds,
     retry_config=RetryConfig(max_attempts=settings.task_max_attempts),
     rate_limits=RateLimits(max_concurrent_dispatches=settings.task_max_concurrent_dispatches),
 )

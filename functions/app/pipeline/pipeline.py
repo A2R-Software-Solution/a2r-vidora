@@ -27,7 +27,10 @@ from app.middleware.logging import logger, log_exception_group
 from app.core.config import settings
 from app.models.video_model import Video, VideoStatus
 from app.pipeline import audio_chunker, chunker, embedder, summarizer, transcriber
-from app.pipeline.youtube_downloader import download_audio, make_temp_dir
+from app.integration.stt_quota import SttQuotaDeferred
+from app.integration.video_tasks import enqueue_video_processing
+from app.pipeline.youtube_downloader import (download_audio, make_temp_dir,
+                                             YouTubeBotChallengeError, VideoTooLongError)
 from app.services.transcript_chunk_service import TranscriptChunkService
 from app.services.video_service import VideoService
 
@@ -94,8 +97,10 @@ async def run_pipeline(video_id: uuid.UUID, youtube_url: str, *, db: AsyncSessio
             )
             logger.info("audio_chunks_ready video_id=%s count=%s", video_id, len(batch.chunks))
             await record_stage("chunk_transcription", total_chunks=len(batch.chunks))
-            segments = await transcriber.transcribe_chunks(batch)
-            await record_stage("chunk_transcription", total_chunks=len(batch.chunks), completed_chunks=len(batch.chunks))
+            async def stt_progress(completed: int, total: int) -> None:
+                await record_stage("chunk_transcription", total_chunks=total, completed_chunks=completed)
+
+            segments = await transcriber.transcribe_chunks(batch, progress=stt_progress, video_id=video_id)
 
         chunks = chunker.chunk_segments(segments)
         await record_stage("embed")
@@ -111,6 +116,17 @@ async def run_pipeline(video_id: uuid.UUID, youtube_url: str, *, db: AsyncSessio
         logger.info(f"Pipeline completed for video {video.id}")
         return video
 
+    except SttQuotaDeferred as exc:
+        if video is None:
+            raise
+        await record_stage("waiting_for_quota")
+        try:
+            await enqueue_video_processing(video.id, youtube_url, delay_seconds=exc.delay_seconds)
+        except Exception as dispatch_error:
+            await video_service.mark_failed(video)
+            raise PipelineError("Could not schedule quota continuation") from dispatch_error
+        logger.info("analysis_deferred video_id=%s delay_seconds=%.2f", video_id, exc.delay_seconds)
+        return video
     except (Exception, asyncio.CancelledError) as exc:
         log_exception_group(
             event="analysis_failure_detail",
@@ -126,7 +142,13 @@ async def run_pipeline(video_id: uuid.UUID, youtube_url: str, *, db: AsyncSessio
                 # rollback. Re-fetch before recording the terminal status.
                 await db.rollback()
                 video = await video_service.get_for_processing(video_id)
-                await video_service.mark_failed(video)
+                reason = None
+                if isinstance(exc, YouTubeBotChallengeError):
+                    reason = "youtube_session_unavailable"
+                elif isinstance(exc, VideoTooLongError):
+                    reason = ("anonymous_duration_limit" if video.user_id is None
+                              else "video_duration_limit")
+                await video_service.mark_failed(video, reason=reason)
             except Exception:
                 logger.exception(f"Could not mark video {video_id} as failed")
         if isinstance(exc, asyncio.CancelledError):

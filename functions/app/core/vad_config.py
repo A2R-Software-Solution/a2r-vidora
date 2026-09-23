@@ -23,7 +23,10 @@ class VadSettings(BaseSettings):
     # a near-maximum STT request; max_chunk_seconds remains the hard limit.
     group_target_seconds: float = Field(default=20, gt=0, le=300)
     split_overlap_ms: int = Field(default=250, ge=0)
-    max_audio_seconds: int = Field(default=2100, gt=0)
+    max_audio_seconds: int = Field(default=10805, gt=0)
+    # A second packing stage combines these pause-based chunks for STT.
+    stt_request_seconds: float = Field(default=240, gt=0, le=300)
+    stt_request_bytes: int = Field(default=20_000_000, gt=44, le=24_000_000)
 
     @model_validator(mode="after")
     def validate_window(self):
@@ -31,6 +34,10 @@ class VadSettings(BaseSettings):
             raise ValueError("VAD_NEG_THRESHOLD must be below VAD_THRESHOLD")
         if self.group_target_seconds > self.max_chunk_seconds:
             raise ValueError("VAD_GROUP_TARGET_SECONDS must not exceed VAD_MAX_CHUNK_SECONDS")
+        if self.stt_request_seconds < self.max_chunk_seconds:
+            raise ValueError("VAD_STT_REQUEST_SECONDS must cover one VAD chunk")
+        if self.stt_request_bytes < 44 + int(self.max_chunk_seconds * 16000) * 2:
+            raise ValueError("VAD_STT_REQUEST_BYTES must cover one VAD WAV chunk")
         usable_ms = self.max_chunk_seconds * 1000 - 2 * self.speech_pad_ms
         if usable_ms < 1000 or self.split_overlap_ms >= usable_ms / 2:
             raise ValueError("Chunk must allow >=1 second of speech after padding, with overlap below half that duration")

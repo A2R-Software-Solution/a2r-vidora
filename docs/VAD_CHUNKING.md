@@ -1,4 +1,4 @@
-# Product ingestion: VAD chunks and sequential STT
+# Product ingestion: VAD chunks and quota-aware STT
 
 The actual `POST /videos/analyze` ingestion now runs:
 
@@ -7,7 +7,8 @@ YouTube download + metadata
   -> normalized 16 kHz audio
   -> Silero VAD speech detection
   -> short-pause merge / capped audio chunks
-  -> bounded parallel Groq STT for each WAV (word timestamps)
+  -> pack adjacent VAD clips into capped Groq WAV requests, shortening long gaps
+  -> shared quota reservation + bounded parallel Groq STT (word timestamps)
   -> global timestamp mapping / overlap ownership / chronological assembly
   -> existing text chunking and MiniLM embeddings
   -> summary
@@ -20,25 +21,27 @@ Shared settings live in `app/core/vad_config.py`, loaded by application config.
 Production requirements now include `requirements-vad.txt`; deploy with these
 dependencies installed. FFmpeg must be available in the function runtime. VAD
 model loading/inference is cached and locked per process and runs off the async
-event loop. The HTTP response contract and existing frontend remain unchanged.
+event loop. The HTTP response contract remains unchanged; the frontend reports
+quota waits and STT request progress.
 
 Cloud Tasks accepts the submitted job and the HTTP endpoint returns its
 `PROCESSING` video record immediately. The worker performs the paid processing.
 Cloud Tasks retries transient worker failures according to `TASK_MAX_ATTEMPTS`.
-STT is bounded by `STT_CONCURRENCY` (default 3), rather than creating an
-unbounded request burst. Audio chunk IDs are namespaced by the video ID; manifests and WAVs
-are temporary and removed with the request's working directory on success/error.
-Chunk results are held in memory until assembly. A restart cannot resume saved
-per-chunk STT yet; durable checkpoints belong to the upcoming queue stage.
+STT is bounded by `STT_CONCURRENCY` (default 3) and shared PostgreSQL RPM,
+hourly audio, and daily audio reservations. Audio chunk IDs are namespaced by
+the video ID; manifests and WAVs are temporary. Completed STT request results
+are checkpointed by video, sequence, and audio hash. Quota waits over ten
+seconds schedule a later Cloud Task; that task re-downloads and prepares audio,
+then reuses checkpoints instead of paying for completed transcription again.
 
-One failed STT chunk prevents embeddings/publishing. Empty VAD or all-empty STT
+One failed STT request after retries prevents embeddings/publishing. Empty VAD or all-empty STT
 fails the video without fabricating text. Summarization finishes before transcript
 rows are written, and publication uses the video-completion transaction.
 
-The existing 270-second request budget / 300-second function timeout still applies
-to the entire download + VAD + sequential STT + embedding/summary workflow. Long
-videos and many short speech regions can exceed it. There is no claim that the
-previous 35-minute duration cap establishes an acceptable processing latency.
+The worker uses a separate 900-second timeout by default; the API stays at 300 seconds.
+Download and VAD are repeated on quota continuation; long-video performance
+and temporary-disk use must be benchmarked before increasing the production
+duration setting. Anonymous videos are capped at 35 minutes.
 Cancelled blocking FFmpeg/VAD work is joined before local cleanup; this may delay
 cancellation handling and platform termination can still interrupt cleanup.
 

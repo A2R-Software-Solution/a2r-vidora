@@ -244,6 +244,16 @@ h1 span { color: #ff6b35; }
   padding-left: 4px;
 }
 
+.duration-sign-in {
+  margin-top: 12px;
+  padding: 8px 16px;
+  border: 0;
+  border-radius: 8px;
+  color: white;
+  background: #ff6b35;
+  cursor: pointer;
+}
+
 .hero-compact {
   padding: 32px 24px 24px;
   transition: padding 0.3s ease;

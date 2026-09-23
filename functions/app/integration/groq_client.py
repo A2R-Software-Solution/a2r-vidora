@@ -56,6 +56,14 @@ class GroqRequestError(Exception):
     """Raised when a Groq API call fails (network, auth, rate limit, etc.)."""
 
 
+class GroqTransientError(GroqRequestError):
+    """Retryable STT provider failure, optionally with a Retry-After delay."""
+
+    def __init__(self, retry_after: float = 0) -> None:
+        super().__init__("AI transcription provider temporarily unavailable.")
+        self.retry_after = retry_after
+
+
 class EmptyTranscriptionError(Exception):
     """Raised when Groq STT returns no usable transcription for an audio file."""
 
@@ -78,6 +86,7 @@ def _api_keys() -> tuple[str, ...]:
 
 async def _try_groq_clients(
     operation: Callable[[AsyncGroq], Awaitable[_T]],
+    *, fallback: bool = True,
 ) -> _T:
     """Round-robin requests and try the other account on transient errors."""
     keys = _api_keys()
@@ -87,7 +96,7 @@ async def _try_groq_clients(
     start = next(_request_counter) % len(keys)
     last_error: GroqError | None = None
 
-    for offset in range(len(keys)):
+    for offset in range(len(keys) if fallback else 1):
         try:
             # Cloud Functions' ASGI bridge creates separate event loops per
             # invocation. Do not reuse async HTTP pools across those loops.
@@ -95,7 +104,7 @@ async def _try_groq_clients(
                 return await operation(client)
         except _RETRYABLE_ERRORS as exc:
             last_error = exc
-            if offset + 1 < len(keys):
+            if fallback and offset + 1 < len(keys):
                 logger.warning("Groq request failed; trying the next configured account.")
                 continue
             raise
@@ -104,13 +113,14 @@ async def _try_groq_clients(
     raise last_error or GroqRequestError("Groq request failed.")
 
 
-async def _with_groq_client(operation: Callable[[AsyncGroq], Awaitable[_T]]) -> _T:
+async def _with_groq_client(operation: Callable[[AsyncGroq], Awaitable[_T]], *,
+                            fallback: bool = True) -> _T:
     try:
         # Includes both accounts: fallback cannot double the stage deadline.
         async with asyncio.timeout(_REQUEST_TIMEOUT_SECONDS):
-            return await _try_groq_clients(operation)
+            return await _try_groq_clients(operation, fallback=fallback)
     except TimeoutError:
-        raise GroqRequestError("AI provider deadline exceeded.") from None
+        raise GroqTransientError() from None
 
 
 def _build_user_message(question: str, context_chunks: list[str]) -> str:
@@ -230,8 +240,17 @@ async def transcribe_audio_words(audio_file_path: str) -> list[dict]:
             lambda client: client.audio.transcriptions.create(
                 file=(path.name, path.read_bytes(), "audio/wav"), model=STT_MODEL,
                 response_format="verbose_json", timestamp_granularities=["word"],
-            )
+            ), fallback=False
         )
+    except _RETRYABLE_ERRORS as exc:
+        response = getattr(exc, "response", None)
+        raw_delay = response.headers.get("retry-after") if response is not None else None
+        try:
+            delay = max(0.0, float(raw_delay)) if raw_delay else 0.0
+        except ValueError:
+            delay = 0.0
+        logger.warning("groq_chunk_transcription_retryable error_type=%s", type(exc).__name__)
+        raise GroqTransientError(delay) from None
     except GroqError as exc:
         logger.error(
             "groq_chunk_transcription_failed error_type=%s error_message=%s",

@@ -35,7 +35,7 @@ export const publicPages = {
     intro: "Start with a video you have permission to process. Vidora prepares its spoken content so you can explore it through summaries and questions.",
     sections: [
       { id: "add-a-video", title: "01 / Add your YouTube link", content: <>
-        <p>Paste a YouTube URL into the home-page form and select Analyze Video. You can submit a video up to and including 30 minutes without signing in. Longer videos require an account and are still subject to the current service limit.</p>
+        <p>Paste a YouTube URL into the home-page form and select Analyze Video. Guests can submit videos up to 35 minutes; signed-in users can submit videos up to 3 hours. Processing may wait when transcription capacity is busy.</p>
         <p>Only submit content you own or have permission to process. Private, unavailable, live, or upcoming videos may not be supported.</p>
       </> },
       { id: "follow-progress", title: "02 / Follow the processing", content: <>

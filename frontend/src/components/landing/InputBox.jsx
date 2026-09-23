@@ -87,7 +87,7 @@ export default function InputBox({ onAnalyze, loading, restoring = false, error,
         <span>⋯ And more</span>
       </div>
       <div className="hint reveal-up delay-4">
-        Free beta supports YouTube videos up to 35 minutes.
+        Guests: up to 35 minutes. Signed-in users: up to 3 hours.
       </div>
     </>
   );

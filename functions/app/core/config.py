@@ -40,6 +40,10 @@ class Settings(BaseSettings):
     chat_model: str
     stt_model: str
     stt_concurrency: int = Field(default=3, ge=1, le=5)
+    stt_requests_per_minute: int = Field(default=19, gt=0)
+    stt_requests_per_day: int = Field(default=1990, gt=0)
+    stt_audio_seconds_per_hour: int = Field(default=7200, gt=0)
+    stt_audio_seconds_per_day: int = Field(default=28800, gt=0)
     answer_max_tokens: int = Field(gt=0)
     answer_temperature: float
     provider_timeout_seconds: float
@@ -55,7 +59,7 @@ class Settings(BaseSettings):
     recaptcha_timeout_seconds: float
     cookie_cache_ttl_seconds: int = Field(gt=0)
     max_video_duration_seconds: int = Field(gt=0)
-    anonymous_max_video_duration_seconds: int = Field(default=1800, gt=0)
+    anonymous_max_video_duration_seconds: int = Field(default=2100, gt=0)
     download_timeout_seconds: float
     download_retries: int = Field(ge=0)
     audio_quality: str
@@ -70,6 +74,7 @@ class Settings(BaseSettings):
     vidora_function_memory_mb: int = Field(gt=0)
     vidora_function_cpu: int = Field(gt=0)
     vidora_function_timeout_seconds: int = Field(gt=0)
+    task_function_timeout_seconds: int = Field(default=900, gt=0, le=1800)
     vidora_function_concurrency: int = Field(gt=0)
     task_max_attempts: int = Field(gt=0)
     task_max_concurrent_dispatches: int = Field(gt=0)
@@ -100,8 +105,14 @@ class Settings(BaseSettings):
             raise ValueError("TARGET_CHUNK_CHARS must not exceed MAX_CHUNK_CHARS")
         if self.analysis_timeout_seconds >= self.vidora_function_timeout_seconds:
             raise ValueError("ANALYSIS_TIMEOUT_SECONDS must be below VIDORA_FUNCTION_TIMEOUT_SECONDS")
+        if self.stale_processing_seconds <= self.task_function_timeout_seconds:
+            raise ValueError("STALE_PROCESSING_SECONDS must exceed TASK_FUNCTION_TIMEOUT_SECONDS")
         if self.anonymous_max_video_duration_seconds > self.max_video_duration_seconds:
             raise ValueError("ANONYMOUS_MAX_VIDEO_DURATION_SECONDS must not exceed MAX_VIDEO_DURATION_SECONDS")
+        if self.stt_requests_per_day < self.stt_requests_per_minute:
+            raise ValueError("STT_REQUESTS_PER_DAY must cover one minute of requests")
+        if self.stt_audio_seconds_per_day < self.stt_audio_seconds_per_hour:
+            raise ValueError("STT_AUDIO_SECONDS_PER_DAY must cover one hour of audio")
         return self
 
     @property

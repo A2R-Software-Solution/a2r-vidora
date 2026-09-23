@@ -29,7 +29,7 @@ export function friendlyApiError(error, context = "analyze") {
   if (status === 400 || status === 422) return context === "analyze" ? YOUTUBE_LINK_MESSAGE : "We couldn’t process that request. Please check your input and try again.";
   if (status === 504) return "This video took too long to process. Please try a shorter YouTube video.";
   if (status >= 500) return "Our system couldn’t complete your request right now. Please try again in a few moments.";
-  return context === "analyze" ? "We couldn’t analyze this video. Please try again with a public YouTube video up to 35 minutes long."
+  return context === "analyze" ? "We couldn’t analyze this video. Please try again with a public YouTube video within your account’s duration limit."
     : "We couldn’t complete your request. Please try again in a moment.";
 }
 

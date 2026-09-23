@@ -101,7 +101,9 @@ class VideoService:
         # Only on an explicit read/retry: no scheduled polling invocations.
         # New submissions start immediately and have a 300-second platform cap.
         cutoff = datetime.now(timezone.utc) - timedelta(seconds=settings.stale_processing_seconds)
-        if video.status == VideoStatus.PROCESSING and video.created_at < cutoff:
+        if (video.status == VideoStatus.PROCESSING
+                and video.processing_stage != "waiting_for_quota"
+                and video.processing_updated_at < cutoff):
             await self._repo.fail_stale(video_id, cutoff)
             await self._db.commit()
             await self._db.refresh(video)
@@ -155,7 +157,9 @@ class VideoService:
         await self._db.commit()
         return video
 
-    async def mark_failed(self, video: Video) -> Video:
+    async def mark_failed(self, video: Video, *, reason: str | None = None) -> Video:
+        if reason is not None:
+            video = await self._repo.update_progress(video, stage=reason)
         updated = await self._repo.update_status(video, VideoStatus.FAILED)
         await self._db.commit()
         return updated

@@ -7,55 +7,100 @@ single-file wrapper remains available; the product pipeline uses transcribe_chun
 
 from __future__ import annotations
 
-from pathlib import Path
 import asyncio
+import random
+import hashlib
+import uuid
+from collections.abc import Awaitable, Callable
+from pathlib import Path
 
 from app.middleware.logging import logger
 from app.core.config import settings
-from app.integration.groq_client import transcribe_audio, transcribe_audio_words, EmptyTranscriptionError
-from app.pipeline.audio_chunker import AudioBatch
-from app.pipeline.transcript_assembler import assemble_words
+from app.integration.groq_client import (transcribe_audio, transcribe_audio_words,
+                                         EmptyTranscriptionError, GroqTransientError)
+from app.integration.stt_quota import reserve_stt_request
+from app.integration.stt_quota import SttQuotaDeferred
+from app.db.session import AsyncSessionLocal
+from app.repository.stt_checkpoint_repository import SttCheckpointRepository
+from app.pipeline.audio_chunker import AudioBatch, SAMPLE_RATE
+from app.pipeline.stt_packer import map_request_words, pack_stt_requests
 
 
-async def transcribe_chunks(batch: AudioBatch) -> list[dict]:
-    """Bounded parallel STT, assembled deterministically by chunk identity."""
+async def transcribe_chunks(batch: AudioBatch, *,
+                            progress: Callable[[int, int], Awaitable[None]] | None = None,
+                            video_id: uuid.UUID | None = None) -> list[dict]:
+    """Pack VAD clips, enforce shared quotas, and assemble by video time."""
     if not batch.chunks:
         raise EmptyTranscriptionError("No speech detected in this video.")
     if len(batch.paths) != len(batch.chunks):
         raise ValueError("Audio manifest/file count mismatch")
-    results: dict[str, list[dict]] = {}
+    requests = pack_stt_requests(batch, settings.vad)
+    if progress:
+        await progress(0, len(requests))
+    results: dict[int, list[dict]] = {}
     semaphore = asyncio.Semaphore(settings.stt_concurrency)
+    progress_lock = asyncio.Lock()
 
-    async def transcribe_one(chunk, path: Path) -> tuple[str, list[dict]]:
+    async def transcribe_one(request) -> tuple[int, list[dict]]:
         async with semaphore:
-            # Results are keyed by stable VAD ID, never completion order.
-            # TaskGroup cancels queued siblings if one chunk fails, preventing
-            # unnecessary paid requests; in-flight provider requests may finish.
-            logger.info("chunk_stt_started chunk_id=%s sequence=%s total=%s", chunk.id, chunk.sequence_number, len(batch.chunks))
-            try:
-                words = await transcribe_audio_words(str(path))
-            except BaseException as exc:
-                # The TaskGroup converts this into an ExceptionGroup upstream;
-                # record the responsible chunk before sibling tasks are cancelled.
-                logger.error(
-                    "chunk_stt_failed chunk_id=%s sequence=%s total=%s error_type=%s error_message=%s",
-                    chunk.id, chunk.sequence_number, len(batch.chunks),
-                    type(exc).__name__, str(exc),
-                    exc_info=(type(exc), exc, exc.__traceback__),
-                )
-                raise
-            logger.info("chunk_stt_completed chunk_id=%s sequence=%s", chunk.id, chunk.sequence_number)
-            return chunk.id, words
+            digest = hashlib.sha256(request.path.read_bytes()).hexdigest() if video_id else ""
+            if video_id:
+                async with AsyncSessionLocal() as session:
+                    cached = await SttCheckpointRepository(session).get(video_id, request.first_sequence, digest)
+                if cached is not None:
+                    return request.first_sequence, cached
+            for attempt in range(4):
+                await reserve_stt_request(request.audio_seconds)
+                try:
+                    words = await transcribe_audio_words(str(request.path))
+                    segments = map_request_words(request, words)
+                    if video_id:
+                        async with AsyncSessionLocal() as session:
+                            async with session.begin():
+                                await SttCheckpointRepository(session).save(
+                                    video_id, request.first_sequence, digest, segments)
+                    logger.info("stt_request_completed first=%s last=%s", request.first_sequence, request.last_sequence)
+                    return request.first_sequence, segments
+                except GroqTransientError as exc:
+                    if attempt == 3:
+                        raise
+                    if exc.retry_after > 10:
+                        raise SttQuotaDeferred(exc.retry_after + 2) from exc
+                    await asyncio.sleep(max(exc.retry_after, min(2 ** attempt, 8)) + random.uniform(0, 0.5))
+            raise AssertionError("unreachable")
 
-    async with asyncio.TaskGroup() as group:
-        tasks = [
-            group.create_task(transcribe_one(chunk, path))
-            for chunk, path in zip(batch.chunks, batch.paths)
-        ]
-    for task in tasks:
-        chunk_id, words = task.result()
-        results[chunk_id] = words
-    segments = assemble_words(batch.chunks, results)
+    tasks = [asyncio.create_task(transcribe_one(request)) for request in requests]
+    failures = []
+    try:
+        for completed in asyncio.as_completed(tasks):
+            try:
+                first_sequence, segments = await completed
+                results[first_sequence] = segments
+                if progress:
+                    async with progress_lock:
+                        await progress(len(results), len(requests))
+            except Exception as exc:
+                failures.append(exc)
+    finally:
+        for task in tasks:
+            if not task.done():
+                task.cancel()
+        await asyncio.gather(*tasks, return_exceptions=True)
+    if failures:
+        raise next((exc for exc in failures if not isinstance(exc, SttQuotaDeferred)), failures[0])
+    segments = []
+    for index, request in enumerate(requests):
+        left = request.start_sample / SAMPLE_RATE
+        right = request.end_sample / SAMPLE_RATE
+        if index:
+            previous = requests[index - 1]
+            left = (previous.end_sample + request.start_sample) / (2 * SAMPLE_RATE)
+        if index + 1 < len(requests):
+            following = requests[index + 1]
+            right = (request.end_sample + following.start_sample) / (2 * SAMPLE_RATE)
+        segments.extend(segment for segment in results[request.first_sequence]
+                        if left <= (segment["start"] + segment["end"]) / 2 < right)
+    segments.sort(key=lambda segment: (segment["start"], segment["end"]))
     if not segments:
         raise EmptyTranscriptionError("No usable speech returned for this video.")
     return segments

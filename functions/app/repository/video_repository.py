@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy import select, update
 from sqlalchemy.dialects.postgresql import insert
@@ -31,7 +31,8 @@ class VideoRepository:
     async def fail_stale(self, video_id: uuid.UUID, before: datetime) -> None:
         await self._db.execute(update(Video).where(
             Video.id == video_id, Video.status == VideoStatus.PROCESSING,
-            Video.created_at < before,
+            Video.processing_updated_at < before,
+            Video.processing_stage != "waiting_for_quota",
         ).values(status=VideoStatus.FAILED))
 
     async def list_by_user(self, user_id: uuid.UUID) -> list[Video]:
@@ -84,6 +85,7 @@ class VideoRepository:
     async def update_progress(self, video: Video, *, stage: str, total_chunks: int | None = None,
                               completed_chunks: int | None = None) -> Video:
         video.processing_stage = stage
+        video.processing_updated_at = datetime.now(timezone.utc)
         if total_chunks is not None:
             video.processing_total_chunks = total_chunks
         if completed_chunks is not None:

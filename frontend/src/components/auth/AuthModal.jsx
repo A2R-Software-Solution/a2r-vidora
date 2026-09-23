@@ -42,7 +42,7 @@ export default function AuthModal({ onClose }) {
     <section className="auth-modal" role="dialog" aria-modal="true" aria-label="Account access" onMouseDown={(event) => event.stopPropagation()}>
       <button className="auth-close" type="button" onClick={onClose} aria-label="Close">×</button>
       <h2>{mode === "signup" ? "Create your account" : "Welcome back"}</h2>
-      <p>{mode === "signup" ? "Sign up to analyze videos longer than 30 minutes." : "Sign in to continue your analyses."}</p>
+      <p>{mode === "signup" ? "Sign up to analyze videos longer than 35 minutes." : "Sign in to continue your analyses."}</p>
       <button className="google-auth" type="button" disabled={loading} onClick={() => run(async () => {
         const credential = await signInWithPopup(auth, new GoogleAuthProvider());
         await registerProfile(credential.user);

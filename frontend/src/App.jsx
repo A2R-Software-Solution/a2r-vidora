@@ -63,7 +63,7 @@ function App() {
         {hasVisitedHome && <div className="home-content" hidden={!isHome} inert={!isHome}>
           <LandingPage onAnalyzed={setVideo} compact={!!video} active={isHome} />
           {!video && <HowItWorksSection />}
-          {video && <WorkspacePage key={video.id} video={video} active={isHome} />}
+          {video && <WorkspacePage key={video.id} video={video} active={isHome} onSignIn={() => setAuthOpen(true)} />}
           {video && <HowItWorksSection />}
         </div>}
         {!isHome && <PublicPage page={publicPage} hasAnalysis={!!video} />}

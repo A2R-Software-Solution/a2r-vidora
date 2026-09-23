@@ -2,17 +2,23 @@
 import asyncio
 from contextlib import ExitStack
 from pathlib import Path
+from tempfile import TemporaryDirectory
 from types import SimpleNamespace
 import unittest
 from unittest.mock import AsyncMock, Mock, patch
 import uuid
+import wave
 
 from app.integration import groq_client
 from app.models.video_model import VideoStatus
-from app.pipeline import pipeline, transcriber
+from app.pipeline import audio_chunker, pipeline, transcriber
+from app.pipeline.youtube_downloader import YouTubeBotChallengeError, VideoTooLongError
 from app.pipeline.audio_chunker import AudioBatch, AudioChunk, SAMPLE_RATE
 from app.pipeline.transcript_assembler import assemble_words
+from app.pipeline.stt_packer import map_request_words, pack_stt_requests
 from app.core.config import settings
+from app.core.vad_config import VadSettings
+from app.integration.stt_quota import SttQuotaDeferred
 
 
 def chunk(index, start, end):
@@ -53,6 +59,32 @@ class AssemblyTests(unittest.TestCase):
                 )
                 self.assertEqual(assembled, [{"text": "good", "start": 1, "end": 2}])
 
+    def test_long_audio_is_scanned_in_bounded_windows(self):
+        with TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source = root / "source.mp3"
+            source.write_bytes(b"test")
+
+            def fake_decode(_, destination, __):
+                with wave.open(str(destination), "wb") as wav:
+                    wav.setnchannels(1)
+                    wav.setsampwidth(2)
+                    wav.setframerate(SAMPLE_RATE)
+                    wav.writeframes(bytes(4 * SAMPLE_RATE * 2))
+
+            def fake_detect(pcm, _):
+                return [{"start": 0, "end": len(pcm) // 2}]
+
+            with patch.object(audio_chunker, "SCAN_BLOCK_SECONDS", 2), \
+                 patch.object(audio_chunker, "decode_audio", side_effect=fake_decode), \
+                 patch.object(audio_chunker, "detect_speech", side_effect=fake_detect) as detect:
+                batch = audio_chunker.prepare_audio(source, output_root=root,
+                    settings=VadSettings(max_audio_seconds=10, max_chunk_seconds=2, group_target_seconds=1))
+            self.assertEqual(detect.call_count, 3)
+            self.assertEqual([c.sequence_number for c in batch.chunks], list(range(len(batch.chunks))))
+            self.assertLessEqual(max(c.end_sample for c in batch.chunks), 4 * SAMPLE_RATE)
+            self.assertEqual(len(batch.paths), len(batch.chunks))
+
 
 class ChunkTranscriptionTests(unittest.IsolatedAsyncioTestCase):
     async def test_no_speech_skips_provider(self):
@@ -63,7 +95,17 @@ class ChunkTranscriptionTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_bounded_parallel_calls_preserve_chronological_assembly(self):
         chunks = tuple(chunk(i, i * 10, (i + 1) * 10) for i in range(3))
-        batch = AudioBatch(Path("."), chunks, tuple(Path(f"{i}.wav") for i in range(3)))
+        temporary = TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        directory = Path(temporary.name)
+        paths = tuple(directory / f"{i}.wav" for i in range(3))
+        for path in paths:
+            with wave.open(str(path), "wb") as wav:
+                wav.setnchannels(1)
+                wav.setsampwidth(2)
+                wav.setframerate(SAMPLE_RATE)
+                wav.writeframes(bytes(10 * SAMPLE_RATE * 2))
+        batch = AudioBatch(directory, chunks, paths)
         active, peak = 0, 0
         async def stt(path):
             nonlocal active, peak
@@ -72,21 +114,43 @@ class ChunkTranscriptionTests(unittest.IsolatedAsyncioTestCase):
             await asyncio.sleep(0)
             active -= 1
             return [{"word": path, "start": 1, "end": 2}]
-        with patch.object(transcriber, "transcribe_audio_words", AsyncMock(side_effect=stt)) as provider:
+        with patch.object(transcriber, "transcribe_audio_words", AsyncMock(side_effect=stt)) as provider, \
+             patch.object(transcriber, "reserve_stt_request", AsyncMock()):
             segments = await transcriber.transcribe_chunks(batch)
-        self.assertEqual(peak, min(settings.stt_concurrency, len(chunks)))
-        self.assertEqual(provider.await_count, 3)
-        self.assertEqual([s["start"] for s in segments], [1, 11, 21])
-        with patch.object(transcriber, "transcribe_audio_words", AsyncMock(side_effect=[[], RuntimeError("network"), []])) as provider:
-            with self.assertRaises(ExceptionGroup):
+        self.assertEqual(peak, 1)
+        self.assertEqual(provider.await_count, 1)
+        self.assertEqual([s["start"] for s in segments], [1])
+        with patch.object(transcriber, "transcribe_audio_words", AsyncMock(side_effect=RuntimeError("network"))) as provider, \
+             patch.object(transcriber, "reserve_stt_request", AsyncMock()):
+            with self.assertRaises(RuntimeError):
                 await transcriber.transcribe_chunks(batch)
-        self.assertGreaterEqual(provider.await_count, 2)
-        self.assertLessEqual(provider.await_count, len(chunks))
+        self.assertEqual(provider.await_count, 1)
+
+    async def test_packing_respects_duration_and_video_clock(self):
+        temporary = TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        directory = Path(temporary.name)
+        chunks = (chunk(0, 5, 15), chunk(1, 30, 40), chunk(2, 270, 280))
+        paths = tuple(directory / f"{i}.wav" for i in range(3))
+        for path in paths:
+            with wave.open(str(path), "wb") as wav:
+                wav.setnchannels(1)
+                wav.setsampwidth(2)
+                wav.setframerate(SAMPLE_RATE)
+                wav.writeframes(bytes(10 * SAMPLE_RATE * 2))
+        requests = pack_stt_requests(AudioBatch(directory, chunks, paths),
+                                     VadSettings(max_chunk_seconds=20, stt_request_seconds=25))
+        self.assertEqual([(r.first_sequence, r.last_sequence) for r in requests], [(0, 1), (2, 2)])
+        self.assertEqual(requests[0].audio_seconds, 21)
+        self.assertEqual(requests[0].path.stat().st_size, 44 + 21 * SAMPLE_RATE * 2)
+        self.assertEqual(map_request_words(requests[0],
+            [{"word": "later", "start": 12, "end": 13}]),
+            [{"text": "later", "start": 31, "end": 32}])
 
     async def test_groq_wav_word_request_and_missing_timing_rejection(self):
         create = AsyncMock(return_value=SimpleNamespace(words=[{"word": "hello", "start": 0, "end": 1}], text="hello"))
         client = SimpleNamespace(audio=SimpleNamespace(transcriptions=SimpleNamespace(create=create)))
-        async def call(operation):
+        async def call(operation, **kwargs):
             return await operation(client)
         with patch.object(groq_client, "_with_groq_client", call), patch.object(Path, "read_bytes", return_value=b"wav"):
             words = await groq_client.transcribe_audio_words("chunk.wav")
@@ -163,3 +227,28 @@ class IngestionWiringTests(unittest.IsolatedAsyncioTestCase):
         self.service.mark_failed.assert_awaited_once()
         self.chunks.replace_all_for_video.assert_not_awaited()
         self.assertFalse(self.prepared_path.exists())
+
+    async def test_download_failures_have_distinct_ui_reasons(self):
+        download = pipeline.download_audio
+        for error, user_id, reason in (
+            (YouTubeBotChallengeError("session unavailable"), None, "youtube_session_unavailable"),
+            (VideoTooLongError("too long"), None, "anonymous_duration_limit"),
+            (VideoTooLongError("too long"), uuid.uuid4(), "video_duration_limit"),
+        ):
+            with self.subTest(reason=reason):
+                self.video.user_id = user_id
+                self.service.mark_failed.reset_mock()
+                download.side_effect = error
+                with self.assertRaises(pipeline.PipelineError):
+                    await pipeline.run_pipeline(self.video.id, "url", db=self.db)
+                self.service.mark_failed.assert_awaited_once_with(self.video, reason=reason)
+
+    async def test_quota_wait_reschedules_without_failing_video(self):
+        self.stt.side_effect = SttQuotaDeferred(75)
+        with patch.object(pipeline, "enqueue_video_processing", AsyncMock()) as enqueue:
+            result = await pipeline.run_pipeline(self.video.id, "https://youtu.be/yYF2Vf1Gc14", db=self.db)
+        self.assertIs(result, self.video)
+        enqueue.assert_awaited_once_with(self.video.id, "https://youtu.be/yYF2Vf1Gc14", delay_seconds=75)
+        self.service.mark_failed.assert_not_awaited()
+        self.chunks.replace_all_for_video.assert_not_awaited()
+        self.assertEqual(self.service.mark_progress.call_args.kwargs["stage"], "waiting_for_quota")
