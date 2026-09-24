@@ -28,6 +28,8 @@ def is_youtube_bot_challenge(message: str) -> bool:
         ord("\u2019"): "'",
         ord("\u02bc"): "'",
     })
+    if "the page needs to be reloaded" in normalized:
+        return True
     return "sign in" in normalized and (
         "confirm you're not a bot" in normalized
         or "confirm you are not a bot" in normalized

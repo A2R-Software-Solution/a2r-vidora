@@ -34,7 +34,8 @@ class HardeningTests(unittest.IsolatedAsyncioTestCase):
         import yt_dlp
         from app.pipeline import youtube_downloader as downloader
         for text, expected in [
-            ("Sign in to confirm you're not a bot", downloader.YouTubeBotChallengeError),
+            ("Sign in to confirm you’re not a bot", downloader.YouTubeBotChallengeError),
+            ("[youtube] F2R2Xeo8HX8: The page needs to be reloaded.", downloader.YouTubeBotChallengeError),
             ("Sign in to confirm you\u2019re not a bot", downloader.YouTubeBotChallengeError),
             ("Sign in to confirm your age", downloader.DownloadError),
             ("This video is private", downloader.DownloadError),
@@ -45,7 +46,7 @@ class HardeningTests(unittest.IsolatedAsyncioTestCase):
                 manager = Mock(__enter__=Mock(return_value=ydl), __exit__=Mock(return_value=False))
                 with patch.object(downloader.secret_manager_client, "get_youtube_cookie", return_value=("test", "cookies")), patch.object(downloader.yt_dlp, "YoutubeDL", return_value=manager), patch.object(downloader, "_resolve_js_runtime", return_value={}):
                     with self.assertRaises(expected) as caught:
-                        downloader._run_download("https://youtu.be/yYF2Vf1Gc14", directory)
+                        downloader._run_download("https://youtu.be/yYF2Vf1Gc14", directory, 2100)
                     self.assertIs(type(caught.exception), expected)
                 self.assertEqual(list(Path(directory).iterdir()), [])
 
