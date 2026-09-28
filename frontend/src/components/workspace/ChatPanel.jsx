@@ -7,8 +7,8 @@ import YouTubeUnavailable from "../landing/YouTubeUnavailable";
 import { config } from "../../config";
 const MAX_CHARS = config.maxQuestionChars;
 
-export default function ChatPanel({ videoId, onSeek, ready = true, progress, active = true, onSignIn }) {
-  const { messages, fetchHistory, askVideo, loading, error, limitReached, questionCount } = useVideoQA(videoId);
+export default function ChatPanel({ videoId, videoTitle, youtubeUrl, onSeek, ready = true, progress, active = true, onSignIn, signedIn = false }) {
+  const { messages, fetchHistory, askVideo, loading, error, limitReached, questionCount, questionLimit } = useVideoQA(videoId, signedIn);
   const [question, setQuestion] = useState("");
   const [charError, setCharError] = useState("");
   const failed = progress?.status === "failed";
@@ -36,12 +36,39 @@ export default function ChatPanel({ videoId, onSeek, ready = true, progress, act
     if (e.key === "Enter") handleAsk();
   };
 
+  const downloadHistory = () => {
+    const entries = messages.map((message, index) => [
+      `Question ${index + 1}: ${message.question}`,
+      `Answer: ${message.answer}`,
+      message.created_at ? `Asked: ${new Date(message.created_at).toLocaleString()}` : null,
+    ].filter(Boolean).join("\n")).join("\n\n");
+    const content = [
+      "Vidora AI - Video Q&A history",
+      `Video: ${videoTitle || "Untitled video"}`,
+      youtubeUrl ? `Source: ${youtubeUrl}` : null,
+      `Downloaded: ${new Date().toLocaleString()}`,
+      "",
+      entries,
+      "",
+    ].filter(Boolean).join("\n");
+    const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "vidora-video-qa.txt";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="chat">
       <div className="chat-tabs">
         <span className="chat-tab active">✨ AI Answer</span>
         <span className="chat-tab">💬 Chat</span>
-        <span className="question-counter">{questionCount}/{config.maxQuestions} questions</span>
+        <span className="question-counter">{questionCount}/{questionLimit} questions</span>
+        {messages.length > 0 && <button type="button" className="download-history" onClick={downloadHistory}>Download Q&A</button>}
       </div>
 
       {!ready && cookieFailure && <YouTubeUnavailable onDismiss={() => window.location.reload()} active={active} />}

@@ -3,7 +3,7 @@ import VideoPlayer from "../components/workspace/VideoPlayer";
 import ChatPanel from "../components/workspace/ChatPanel";
 import { getVideos } from "../api/videoApi";
 
-export default function WorkspacePage({ video, active = true, onSignIn }) {
+export default function WorkspacePage({ video, active = true, onSignIn, signedIn = false }) {
   const playerRef = useRef(null);
   const [previousVideo, setPreviousVideo] = useState(video);
   const [currentVideo, setCurrentVideo] = useState(video);
@@ -66,7 +66,7 @@ export default function WorkspacePage({ video, active = true, onSignIn }) {
             status={currentVideo?.status}
             youtubeUrl={currentVideo?.youtube_url}
           />
-          <ChatPanel videoId={currentVideo?.id} onSeek={handleSeek} ready={currentVideo?.status === "completed"} progress={currentVideo} active={active} onSignIn={onSignIn} />
+          <ChatPanel videoId={currentVideo?.id} videoTitle={currentVideo?.title} youtubeUrl={currentVideo?.youtube_url} onSeek={handleSeek} ready={currentVideo?.status === "completed"} progress={currentVideo} active={active} onSignIn={onSignIn} signedIn={signedIn} />
         </div>
       </div>
     </section>
