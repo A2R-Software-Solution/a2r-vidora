@@ -1,11 +1,12 @@
 import SiteLink from "../components/common/SiteLink";
 import { config } from "../config";
 import { siteDetails } from "./siteDetails";
+import { guidePages } from "./guidePages";
 
 const emailLink = <a href={`mailto:${siteDetails.supportEmail}`}>{siteDetails.supportEmail}</a>;
 const contactLink = <SiteLink href="/contact">contact our team</SiteLink>;
 
-export const publicPages = {
+const corePages = {
   "/about": {
     label: "About",
     eyebrow: "Meet Vidora AI",
@@ -152,3 +153,5 @@ export const publicPages = {
     ],
   },
 };
+
+export const publicPages = { ...corePages, ...guidePages };

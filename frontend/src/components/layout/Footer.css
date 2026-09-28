@@ -9,7 +9,7 @@
 
 .site-footer-main {
   display: grid;
-  grid-template-columns: minmax(0, 1.8fr) minmax(130px, 0.7fr) minmax(150px, 0.7fr);
+  grid-template-columns: minmax(0, 1.8fr) repeat(3, minmax(130px, 0.7fr));
   gap: 36px 64px;
   padding-bottom: 40px;
 }

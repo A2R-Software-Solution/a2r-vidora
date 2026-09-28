@@ -66,3 +66,6 @@
   .public-body h2 { font-size: 19px; }
   .public-toc ol { grid-template-columns: 1fr; }
 }
+
+.public-body table { width: 100%; border-collapse: collapse; margin: 0 0 1em; }
+.public-body th, .public-body td { text-align: left; padding: 10px 12px; border-bottom: 1px solid rgba(0, 0, 0, 0.12); vertical-align: top; }

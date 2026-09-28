@@ -8,6 +8,16 @@ const linkGroups = [
     links: [
       { href: "/about", label: "About Vidora" },
       { href: "/how-it-works", label: "How it works" },
+      { href: "/faq", label: "FAQ" },
+    ],
+  },
+  {
+    title: "Guides",
+    links: [
+      { href: "/guides/summarize-long-videos", label: "Summarize long videos" },
+      { href: "/guides/find-exact-moments-in-videos", label: "Find exact moments" },
+      { href: "/guides/study-from-lecture-videos", label: "Study from lectures" },
+      { href: "/guides/ask-better-questions", label: "Ask better questions" },
     ],
   },
   {
