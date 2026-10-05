@@ -116,3 +116,13 @@ class VideoPublic(_VideoBase):
     id: uuid.UUID
     title: str | None
     status: VideoStatus
+
+
+class ShortSuggestion(_VideoBase):
+    """A proposed clip; Phase 1 does not create or store a video file."""
+
+    title: str = Field(..., max_length=100)
+    hook: str = Field(..., max_length=180)
+    start_time: int = Field(..., ge=0)
+    end_time: int = Field(..., gt=0)
+    reason: str = Field(..., max_length=300)

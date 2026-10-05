@@ -68,6 +68,14 @@ node_modules/
 !.env.example
 !.env.*.example
 
+# Local Firebase emulator overrides and credential exports
+*.local
+.secret*
+!.secret.example
+*firebase-adminsdk*.json
+*firebase-service-account*.json
+service-account*.json
+
 # Python virtual environments, caches and test artifacts
 venv/
 .venv/
@@ -90,6 +98,7 @@ htmlcov/
 
 # Local build artifacts and browser-debug sessions
 frontend/dist/
+frontend/.prerender/
 .chrome-debug*/
 *.zip
 *.tgz

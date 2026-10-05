@@ -7,6 +7,11 @@ venv/
 
 secrets/
 *firebase-service-account.json
+*firebase-adminsdk*.json
+*firebase-service-account*.json
+service-account*.json
+.secret*
+!.secret.example
 
 # Environment files
 .env

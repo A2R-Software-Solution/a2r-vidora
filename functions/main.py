@@ -158,6 +158,17 @@ def processvideo(request) -> None:
         raise
 
 
+@tasks_fn.on_task_dispatched(
+    secrets=["DATABASE_URL"],
+    timeout_sec=settings.shorts_timeout_seconds + 120,
+    retry_config=RetryConfig(max_attempts=3),
+    rate_limits=RateLimits(max_concurrent_dispatches=1),
+)
+def processshort(request) -> None:
+    from app.pipeline.short_worker import process_short
+    asyncio.run(process_short(request.data["short_id"], request.data["attempt_id"]))
+
+
 @scheduler_fn.on_schedule(
     schedule=settings.cleanup_schedule, secrets=["GROQ_API_KEY", "DATABASE_URL"]
 )

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import VideoPlayer from "../components/workspace/VideoPlayer";
 import ChatPanel from "../components/workspace/ChatPanel";
+import ShortSuggestions from "../components/workspace/ShortSuggestions";
 import { getVideos } from "../api/videoApi";
 
 export default function WorkspacePage({ video, active = true, onSignIn, signedIn = false }) {
@@ -66,7 +67,9 @@ export default function WorkspacePage({ video, active = true, onSignIn, signedIn
             status={currentVideo?.status}
             youtubeUrl={currentVideo?.youtube_url}
           />
-          <ChatPanel videoId={currentVideo?.id} videoTitle={currentVideo?.title} youtubeUrl={currentVideo?.youtube_url} onSeek={handleSeek} ready={currentVideo?.status === "completed"} progress={currentVideo} active={active} onSignIn={onSignIn} signedIn={signedIn} />
+          <div className="workspace-side"><ChatPanel videoId={currentVideo?.id} videoTitle={currentVideo?.title} youtubeUrl={currentVideo?.youtube_url} onSeek={handleSeek} ready={currentVideo?.status === "completed"} progress={currentVideo} active={active} onSignIn={onSignIn} signedIn={signedIn} />
+            {currentVideo?.status === "completed" && <ShortSuggestions key={currentVideo.id} videoId={currentVideo.id} onSeek={handleSeek} active={active} />}
+          </div>
         </div>
       </div>
     </section>

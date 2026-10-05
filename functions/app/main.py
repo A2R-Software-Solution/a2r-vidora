@@ -12,6 +12,8 @@ from app.middleware.logging import logger, setup_logging
 from app.routes.user_routes import router as user_router
 from app.routes.video_routes import router as video_router
 from app.routes.qa_log_routes import router as qa_log_router
+from app.routes.short_suggestion_routes import router as short_suggestion_router
+from app.routes.short_routes import router as short_router
 
 
 @asynccontextmanager
@@ -39,6 +41,8 @@ app.include_router(health_router)
 app.include_router(user_router)
 app.include_router(video_router)
 app.include_router(qa_log_router)
+app.include_router(short_suggestion_router)
+app.include_router(short_router)
 
 
 @app.exception_handler(Exception)

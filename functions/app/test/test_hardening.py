@@ -12,8 +12,9 @@ from app.integration import groq_client as groq
 from app.models.video_model import VideoStatus
 from app.repository.video_repository import VideoRepository
 from app.services.qa_log_service import QALogService
-from app.services.video_service import VideoAccessDeniedError
+from app.services.video_service import VideoAccessDeniedError, VideoService
 from app.schemas.video_schema import VideoCreate
+from datetime import datetime, timedelta, timezone
 
 
 class HardeningTests(unittest.IsolatedAsyncioTestCase):
@@ -104,6 +105,41 @@ class HardeningTests(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(result, "saved")
             enqueue.assert_not_awaited()
 
+    async def test_same_youtube_video_reuses_completed_analysis_without_queueing(self):
+        request_id, source_id = uuid.uuid4(), uuid.uuid4()
+        source = SimpleNamespace(
+            id=source_id, title="Reusable", duration=300, summary="Saved",
+            processing_total_chunks=2, processing_completed_chunks=2,
+            expires_at=datetime.now(timezone.utc) + timedelta(hours=8),
+        )
+        db = Mock(add=Mock(), add_all=Mock(), commit=AsyncMock(), refresh=AsyncMock())
+        service = VideoService(db)
+        service._repo = Mock(
+            get_by_id=AsyncMock(return_value=None),
+            find_reusable_completed=AsyncMock(return_value=source),
+            create_once=AsyncMock(),
+        )
+        service._chunk_repo = Mock(list_by_video=AsyncMock(return_value=[SimpleNamespace(
+            chunk_text="Transcript", start_time=0, end_time=20, embedding=[0.0] * 384,
+        )]))
+        video, created = await service.submit_once(
+            VideoCreate(youtube_url="https://youtu.be/yYF2Vf1Gc14"), user_id=None, request_id=request_id,
+        )
+        self.assertFalse(created)
+        self.assertEqual(video.status, VideoStatus.COMPLETED)
+        self.assertEqual(video.youtube_id, "yYF2Vf1Gc14")
+        self.assertEqual(video.expires_at, source.expires_at)
+        service._repo.create_once.assert_not_awaited()
+        self.assertEqual(db.add_all.call_args.args[0][0].video_id, request_id)
+
+    async def test_expired_completed_video_is_not_reused(self):
+        repo = VideoRepository(Mock(execute=AsyncMock(return_value=Mock(scalar_one_or_none=Mock(return_value=None)))))
+        result = await repo.find_reusable_completed("yYF2Vf1Gc14", now=datetime.now(timezone.utc))
+        self.assertIsNone(result)
+        statement = str(repo._db.execute.call_args.args[0].compile(dialect=postgresql.dialect()))
+        self.assertIn("videos.status", statement)
+        self.assertIn("videos.expires_at", statement)
+
     async def test_postgres_insert_uses_atomic_conflict_guard(self):
         db = Mock(execute=AsyncMock(return_value=Mock(scalar_one_or_none=Mock(return_value=None))))
         created = await VideoRepository(db).create_once(uuid.uuid4())
@@ -120,7 +156,7 @@ class HardeningTests(unittest.IsolatedAsyncioTestCase):
         service._repo.list_by_video.assert_not_awaited()
 
     async def test_provider_deadline_is_bounded(self):
-        async def slow(operation):
+        async def slow(operation, **_kwargs):
             await asyncio.sleep(1)
         with patch.object(groq, "_REQUEST_TIMEOUT_SECONDS", 0.01), patch.object(groq, "_try_groq_clients", slow):
             with self.assertRaises(groq.GroqRequestError):

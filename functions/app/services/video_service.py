@@ -25,9 +25,13 @@ from app.middleware.logging import logger
 from app.models.video_model import Video, VideoStatus
 from app.repository.qa_log_repository import QALogRepository
 from app.repository.transcript_chunk_repository import TranscriptChunkRepository
+from app.models.transcript_chunk_model import TranscriptChunk
 from app.repository.video_repository import VideoRepository
 from app.schemas.video_schema import VideoCreate
 from app.utils.youtube import extract_youtube_id
+from app.models.short_model import Short
+from app.integration import short_storage
+from sqlalchemy import select
 
 
 class VideoNotFoundError(Exception):
@@ -112,10 +116,55 @@ class VideoService:
     async def submit_once(self, payload: VideoCreate, *, user_id: uuid.UUID | None,
                           request_id: uuid.UUID) -> tuple[Video, bool]:
         youtube_id = extract_youtube_id(payload.youtube_url)
+        existing = await self._repo.get_by_id(request_id)
+        if existing is not None:
+            if existing.user_id != user_id or existing.youtube_id != youtube_id:
+                raise SubmissionConflictError("Request identifier already used for another submission.")
+            return existing, False
+
+        now = datetime.now(timezone.utc)
+        reusable = await self._repo.find_reusable_completed(youtube_id, now=now)
+        if reusable is not None:
+            # A requester gets their own record, Q&A history and Shorts quota.
+            # Transcript chunks are copied so source cleanup cannot affect it.
+            video = Video(
+                id=request_id,
+                user_id=user_id,
+                youtube_id=youtube_id,
+                youtube_url=f"https://www.youtube.com/watch?v={youtube_id}",
+                title=reusable.title,
+                duration=reusable.duration,
+                status=VideoStatus.COMPLETED,
+                summary=reusable.summary,
+                processing_stage="completed",
+                processing_total_chunks=reusable.processing_total_chunks,
+                processing_completed_chunks=reusable.processing_completed_chunks,
+                expires_at=min(
+                    reusable.expires_at,
+                    now + timedelta(hours=settings.video_retention_hours),
+                ),
+            )
+            self._db.add(video)
+            source_chunks = await self._chunk_repo.list_by_video(reusable.id)
+            self._db.add_all([
+                TranscriptChunk(
+                    video_id=video.id,
+                    chunk_text=chunk.chunk_text,
+                    start_time=chunk.start_time,
+                    end_time=chunk.end_time,
+                    embedding=chunk.embedding,
+                )
+                for chunk in source_chunks
+            ])
+            await self._db.commit()
+            await self._db.refresh(video)
+            logger.info("analysis_reused video_id=%s source_video_id=%s", video.id, reusable.id)
+            return video, False
+
         created = await self._repo.create_once(
             request_id, user_id=user_id, youtube_id=youtube_id,
             youtube_url=f"https://www.youtube.com/watch?v={youtube_id}",
-            expires_at=datetime.now(timezone.utc) + timedelta(hours=settings.video_retention_hours),
+            expires_at=now + timedelta(hours=settings.video_retention_hours),
         )
         await self._db.commit()
         video = await self.get_for_user(request_id, user_id=user_id)
@@ -172,9 +221,22 @@ class VideoService:
         before the video row itself. Returns the number of videos purged.
         """
         now = now or datetime.now(timezone.utc)
+        expired_shorts = list((await self._db.execute(
+            select(Short).where(Short.expires_at <= now).with_for_update()
+        )).scalars())
+        for short in expired_shorts:
+            if short.object_name:
+                await short_storage.delete(short.object_name)
+                short.object_name = None
+            short.status = "expired"
+        await self._db.flush()
         expired_videos = await self._repo.list_expired(before=now)
 
         for video in expired_videos:
+            # Keep expired job records until the parent expires so cleanup
+            # never restores the two-success allowance for a live analysis.
+            from sqlalchemy import delete
+            await self._db.execute(delete(Short).where(Short.video_id == video.id))
             await self._chunk_repo.delete_by_video(video.id)
             await self._qa_log_repo.delete_by_video(video.id)
             await self._repo.delete(video)

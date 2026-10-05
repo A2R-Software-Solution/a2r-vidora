@@ -44,3 +44,13 @@ export const askQuestion = (videoId, payload) => {
 export const getQaHistory = (videoId) => {
   return apiClient.get(`/videos/${videoId}/qa`);
 };
+
+export const suggestShorts = (videoId) => apiClient.post(`/videos/${videoId}/shorts/suggestions`);
+
+export const createShort = (videoId, clip) => apiClient.post(`/videos/${videoId}/shorts`, {
+  start_time: clip.start_time,
+  end_time: clip.end_time,
+});
+export const listShorts = (videoId, signal) => apiClient.get(`/videos/${videoId}/shorts`, { signal });
+export const getShortDownload = (videoId, shortId, download = true) =>
+  apiClient.get(`/videos/${videoId}/shorts/${shortId}/download`, { params: { download } });

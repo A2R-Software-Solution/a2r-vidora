@@ -41,6 +41,20 @@ class VideoRepository:
         )
         return list(result.scalars().all())
 
+    async def find_reusable_completed(self, youtube_id: str, *, now: datetime) -> Video | None:
+        """Return a still-retained completed analysis of the same public video."""
+        result = await self._db.execute(
+            select(Video)
+            .where(
+                Video.youtube_id == youtube_id,
+                Video.status == VideoStatus.COMPLETED,
+                Video.expires_at > now,
+            )
+            .order_by(Video.created_at.desc())
+            .limit(1)
+        )
+        return result.scalar_one_or_none()
+
     async def create(
         self,
         *,

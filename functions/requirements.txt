@@ -8,12 +8,14 @@ slowapi==0.1.9
 uvicorn
 yt-dlp[default]
 google-cloud-secret-manager
+google-cloud-storage
 deno
 sentence-transformers
 groq
 python-dotenv
 pydantic-settings
 SQLAlchemy
+greenlet
 alembic
 pgvector
 asyncpg

@@ -79,6 +79,12 @@ class Settings(BaseSettings):
     task_max_attempts: int = Field(gt=0)
     task_max_concurrent_dispatches: int = Field(gt=0)
     video_processing_task: str
+    shorts_enabled: bool = False
+    shorts_bucket: str | None = None
+    shorts_signer_email: str | None = None
+    shorts_processing_task: str = "processshort"
+    shorts_timeout_seconds: int = Field(default=600, ge=60, le=800)
+    shorts_retention_hours: int = Field(default=24, gt=0)
     cleanup_schedule: str
     qa_page_size: int = Field(gt=0)
     qa_max_page_size: int = Field(gt=0)

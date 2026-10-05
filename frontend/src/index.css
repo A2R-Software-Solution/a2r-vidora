@@ -132,6 +132,33 @@ input::placeholder { color: #b0a89e; }
 }
 .video-title { margin-top: 16px; font-weight: 650; font-size: 15px; color: #1a1a1a; }
 .video-meta { color: #8a8078; margin-top: 6px; font-size: 13px; }
+.workspace-side { min-width: 0; }
+.short-suggestions { border-top: 1px solid #f0e0d0; padding: 20px 28px 28px; }
+.shorts-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.shorts-heading h2 { margin: 0; font-size: 16px; color: #352720; }
+.shorts-heading p { margin: 4px 0 0; color: #8a8078; font-size: 12px; line-height: 1.4; }
+.shorts-heading button { flex: 0 0 auto; border: 0; border-radius: 8px; padding: 9px 12px; background: #ff6b35; color: #fff; font: inherit; font-size: 13px; font-weight: 650; cursor: pointer; }
+.shorts-heading button:disabled { cursor: wait; opacity: .7; }
+.shorts-error { color: #b64032; font-size: 13px; }
+.shorts-list { display: grid; gap: 10px; margin-top: 16px; }
+.short-card { border: 1px solid #f0d9c5; border-radius: 10px; padding: 12px; background: #fffaf6; }
+.short-card > span { color: #c65328; font-size: 10px; font-weight: 750; letter-spacing: .08em; }
+.short-card h3 { margin: 4px 0; color: #352720; font-size: 14px; }
+.short-card p { margin: 5px 0 0; color: #74685f; font-size: 12px; line-height: 1.45; }
+.short-card .short-hook { color: #493a31; font-size: 13px; }
+.short-time { margin-top: 8px; border: 0; padding: 0; background: transparent; color: #c65328; font: inherit; font-size: 12px; font-weight: 650; cursor: pointer; }
+.short-allowance { margin: 14px 0 0; font-size: 12px; font-weight: 650; color: #684638; }
+.shorts-note { color: #74685f; font-size: 12px; line-height: 1.5; }
+.short-status { margin-top: 12px; font-size: 13px; color: #684638; }
+.short-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.short-actions button, .short-refresh { min-height: 44px; border: 1px solid #e7bca5; border-radius: 8px; padding: 8px 12px; background: #fff; color: #9c4825; font: inherit; font-size: 13px; cursor: pointer; }
+.short-actions button:disabled { opacity: .55; cursor: not-allowed; }
+.short-preview { display: block; margin-top: 12px; width: min(100%, 240px); aspect-ratio: 9 / 16; border-radius: 10px; background: #201812; }
+.short-suggestions button:focus-visible { outline: 3px solid #a9411d; outline-offset: 3px; }
+@media (max-width: 640px) {
+  .short-suggestions { padding: 18px 16px; }
+  .shorts-heading { align-items: flex-start; flex-wrap: wrap; }
+}
 
 .chat { padding: 28px; display: flex; flex-direction: column; }
 .chat-title { font-size: 17px; font-weight: 700; color: #1a1a1a; }
