@@ -4,7 +4,12 @@ import ChatPanel from "../components/workspace/ChatPanel";
 import ShortSuggestions from "../components/workspace/ShortSuggestions";
 import { getVideos } from "../api/videoApi";
 
-export default function WorkspacePage({ video, active = true, onSignIn, signedIn = false }) {
+export default function WorkspacePage({ video, active = true, onSignIn, signedIn = false, mode = "analyze" }) {
+  const reels = mode === "reels";
+  const [hasOpenedReels, setHasOpenedReels] = useState(reels);
+  const [hasOpenedAnalysis, setHasOpenedAnalysis] = useState(!reels);
+  if (reels && !hasOpenedReels) setHasOpenedReels(true);
+  if (!reels && !hasOpenedAnalysis) setHasOpenedAnalysis(true);
   const playerRef = useRef(null);
   const [previousVideo, setPreviousVideo] = useState(video);
   const [currentVideo, setCurrentVideo] = useState(video);
@@ -30,23 +35,25 @@ export default function WorkspacePage({ video, active = true, onSignIn, signedIn
     if (!active) playerRef.current?.pause();
   }, [active]);
 
+  useEffect(() => { playerRef.current?.pause(); }, [mode]);
+
   const handleSeek = (seconds) => {
     playerRef.current?.seekTo(seconds);
   };
 
   return (
     <section className="preview">
-      <div className="workspace-tagline workspace-tagline-left" aria-hidden="true">
+      <div className="workspace-tagline workspace-tagline-left" aria-hidden="true" hidden={reels}>
         Video, transcript<br />and AI — all in<br />one place.
       </div>
-      <div className="workspace-tagline workspace-tagline-top-right" aria-hidden="true">
+      <div className="workspace-tagline workspace-tagline-top-right" aria-hidden="true" hidden={reels}>
         ...to answers<br />in seconds.
         <svg className="tagline-arrow" viewBox="0 0 60 50" fill="none">
           <path d="M5 5 Q 30 10, 40 40" stroke="#ff6b35" strokeWidth="2" strokeLinecap="round"/>
           <path d="M32 34 L40 40 L34 28" stroke="#ff6b35" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
         </svg>
       </div>
-      <div className="workspace-tagline workspace-tagline-bottom-right" aria-hidden="true">
+      <div className="workspace-tagline workspace-tagline-bottom-right" aria-hidden="true" hidden={reels}>
         Actual answers.<br />Not just summaries.
         <svg className="tagline-arrow" viewBox="0 0 60 50" fill="none">
           <path d="M5 5 Q 30 10, 40 40" stroke="#ff6b35" strokeWidth="2" strokeLinecap="round"/>
@@ -67,8 +74,22 @@ export default function WorkspacePage({ video, active = true, onSignIn, signedIn
             status={currentVideo?.status}
             youtubeUrl={currentVideo?.youtube_url}
           />
-          <div className="workspace-side"><ChatPanel videoId={currentVideo?.id} videoTitle={currentVideo?.title} youtubeUrl={currentVideo?.youtube_url} onSeek={handleSeek} ready={currentVideo?.status === "completed"} progress={currentVideo} active={active} onSignIn={onSignIn} signedIn={signedIn} />
-            {currentVideo?.status === "completed" && <ShortSuggestions key={currentVideo.id} videoId={currentVideo.id} onSeek={handleSeek} active={active} />}
+          <div className="workspace-side">
+            {hasOpenedAnalysis && <div hidden={reels} inert={reels}>
+              {currentVideo?.status === "completed" && <section className="workspace-summary" aria-labelledby="summary-heading">
+                <h2 id="summary-heading">Video summary</h2>
+                <p>{currentVideo.summary || "No summary is available for this video. You can still ask questions below."}</p>
+              </section>}
+              <ChatPanel videoId={currentVideo?.id} videoTitle={currentVideo?.title} youtubeUrl={currentVideo?.youtube_url} onSeek={handleSeek} ready={currentVideo?.status === "completed"} progress={currentVideo} active={active && !reels} onSignIn={onSignIn} signedIn={signedIn} />
+            </div>}
+            {hasOpenedReels && <div hidden={!reels} inert={!reels}>
+              {currentVideo?.status === "completed" ? <ShortSuggestions key={currentVideo.id} videoId={currentVideo.id} onSeek={handleSeek} active={active && reels} /> :
+                <div className="reel-preparation" role="status">
+                  <h2>{currentVideo?.status === "failed" ? "Couldn't prepare this video" : "Preparing your video"}</h2>
+                  <p>{currentVideo?.status === "failed" ? "Try submitting your YouTube link again. Guests can use videos up to 35 minutes; sign in for videos up to 3 hours." : "We're processing the video's audio to find moments for your reel. Clip suggestions will unlock here when it's ready."}</p>
+                  {currentVideo?.status === "failed" && !signedIn && <button type="button" className="duration-sign-in" onClick={onSignIn}>Sign in</button>}
+                </div>}
+            </div>}
           </div>
         </div>
       </div>

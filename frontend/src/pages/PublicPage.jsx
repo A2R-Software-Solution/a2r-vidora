@@ -16,7 +16,7 @@ export default function PublicPage({ page, hasAnalysis }) {
 
   return (
     <article className="public-page">
-      <SiteLink className="public-back" href="/">
+      <SiteLink className="public-back" href={hasAnalysis ? "/analyze" : "/"}>
         <span aria-hidden="true">←</span> {hasAnalysis ? "Back to your analysis" : "Back to Vidora"}
       </SiteLink>
       <header className="public-header">

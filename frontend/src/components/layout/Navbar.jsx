@@ -3,7 +3,7 @@ import { auth } from "../../firebase";
 import SiteLink from "../common/SiteLink";
 import "./Navbar.css";
 
-export default function Navbar({ onHome, user, onAuth }) {
+export default function Navbar({ onHome, user, onAuth, currentPath }) {
   return (
     <nav className="site-navbar" aria-label="Main navigation">
       <SiteLink className="logo" href="/" onClick={onHome} aria-label="Vidora AI home">
@@ -15,6 +15,10 @@ export default function Navbar({ onHome, user, onAuth }) {
         Vidora<span>AI</span>
       </SiteLink>
       <div className="nav-right">
+        <div className="tool-navigation">
+          <SiteLink className="tool-link" href="/reels" aria-current={currentPath === "/reels" ? "page" : undefined}>Create Reel</SiteLink>
+          <SiteLink className="tool-link" href="/analyze" aria-current={currentPath === "/analyze" ? "page" : undefined}>Analyze</SiteLink>
+        </div>
         {user ? (
           <button type="button" className="signup" onClick={() => signOut(auth)}>Log out</button>
         ) : (

@@ -25,7 +25,7 @@ function AnalysisStatus({ restoring }) {
   );
 }
 
-export default function InputBox({ onAnalyze, loading, restoring = false, error, onClearError }) {
+export default function InputBox({ onAnalyze, loading, restoring = false, error, onClearError, mode = "analyze" }) {
   const [url, setUrl] = useState("");
   const [validationError, setValidationError] = useState(null);
   const inputRef = useRef(null);
@@ -59,6 +59,7 @@ export default function InputBox({ onAnalyze, loading, restoring = false, error,
             onClearError?.();
           }}
           placeholder="https://www.youtube.com/watch?v=..."
+          onKeyDown={(event) => { if (event.key === "Enter" && !loading) handleAnalyze(); }}
           disabled={loading}
         />
         <button
@@ -74,7 +75,7 @@ export default function InputBox({ onAnalyze, loading, restoring = false, error,
               <span className="dot"></span>
             </span>
           ) : (
-            "Analyze Video →"
+            mode === "reels" ? "Prepare Video →" : "Analyze Video →"
           )}
         </button>
       </div>
@@ -82,9 +83,6 @@ export default function InputBox({ onAnalyze, loading, restoring = false, error,
       {visibleError && <div id="analysis-input-error" className="analysis-status analysis-error" role="alert">{visibleError}</div>}
       <div className="providers reveal-up delay-4">
         <span><span className="provider-icon yt">▶</span> YouTube</span>
-        <span><span className="provider-icon vimeo">V</span> Vimeo</span>
-        <span><span className="provider-icon drive">▲</span> Google Drive</span>
-        <span>⋯ And more</span>
       </div>
       <div className="hint reveal-up delay-4">
         Guests: up to 35 minutes. Signed-in users: up to 3 hours.

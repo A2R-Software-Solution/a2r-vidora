@@ -150,8 +150,8 @@ export default function ShortSuggestions({ videoId, onSeek, active = true }) {
   const canCreate = !!history && !historyError && history.used < history.free_limit && !creating;
   return <section className="short-suggestions" aria-labelledby="shorts-heading">
     <div className="shorts-heading">
-      <div><h2 id="shorts-heading">Create Shorts</h2><p>Find two standout moments, then choose which videos to create.</p></div>
-      <button type="button" onClick={generate} disabled={loading}>{loading ? "Finding ideas…" : "Suggest Shorts"}</button>
+      <div><h2 id="shorts-heading">Create your reel</h2><p>Find two standout moments, then choose a clip to turn into a reel.</p></div>
+      <button type="button" onClick={generate} disabled={loading}>{loading ? "Finding ideas…" : "Find reel ideas"}</button>
     </div>
     <p className="short-allowance" role="status">{history ? `${history.used}/${history.free_limit} free Shorts used for this video` : "Checking your free Shorts allowance…"}</p>
     {history && history.used >= history.free_limit && <p className="shorts-note">Your free slots are used or reserved by videos in progress.</p>}

@@ -97,6 +97,7 @@ htmlcov/
 **/models/
 
 # Local build artifacts and browser-debug sessions
+/video/
 frontend/dist/
 frontend/.prerender/
 .chrome-debug*/
