@@ -3,14 +3,27 @@ import os
 import re
 import shutil
 import subprocess
+import tempfile
 from pathlib import Path
 from app.core.config import settings
 from app.integration import secret_manager_client
+from app.middleware.logging import logger
+
+
+def _log_stderr(stderr, reason):
+    try:
+        stderr.seek(0)
+        tail = stderr.read()[-2000:].decode("utf-8", "replace").strip().splitlines()[-20:]
+        logger.error("media_command_failed reason=%s stderr=%s", reason, " | ".join(tail))
+    finally:
+        stderr.close()
 
 
 def _run(args, directory, timeout):
+    # Keep stderr so failures are diagnosable; a temp file avoids pipe deadlocks.
+    stderr = tempfile.TemporaryFile()
     process = subprocess.Popen(args, cwd=directory, stdout=subprocess.DEVNULL,
-                               stderr=subprocess.DEVNULL, start_new_session=os.name != "nt")
+                               stderr=stderr, start_new_session=os.name != "nt")
     try:
         code = process.wait(timeout=timeout)
     except subprocess.TimeoutExpired:
@@ -21,9 +34,12 @@ def _run(args, directory, timeout):
             import signal
             os.killpg(process.pid, signal.SIGKILL)
         process.wait()
+        _log_stderr(stderr, "timed out")
         raise RuntimeError("Media operation timed out.") from None
     if code:
+        _log_stderr(stderr, f"exit code {code}")
         raise RuntimeError("Media operation failed.")
+    stderr.close()
 
 
 def _srt_time(seconds):
