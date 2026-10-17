@@ -2,11 +2,13 @@ from __future__ import annotations
 
 import re
 import uuid
+from time import monotonic
 from typing import Awaitable, Callable
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
+from app.middleware.logging import logger
 from app.models.qa_log_model import QALog
 from app.repository.qa_log_repository import QALogRepository
 from app.services.transcript_chunk_service import TranscriptChunkService
@@ -97,6 +99,7 @@ class QALogService:
                 f"question must not exceed {_MAX_QUESTION_LEN} characters."
             )
 
+        started = monotonic()
         time_range = _extract_time_range(cleaned_question)
         if time_range is not None:
             start_seconds, end_seconds = time_range
@@ -112,6 +115,7 @@ class QALogService:
                 video_duration_seconds=video.duration,
             )
 
+        retrieved = monotonic()
         if not relevant_chunks:
             answer = _NO_CONTEXT_ANSWER
         else:
@@ -124,6 +128,11 @@ class QALogService:
                 for chunk in relevant_chunks
             ]
             answer = await answer_fn(cleaned_question, context_texts)
+        # Aggregate retrieval telemetry only; the question text is never logged.
+        logger.info("qa_answered video_id=%s route=%s duration_seconds=%s chunks=%s no_context=%s "
+                    "retrieval_seconds=%.3f answer_seconds=%.3f", video_id,
+                    "time_range" if time_range is not None else "hybrid", video.duration,
+                    len(relevant_chunks), not relevant_chunks, retrieved - started, monotonic() - retrieved)
 
         log = await self._repo.create(
             video_id=video_id,

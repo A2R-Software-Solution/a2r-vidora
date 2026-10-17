@@ -125,6 +125,14 @@ async def _with_groq_client(operation: Callable[[AsyncGroq], Awaitable[_T]], *,
         raise GroqTransientError() from None
 
 
+def _log_usage(kind: str, response) -> None:
+    """Token counts for cost analysis; never logs prompt or completion text."""
+    usage = getattr(response, "usage", None)
+    if usage is not None:
+        logger.info("llm_usage kind=%s prompt_tokens=%s completion_tokens=%s",
+                    kind, getattr(usage, "prompt_tokens", None), getattr(usage, "completion_tokens", None))
+
+
 def _build_user_message(question: str, context_chunks: list[str]) -> str:
     if context_chunks:
         joined = "\n---\n".join(escape(chunk.strip()) for chunk in context_chunks if chunk.strip())
@@ -189,6 +197,7 @@ async def generate_summary(full_transcript_text: str) -> str:
         logger.error("Groq summary failed: %s", type(exc).__name__)
         raise GroqRequestError("AI summary provider unavailable.") from None
 
+    _log_usage("summary", response)
     summary = (response.choices[0].message.content or "").strip()
     if not summary:
         raise GroqRequestError("Groq returned an empty summary.")
@@ -227,6 +236,7 @@ async def generate_answer(question: str, context_chunks: list[str]) -> str:
         logger.error("Groq answer failed: %s", type(exc).__name__)
         raise GroqRequestError("AI answer provider unavailable.") from None
 
+    _log_usage("answer", response)
     answer = (response.choices[0].message.content or "").strip()
     if not answer:
         raise GroqRequestError("Groq returned an empty answer.")
@@ -283,6 +293,7 @@ async def generate_short_suggestions(timestamped_transcript: str) -> list[dict]:
         except GroqError as exc:
             logger.error("Groq short suggestions failed: %s", type(exc).__name__)
             raise GroqRequestError("AI short suggestions provider unavailable.") from None
+        _log_usage("short_suggestions", response)
         raw = (response.choices[0].message.content or "").strip()
         suggestions = _parse_suggestions(raw)
         if suggestions is not None:

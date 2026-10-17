@@ -1,0 +1,3325 @@
+{
+ "aggregate": {
+  "all": {
+   "files": 71,
+   "hours": 57.9,
+   "speech_ratio": 0.848,
+   "vad_audio_ratio": 0.927,
+   "packed_audio_ratio": 0.972,
+   "packed_audio_ratio_median_file": 0.979,
+   "packed_audio_ratio_min_file": 0.612,
+   "vad_chunks_per_h": 314.5,
+   "requests_per_h_packed": 15.7,
+   "requests_per_h_fixed30": 120.6,
+   "requests_per_h_fixed240": 15.6,
+   "forced_split_chunks": 0,
+   "vad_chunks": 18210,
+   "chunk_len_median_s": 8.65,
+   "cuts_in_speech": {
+    "fixed30": [
+     5870,
+     6910
+    ],
+    "fixed240": [
+     699,
+     831
+    ],
+    "packed": [
+     20,
+     836
+    ]
+   },
+   "local_vad_rtf": 0.0332
+  },
+  "earnings21": {
+   "files": 44,
+   "hours": 39.26,
+   "speech_ratio": 0.824,
+   "vad_audio_ratio": 0.912,
+   "packed_audio_ratio": 0.965,
+   "packed_audio_ratio_median_file": 0.974,
+   "packed_audio_ratio_min_file": 0.612,
+   "vad_chunks_per_h": 335.9,
+   "requests_per_h_packed": 15.4,
+   "requests_per_h_fixed30": 120.5,
+   "requests_per_h_fixed240": 15.5,
+   "forced_split_chunks": 0,
+   "vad_chunks": 13190,
+   "chunk_len_median_s": 8.07,
+   "cuts_in_speech": {
+    "fixed30": [
+     3885,
+     4687
+    ],
+    "fixed240": [
+     463,
+     565
+    ],
+    "packed": [
+     0,
+     561
+    ]
+   },
+   "local_vad_rtf": 0.0345
+  },
+  "rev16": {
+   "files": 16,
+   "hours": 16.16,
+   "speech_ratio": 0.905,
+   "vad_audio_ratio": 0.958,
+   "packed_audio_ratio": 0.984,
+   "packed_audio_ratio_median_file": 0.987,
+   "packed_audio_ratio_min_file": 0.919,
+   "vad_chunks_per_h": 258.3,
+   "requests_per_h_packed": 16.0,
+   "requests_per_h_fixed30": 120.5,
+   "requests_per_h_fixed240": 15.5,
+   "forced_split_chunks": 0,
+   "vad_chunks": 4175,
+   "chunk_len_median_s": 20.07,
+   "cuts_in_speech": {
+    "fixed30": [
+     1747,
+     1932
+    ],
+    "fixed240": [
+     207,
+     234
+    ],
+    "packed": [
+     20,
+     242
+    ]
+   },
+   "local_vad_rtf": 0.0298
+  },
+  "tedlium": {
+   "files": 11,
+   "hours": 2.47,
+   "speech_ratio": 0.857,
+   "vad_audio_ratio": 0.952,
+   "packed_audio_ratio": 0.995,
+   "packed_audio_ratio_median_file": 0.997,
+   "packed_audio_ratio_min_file": 0.98,
+   "vad_chunks_per_h": 341.6,
+   "requests_per_h_packed": 17.8,
+   "requests_per_h_fixed30": 122.1,
+   "requests_per_h_fixed240": 17.4,
+   "forced_split_chunks": 0,
+   "vad_chunks": 845,
+   "chunk_len_median_s": 10.99,
+   "cuts_in_speech": {
+    "fixed30": [
+     238,
+     291
+    ],
+    "fixed240": [
+     29,
+     32
+    ],
+    "packed": [
+     0,
+     33
+    ]
+   },
+   "local_vad_rtf": 0.0351
+  }
+ },
+ "files": [
+  {
+   "video_id": "earnings21_e4320211",
+   "duration_s": 3285.82,
+   "speech_regions": 1101,
+   "speech_s": 2684.96,
+   "vad_chunks": 318,
+   "forced_splits": 0,
+   "vad_audio_s": 3059.86,
+   "stt_requests": 14,
+   "packed_audio_s": 3233.77,
+   "chunk_len_median_s": 7.92,
+   "fixed30_requests": 110,
+   "fixed240_requests": 14,
+   "local_vad_seconds": 137.45,
+   "local_pack_seconds": 4.34,
+   "settings": {
+    "threshold": 0.5,
+    "neg_threshold": 0.35,
+    "min_speech_ms": 250,
+    "min_silence_ms": 100,
+    "merge_pause_ms": 600,
+    "speech_pad_ms": 150,
+    "max_chunk_seconds": 30.0,
+    "group_target_seconds": 20.0,
+    "split_overlap_ms": 250,
+    "max_audio_seconds": 10805,
+    "stt_request_seconds": 240.0,
+    "stt_request_bytes": 20000000
+   },
+   "set": "earnings21",
+   "cuts_in_speech": {
+    "fixed30": [
+     95,
+     109
+    ],
+    "fixed240": [
+     13,
+     13
+    ],
+    "packed": [
+     0,
+     13
+    ]
+   }
+  },
+  {
+   "video_id": "earnings21_e4330115",
+   "duration_s": 2458.87,
+   "speech_regions": 649,
+   "speech_s": 2067.23,
+   "vad_chunks": 234,
+   "forced_splits": 0,
+   "vad_audio_s": 2284.35,
+   "stt_requests": 11,
+   "packed_audio_s": 2421.27,
+   "chunk_len_median_s": 8.33,
+   "fixed30_requests": 82,
+   "fixed240_requests": 11,
+   "local_vad_seconds": 101.65,
+   "local_pack_seconds": 3.73,
+   "settings": {
+    "threshold": 0.5,
+    "neg_threshold": 0.35,
+    "min_speech_ms": 250,
+    "min_silence_ms": 100,
+    "merge_pause_ms": 600,
+    "speech_pad_ms": 150,
+    "max_chunk_seconds": 30.0,
+    "group_target_seconds": 20.0,
+    "split_overlap_ms": 250,
+    "max_audio_seconds": 10805,
+    "stt_request_seconds": 240.0,
+    "stt_request_bytes": 20000000
+   },
+   "set": "earnings21",
+   "cuts_in_speech": {
+    "fixed30": [
+     71,
+     81
+    ],
+    "fixed240": [
+     7,
+     10
+    ],
+    "packed": [
+     0,
+     10
+    ]
+   }
+  },
+  {
+   "video_id": "earnings21_e4341191",
+   "duration_s": 5740.61,
+   "speech_regions": 1794,
+   "speech_s": 4469.02,
+   "vad_chunks": 710,
+   "forced_splits": 0,
+   "vad_audio_s": 5062.47,
+   "stt_requests": 24,
+   "packed_audio_s": 5514.86,
+   "chunk_len_median_s": 5.77,
+   "fixed30_requests": 192,
+   "fixed240_requests": 24,
+   "local_vad_seconds": 170.58,
+   "local_pack_seconds": 10.26,
+   "settings": {
+    "threshold": 0.5,
+    "neg_threshold": 0.35,
+    "min_speech_ms": 250,
+    "min_silence_ms": 100,
+    "merge_pause_ms": 600,
+    "speech_pad_ms": 150,
+    "max_chunk_seconds": 30.0,
+    "group_target_seconds": 20.0,
+    "split_overlap_ms": 250,
+    "max_audio_seconds": 10805,
+    "stt_request_seconds": 240.0,
+    "stt_request_bytes": 20000000
+   },
+   "set": "earnings21",
+   "cuts_in_speech": {
+    "fixed30": [
+     136,
+     191
+    ],
+    "fixed240": [
+     17,
+     23
+    ],
+    "packed": [
+     0,
+     23
+    ]
+   }
+  },
+  {
+   "video_id": "earnings21_e4344338",
+   "duration_s": 2720.91,
+   "speech_regions": 772,
+   "speech_s": 2300.22,
+   "vad_chunks": 258,
+   "forced_splits": 0,
+   "vad_audio_s": 2549.61,
+   "stt_requests": 12,
+   "packed_audio_s": 2689.46,
+   "chunk_len_median_s": 8.01,
+   "fixed30_requests": 91,
+   "fixed240_requests": 12,
+   "local_vad_seconds": 77.22,
+   "local_pack_seconds": 2.43,
+   "settings": {
+    "threshold": 0.5,
+    "neg_threshold": 0.35,
+    "min_speech_ms": 250,
+    "min_silence_ms": 100,
+    "merge_pause_ms": 600,
+    "speech_pad_ms": 150,
+    "max_chunk_seconds": 30.0,
+    "group_target_seconds": 20.0,
+    "split_overlap_ms": 250,
+    "max_audio_seconds": 10805,
+    "stt_request_seconds": 240.0,
+    "stt_request_bytes": 20000000
+   },
+   "set": "earnings21",
+   "cuts_in_speech": {
+    "fixed30": [
+     77,
+     90
+    ],
+    "fixed240": [
+     9,
+     11
+    ],
+    "packed": [
+     0,
+     11
+    ]
+   }
+  },
+  {
+   "video_id": "earnings21_e4344866",
+   "duration_s": 3275.42,
+   "speech_regions": 836,
+   "speech_s": 2720.54,
+   "vad_chunks": 330,
+   "forced_splits": 0,
+   "vad_audio_s": 2980.62,
+   "stt_requests": 14,
+   "packed_audio_s": 3180.12,
+   "chunk_len_median_s": 7.12,
+   "fixed30_requests": 110,
+   "fixed240_requests": 14,
+   "local_vad_seconds": 107.14,
+   "local_pack_seconds": 4.85,
+   "settings": {
+    "threshold": 0.5,
+    "neg_threshold": 0.35,
+    "min_speech_ms": 250,
+    "min_silence_ms": 100,
+    "merge_pause_ms": 600,
+    "speech_pad_ms": 150,
+    "max_chunk_seconds": 30.0,
+    "group_target_seconds": 20.0,
+    "split_overlap_ms": 250,
+    "max_audio_seconds": 10805,
+    "stt_request_seconds": 240.0,
+    "stt_request_bytes": 20000000
+   },
+   "set": "earnings21",
+   "cuts_in_speech": {
+    "fixed30": [
+     91,
+     109
+    ],
+    "fixed240": [
+     11,
+     13
+    ],
+    "packed": [
+     0,
+     13
+    ]
+   }
+  },
+  {
+   "video_id": "earnings21_e4346818",
+   "duration_s": 3971.97,
+   "speech_regions": 1156,
+   "speech_s": 3184.99,
+   "vad_chunks": 459,
+   "forced_splits": 0,
+   "vad_audio_s": 3548.32,
+   "stt_requests": 17,
+   "packed_audio_s": 3844.26,
+   "chunk_len_median_s": 6.06,
+   "fixed30_requests": 133,
+   "fixed240_requests": 17,
+   "local_vad_seconds": 156.1,
+   "local_pack_seconds": 4.73,
+   "settings": {
+    "threshold": 0.5,
+    "neg_threshold": 0.35,
+    "min_speech_ms": 250,
+    "min_silence_ms": 100,
+    "merge_pause_ms": 600,
+    "speech_pad_ms": 150,
+    "max_chunk_seconds": 30.0,
+    "group_target_seconds": 20.0,
+    "split_overlap_ms": 250,
+    "max_audio_seconds": 10805,
+    "stt_request_seconds": 240.0,
+    "stt_request_bytes": 20000000
+   },
+   "set": "earnings21",
+   "cuts_in_speech": {
+    "fixed30": [
+     106,
+     132
+    ],
+    "fixed240": [
+     15,
+     16
+    ],
+    "packed": [
+     0,
+     16
+    ]
+   }
+  },
+  {
+   "video_id": "earnings21_e4346923",
+   "duration_s": 4709.38,
+   "speech_regions": 1415,
+   "speech_s": 3815.46,
+   "vad_chunks": 376,
+   "forced_splits": 0,
+   "vad_audio_s": 4261.97,
+   "stt_requests": 19,
+   "packed_audio_s": 4458.81,
+   "chunk_len_median_s": 9.8,
+   "fixed30_requests": 157,
+   "fixed240_requests": 20,
+   "local_vad_seconds": 192.52,
+   "local_pack_seconds": 4.17,
+   "settings": {
+    "threshold": 0.5,
+    "neg_threshold": 0.35,
+    "min_speech_ms": 250,
+    "min_silence_ms": 100,
+    "merge_pause_ms": 600,
+    "speech_pad_ms": 150,
+    "max_chunk_seconds": 30.0,
+    "group_target_seconds": 20.0,
+    "split_overlap_ms": 250,
+    "max_audio_seconds": 10805,
+    "stt_request_seconds": 240.0,
+    "stt_request_bytes": 20000000
+   },
+   "set": "earnings21",
+   "cuts_in_speech": {
+    "fixed30": [
+     136,
+     156
+    ],
+    "fixed240": [
+     17,
+     19
+    ],
+    "packed": [
+     0,
+     18
+    ]
+   }
+  },
+  {
+   "video_id": "earnings21_e4359732",
+   "duration_s": 4887.0,
+   "speech_regions": 1271,
+   "speech_s": 4271.34,
+   "vad_chunks": 352,
+   "forced_splits": 0,
+   "vad_audio_s": 4658.01,
+   "stt_requests": 21,
+   "packed_audio_s": 4810.26,
+   "chunk_len_median_s": 13.68,
+   "fixed30_requests": 163,
+   "fixed240_requests": 21,
+   "local_vad_seconds": 193.7,
+   "local_pack_seconds": 5.11,
+   "settings": {
+    "threshold": 0.5,
+    "neg_threshold": 0.35,
+    "min_speech_ms": 250,
+    "min_silence_ms": 100,
+    "merge_pause_ms": 600,
+    "speech_pad_ms": 150,
+    "max_chunk_seconds": 30.0,
+    "group_target_seconds": 20.0,
+    "split_overlap_ms": 250,
+    "max_audio_seconds": 10805,
+    "stt_request_seconds": 240.0,
+    "stt_request_bytes": 20000000
+   },
+   "set": "earnings21",
+   "cuts_in_speech": {
+    "fixed30": [
+     132,
+     162
+    ],
+    "fixed240": [
+     16,
+     20
+    ],
+    "packed": [
+     0,
+     20
+    ]
+   }
+  },
+  {
+   "video_id": "earnings21_e4359971",
+   "duration_s": 3759.91,
+   "speech_regions": 1098,
+   "speech_s": 3136.83,
+   "vad_chunks": 362,
+   "forced_splits": 0,
+   "vad_audio_s": 3488.52,
+   "stt_requests": 16,
+   "packed_audio_s": 3684.52,
+   "chunk_len_median_s": 7.76,
+   "fixed30_requests": 126,
+   "fixed240_requests": 16,
+   "local_vad_seconds": 140.44,
+   "local_pack_seconds": 5.46,
+   "settings": {
+    "threshold": 0.5,
+    "neg_threshold": 0.35,
+    "min_speech_ms": 250,
+    "min_silence_ms": 100,
+    "merge_pause_ms": 600,
+    "speech_pad_ms": 150,
+    "max_chunk_seconds": 30.0,
+    "group_target_seconds": 20.0,
+    "split_overlap_ms": 250,
+    "max_audio_seconds": 10805,
+    "stt_request_seconds": 240.0,
+    "stt_request_bytes": 20000000
+   },
+   "set": "earnings21",
+   "cuts_in_speech": {
+    "fixed30": [
+     108,
+     125
+    ],
+    "fixed240": [
+     12,
+     15
+    ],
+    "packed": [
+     0,
+     15
+    ]
+   }
+  },
+  {
+   "video_id": "earnings21_e4360366",
+   "duration_s": 3906.72,
+   "speech_regions": 962,
+   "speech_s": 3208.99,
+   "vad_chunks": 430,
+   "forced_splits": 0,
+   "vad_audio_s": 3523.61,
+   "stt_requests": 17,
+   "packed_audio_s": 3805.71,
+   "chunk_len_median_s": 6.99,
+   "fixed30_requests": 131,
+   "fixed240_requests": 17,
+   "local_vad_seconds": 147.99,
+   "local_pack_seconds": 6.39,
+   "settings": {
+    "threshold": 0.5,
+    "neg_threshold": 0.35,
+    "min_speech_ms": 250,
+    "min_silence_ms": 100,
+    "merge_pause_ms": 600,
+    "speech_pad_ms": 150,
+    "max_chunk_seconds": 30.0,
+    "group_target_seconds": 20.0,
+    "split_overlap_ms": 250,
+    "max_audio_seconds": 10805,
+    "stt_request_seconds": 240.0,
+    "stt_request_bytes": 20000000
+   },
+   "set": "earnings21",
+   "cuts_in_speech": {
+    "fixed30": [
+     105,
+     130
+    ],
+    "fixed240": [
+     14,
+     16
+    ],
+    "packed": [
+     0,
+     16
+    ]
+   }
+  },
+  {
+   "video_id": "earnings21_e4360674",
+   "duration_s": 3594.98,
+   "speech_regions": 946,
+   "speech_s": 3036.35,
+   "vad_chunks": 328,
+   "forced_splits": 0,
+   "vad_audio_s": 3333.13,
+   "stt_requests": 16,
+   "packed_audio_s": 3537.05,
+   "chunk_len_median_s": 9.16,
+   "fixed30_requests": 120,
+   "fixed240_requests": 15,
+   "local_vad_seconds": 138.33,
+   "local_pack_seconds": 5.3,
+   "settings": {
+    "threshold": 0.5,
+    "neg_threshold": 0.35,
+    "min_speech_ms": 250,
+    "min_silence_ms": 100,
+    "merge_pause_ms": 600,
+    "speech_pad_ms": 150,
+    "max_chunk_seconds": 30.0,
+    "group_target_seconds": 20.0,
+    "split_overlap_ms": 250,
+    "max_audio_seconds": 10805,
+    "stt_request_seconds": 240.0,
+    "stt_request_bytes": 20000000
+   },
+   "set": "earnings21",
+   "cuts_in_speech": {
+    "fixed30": [
+     101,
+     119
+    ],
+    "fixed240": [
+     12,
+     14
+    ],
+    "packed": [
+     0,
+     15
+    ]
+   }
+  },
+  {
+   "video_id": "earnings21_e4360717",
+   "duration_s": 4511.28,
+   "speech_regions": 1271,
+   "speech_s": 3808.42,
+   "vad_chunks": 355,
+   "forced_splits": 0,
+   "vad_audio_s": 4221.91,
+   "stt_requests": 19,
+   "packed_audio_s": 4393.31,
+   "chunk_len_median_s": 10.03,
+   "fixed30_requests": 151,
+   "fixed240_requests": 19,
+   "local_vad_seconds": 164.04,
+   "local_pack_seconds": 4.18,
+   "settings": {
+    "threshold": 0.5,
+    "neg_threshold": 0.35,
+    "min_speech_ms": 250,
+    "min_silence_ms": 100,
+    "merge_pause_ms": 600,
+    "speech_pad_ms": 150,
+    "max_chunk_seconds": 30.0,
+    "group_target_seconds": 20.0,
+    "split_overlap_ms": 250,
+    "max_audio_seconds": 10805,
+    "stt_request_seconds": 240.0,
+    "stt_request_bytes": 20000000
+   },
+   "set": "earnings21",
+   "cuts_in_speech": {
+    "fixed30": [
+     133,
+     150
+    ],
+    "fixed240": [
+     16,
+     18
+    ],
+    "packed": [
+     0,
+     18
+    ]
+   }
+  },
+  {
+   "video_id": "earnings21_e4361631",
+   "duration_s": 4411.43,
+   "speech_regions": 933,
+   "speech_s": 3526.05,
+   "vad_chunks": 342,
+   "forced_splits": 0,
+   "vad_audio_s": 3817.21,
+   "stt_requests": 18,
+   "packed_audio_s": 3992.91,
+   "chunk_len_median_s": 9.68,
+   "fixed30_requests": 148,
+   "fixed240_requests": 19,
+   "local_vad_seconds": 156.72,
+   "local_pack_seconds": 4.24,
+   "settings": {
+    "threshold": 0.5,
+    "neg_threshold": 0.35,
+    "min_speech_ms": 250,
+    "min_silence_ms": 100,
+    "merge_pause_ms": 600,
+    "speech_pad_ms": 150,
+    "max_chunk_seconds": 30.0,
+    "group_target_seconds": 20.0,
+    "split_overlap_ms": 250,
+    "max_audio_seconds": 10805,
+    "stt_request_seconds": 240.0,
+    "stt_request_bytes": 20000000
+   },
+   "set": "earnings21",
+   "cuts_in_speech": {
+    "fixed30": [
+     117,
+     147
+    ],
+    "fixed240": [
+     14,
+     18
+    ],
+    "packed": [
+     0,
+     17
+    ]
+   }
+  },
+  {
+   "video_id": "earnings21_e4363614",
+   "duration_s": 5587.23,
+   "speech_regions": 1852,
+   "speech_s": 4583.99,
+   "vad_chunks": 483,
+   "forced_splits": 0,
+   "vad_audio_s": 5198.06,
+   "stt_requests": 24,
+   "packed_audio_s": 5438.7,
+   "chunk_len_median_s": 9.0,
+   "fixed30_requests": 187,
+   "fixed240_requests": 24,
+   "local_vad_seconds": 182.78,
+   "local_pack_seconds": 6.66,
+   "settings": {
+    "threshold": 0.5,
+    "neg_threshold": 0.35,
+    "min_speech_ms": 250,
+    "min_silence_ms": 100,
+    "merge_pause_ms": 600,
+    "speech_pad_ms": 150,
+    "max_chunk_seconds": 30.0,
+    "group_target_seconds": 20.0,
+    "split_overlap_ms": 250,
+    "max_audio_seconds": 10805,
+    "stt_request_seconds": 240.0,
+    "stt_request_bytes": 20000000
+   },
+   "set": "earnings21",
+   "cuts_in_speech": {
+    "fixed30": [
+     159,
+     186
+    ],
+    "fixed240": [
+     21,
+     23
+    ],
+    "packed": [
+     0,
+     23
+    ]
+   }
+  },
+  {
+   "video_id": "earnings21_e4364366",
+   "duration_s": 3506.0,
+   "speech_regions": 1030,
+   "speech_s": 2802.11,
+   "vad_chunks": 317,
+   "forced_splits": 0,
+   "vad_audio_s": 3140.67,
+   "stt_requests": 15,
+   "packed_audio_s": 3323.05,
+   "chunk_len_median_s": 8.14,
+   "fixed30_requests": 117,
+   "fixed240_requests": 15,
+   "local_vad_seconds": 108.64,
+   "local_pack_seconds": 4.89,
+   "settings": {
+    "threshold": 0.5,
+    "neg_threshold": 0.35,
+    "min_speech_ms": 250,
+    "min_silence_ms": 100,
+    "merge_pause_ms": 600,
+    "speech_pad_ms": 150,
+    "max_chunk_seconds": 30.0,
+    "group_target_seconds": 20.0,
+    "split_overlap_ms": 250,
+    "max_audio_seconds": 10805,
+    "stt_request_seconds": 240.0,
+    "stt_request_bytes": 20000000
+   },
+   "set": "earnings21",
+   "cuts_in_speech": {
+    "fixed30": [
+     89,
+     116
+    ],
+    "fixed240": [
+     10,
+     14
+    ],
+    "packed": [
+     0,
+     14
+    ]
+   }
+  },
+  {
+   "video_id": "earnings21_e4365024",
+   "duration_s": 4328.68,
+   "speech_regions": 1028,
+   "speech_s": 3782.62,
+   "vad_chunks": 316,
+   "forced_splits": 0,
+   "vad_audio_s": 4102.51,
+   "stt_requests": 19,
+   "packed_audio_s": 4253.07,
+   "chunk_len_median_s": 13.26,
+   "fixed30_requests": 145,
+   "fixed240_requests": 19,
+   "local_vad_seconds": 145.75,
+   "local_pack_seconds": 4.74,
+   "settings": {
+    "threshold": 0.5,
+    "neg_threshold": 0.35,
+    "min_speech_ms": 250,
+    "min_silence_ms": 100,
+    "merge_pause_ms": 600,
+    "speech_pad_ms": 150,
+    "max_chunk_seconds": 30.0,
+    "group_target_seconds": 20.0,
+    "split_overlap_ms": 250,
+    "max_audio_seconds": 10805,
+    "stt_request_seconds": 240.0,
+    "stt_request_bytes": 20000000
+   },
+   "set": "earnings21",
+   "cuts_in_speech": {
+    "fixed30": [
+     128,
+     144
+    ],
+    "fixed240": [
+     15,
+     18
+    ],
+    "packed": [
+     0,
+     18
+    ]
+   }
+  },
+  {
+   "video_id": "earnings21_e4365948",
+   "duration_s": 2518.99,
+   "speech_regions": 626,
+   "speech_s": 2166.18,
+   "vad_chunks": 218,
+   "forced_splits": 0,
+   "vad_audio_s": 2365.23,
+   "stt_requests": 11,
+   "packed_audio_s": 2476.1,
+   "chunk_len_median_s": 9.04,
+   "fixed30_requests": 84,
+   "fixed240_requests": 11,
+   "local_vad_seconds": 81.28,
+   "local_pack_seconds": 2.95,
+   "settings": {
+    "threshold": 0.5,
+    "neg_threshold": 0.35,
+    "min_speech_ms": 250,
+    "min_silence_ms": 100,
+    "merge_pause_ms": 600,
+    "speech_pad_ms": 150,
+    "max_chunk_seconds": 30.0,
+    "group_target_seconds": 20.0,
+    "split_overlap_ms": 250,
+    "max_audio_seconds": 10805,
+    "stt_request_seconds": 240.0,
+    "stt_request_bytes": 20000000
+   },
+   "set": "earnings21",
+   "cuts_in_speech": {
+    "fixed30": [
+     73,
+     83
+    ],
+    "fixed240": [
+     9,
+     10
+    ],
+    "packed": [
+     0,
+     10
+    ]
+   }
+  },
+  {
+   "video_id": "earnings21_e4366302",
+   "duration_s": 3595.01,
+   "speech_regions": 967,
+   "speech_s": 2954.14,
+   "vad_chunks": 355,
+   "forced_splits": 0,
+   "vad_audio_s": 3257.47,
+   "stt_requests": 15,
+   "packed_audio_s": 3483.81,
+   "chunk_len_median_s": 6.54,
+   "fixed30_requests": 120,
+   "fixed240_requests": 15,
+   "local_vad_seconds": 132.12,
+   "local_pack_seconds": 4.82,
+   "settings": {
+    "threshold": 0.5,
+    "neg_threshold": 0.35,
+    "min_speech_ms": 250,
+    "min_silence_ms": 100,
+    "merge_pause_ms": 600,
+    "speech_pad_ms": 150,
+    "max_chunk_seconds": 30.0,
+    "group_target_seconds": 20.0,
+    "split_overlap_ms": 250,
+    "max_audio_seconds": 10805,
+    "stt_request_seconds": 240.0,
+    "stt_request_bytes": 20000000
+   },
+   "set": "earnings21",
+   "cuts_in_speech": {
+    "fixed30": [
+     98,
+     119
+    ],
+    "fixed240": [
+     10,
+     14
+    ],
+    "packed": [
+     0,
+     14
+    ]
+   }
+  },
+  {
+   "video_id": "earnings21_e4366429",
+   "duration_s": 4010.48,
+   "speech_regions": 916,
+   "speech_s": 3418.59,
+   "vad_chunks": 352,
+   "forced_splits": 0,
+   "vad_audio_s": 3705.22,
+   "stt_requests": 17,
+   "packed_audio_s": 3914.13,
+   "chunk_len_median_s": 7.82,
+   "fixed30_requests": 134,
+   "fixed240_requests": 17,
+   "local_vad_seconds": 146.67,
+   "local_pack_seconds": 5.21,
+   "settings": {
+    "threshold": 0.5,
+    "neg_threshold": 0.35,
+    "min_speech_ms": 250,
+    "min_silence_ms": 100,
+    "merge_pause_ms": 600,
+    "speech_pad_ms": 150,
+    "max_chunk_seconds": 30.0,
+    "group_target_seconds": 20.0,
+    "split_overlap_ms": 250,
+    "max_audio_seconds": 10805,
+    "stt_request_seconds": 240.0,
+    "stt_request_bytes": 20000000
+   },
+   "set": "earnings21",
+   "cuts_in_speech": {
+    "fixed30": [
+     116,
+     133
+    ],
+    "fixed240": [
+     16,
+     16
+    ],
+    "packed": [
+     0,
+     16
+    ]
+   }
+  },
+  {
+   "video_id": "earnings21_e4366522",
+   "duration_s": 1817.73,
+   "speech_regions": 498,
+   "speech_s": 1518.37,
+   "vad_chunks": 160,
+   "forced_splits": 0,
+   "vad_audio_s": 1681.73,
+   "stt_requests": 8,
+   "packed_audio_s": 1775.84,
+   "chunk_len_median_s": 8.65,
+   "fixed30_requests": 61,
+   "fixed240_requests": 8,
+   "local_vad_seconds": 74.2,
+   "local_pack_seconds": 2.02,
+   "settings": {
+    "threshold": 0.5,
+    "neg_threshold": 0.35,
+    "min_speech_ms": 250,
+    "min_silence_ms": 100,
+    "merge_pause_ms": 600,
+    "speech_pad_ms": 150,
+    "max_chunk_seconds": 30.0,
+    "group_target_seconds": 20.0,
+    "split_overlap_ms": 250,
+    "max_audio_seconds": 10805,
+    "stt_request_seconds": 240.0,
+    "stt_request_bytes": 20000000
+   },
+   "set": "earnings21",
+   "cuts_in_speech": {
+    "fixed30": [
+     51,
+     60
+    ],
+    "fixed240": [
+     6,
+     7
+    ],
+    "packed": [
+     0,
+     7
+    ]
+   }
+  },
+  {
+   "video_id": "earnings21_e4366893",
+   "duration_s": 2366.35,
+   "speech_regions": 660,
+   "speech_s": 1987.2,
+   "vad_chunks": 181,
+   "forced_splits": 0,
+   "vad_audio_s": 2201.35,
+   "stt_requests": 10,
+   "packed_audio_s": 2294.84,
+   "chunk_len_median_s": 11.28,
+   "fixed30_requests": 79,
+   "fixed240_requests": 10,
+   "local_vad_seconds": 89.51,
+   "local_pack_seconds": 2.75,
+   "settings": {
+    "threshold": 0.5,
+    "neg_threshold": 0.35,
+    "min_speech_ms": 250,
+    "min_silence_ms": 100,
+    "merge_pause_ms": 600,
+    "speech_pad_ms": 150,
+    "max_chunk_seconds": 30.0,
+    "group_target_seconds": 20.0,
+    "split_overlap_ms": 250,
+    "max_audio_seconds": 10805,
+    "stt_request_seconds": 240.0,
+    "stt_request_bytes": 20000000
+   },
+   "set": "earnings21",
+   "cuts_in_speech": {
+    "fixed30": [
+     67,
+     78
+    ],
+    "fixed240": [
+     6,
+     9
+    ],
+    "packed": [
+     0,
+     9
+    ]
+   }
+  },
+  {
+   "video_id": "earnings21_e4367318",
+   "duration_s": 1720.8,
+   "speech_regions": 499,
+   "speech_s": 1396.45,
+   "vad_chunks": 176,
+   "forced_splits": 0,
+   "vad_audio_s": 1560.0,
+   "stt_requests": 8,
+   "packed_audio_s": 1673.59,
+   "chunk_len_median_s": 7.4,
+   "fixed30_requests": 58,
+   "fixed240_requests": 8,
+   "local_vad_seconds": 64.51,
+   "local_pack_seconds": 2.4,
+   "settings": {
+    "threshold": 0.5,
+    "neg_threshold": 0.35,
+    "min_speech_ms": 250,
+    "min_silence_ms": 100,
+    "merge_pause_ms": 600,
+    "speech_pad_ms": 150,
+    "max_chunk_seconds": 30.0,
+    "group_target_seconds": 20.0,
+    "split_overlap_ms": 250,
+    "max_audio_seconds": 10805,
+    "stt_request_seconds": 240.0,
+    "stt_request_bytes": 20000000
+   },
+   "set": "earnings21",
+   "cuts_in_speech": {
+    "fixed30": [
+     48,
+     57
+    ],
+    "fixed240": [
+     3,
+     7
+    ],
+    "packed": [
+     0,
+     7
+    ]
+   }
+  },
+  {
+   "video_id": "earnings21_e4367535",
+   "duration_s": 3175.3,
+   "speech_regions": 876,
+   "speech_s": 2558.02,
+   "vad_chunks": 337,
+   "forced_splits": 0,
+   "vad_audio_s": 2859.94,
+   "stt_requests": 14,
+   "packed_audio_s": 3071.16,
+   "chunk_len_median_s": 6.99,
+   "fixed30_requests": 106,
+   "fixed240_requests": 14,
+   "local_vad_seconds": 110.77,
+   "local_pack_seconds": 4.68,
+   "settings": {
+    "threshold": 0.5,
+    "neg_threshold": 0.35,
+    "min_speech_ms": 250,
+    "min_silence_ms": 100,
+    "merge_pause_ms": 600,
+    "speech_pad_ms": 150,
+    "max_chunk_seconds": 30.0,
+    "group_target_seconds": 20.0,
+    "split_overlap_ms": 250,
+    "max_audio_seconds": 10805,
+    "stt_request_seconds": 240.0,
+    "stt_request_bytes": 20000000
+   },
+   "set": "earnings21",
+   "cuts_in_speech": {
+    "fixed30": [
+     86,
+     105
+    ],
+    "fixed240": [
+     10,
+     13
+    ],
+    "packed": [
+     0,
+     13
+    ]
+   }
+  },
+  {
+   "video_id": "earnings21_e4368670",
+   "duration_s": 4221.99,
+   "speech_regions": 1048,
+   "speech_s": 3641.57,
+   "vad_chunks": 344,
+   "forced_splits": 0,
+   "vad_audio_s": 3958.21,
+   "stt_requests": 18,
+   "packed_audio_s": 4134.53,
+   "chunk_len_median_s": 9.55,
+   "fixed30_requests": 141,
+   "fixed240_requests": 18,
+   "local_vad_seconds": 145.68,
+   "local_pack_seconds": 4.47,
+   "settings": {
+    "threshold": 0.5,
+    "neg_threshold": 0.35,
+    "min_speech_ms": 250,
+    "min_silence_ms": 100,
+    "merge_pause_ms": 600,
+    "speech_pad_ms": 150,
+    "max_chunk_seconds": 30.0,
+    "group_target_seconds": 20.0,
+    "split_overlap_ms": 250,
+    "max_audio_seconds": 10805,
+    "stt_request_seconds": 240.0,
+    "stt_request_bytes": 20000000
+   },
+   "set": "earnings21",
+   "cuts_in_speech": {
+    "fixed30": [
+     114,
+     140
+    ],
+    "fixed240": [
+     14,
+     17
+    ],
+    "packed": [
+     0,
+     17
+    ]
+   }
+  },
+  {
+   "video_id": "earnings21_e4374910",
+   "duration_s": 2028.5,
+   "speech_regions": 611,
+   "speech_s": 1729.66,
+   "vad_chunks": 174,
+   "forced_splits": 0,
+   "vad_audio_s": 1944.41,
+   "stt_requests": 9,
+   "packed_audio_s": 2014.83,
+   "chunk_len_median_s": 9.77,
+   "fixed30_requests": 68,
+   "fixed240_requests": 9,
+   "local_vad_seconds": 73.8,
+   "local_pack_seconds": 2.05,
+   "settings": {
+    "threshold": 0.5,
+    "neg_threshold": 0.35,
+    "min_speech_ms": 250,
+    "min_silence_ms": 100,
+    "merge_pause_ms": 600,
+    "speech_pad_ms": 150,
+    "max_chunk_seconds": 30.0,
+    "group_target_seconds": 20.0,
+    "split_overlap_ms": 250,
+    "max_audio_seconds": 10805,
+    "stt_request_seconds": 240.0,
+    "stt_request_bytes": 20000000
+   },
+   "set": "earnings21",
+   "cuts_in_speech": {
+    "fixed30": [
+     56,
+     67
+    ],
+    "fixed240": [
+     5,
+     8
+    ],
+    "packed": [
+     0,
+     8
+    ]
+   }
+  },
+  {
+   "video_id": "earnings21_e4375653",
+   "duration_s": 3472.15,
+   "speech_regions": 945,
+   "speech_s": 2982.66,
+   "vad_chunks": 315,
+   "forced_splits": 0,
+   "vad_audio_s": 3266.86,
+   "stt_requests": 15,
+   "packed_audio_s": 3428.58,
+   "chunk_len_median_s": 8.2,
+   "fixed30_requests": 116,
+   "fixed240_requests": 15,
+   "local_vad_seconds": 105.17,
+   "local_pack_seconds": 3.63,
+   "settings": {
+    "threshold": 0.5,
+    "neg_threshold": 0.35,
+    "min_speech_ms": 250,
+    "min_silence_ms": 100,
+    "merge_pause_ms": 600,
+    "speech_pad_ms": 150,
+    "max_chunk_seconds": 30.0,
+    "group_target_seconds": 20.0,
+    "split_overlap_ms": 250,
+    "max_audio_seconds": 10805,
+    "stt_request_seconds": 240.0,
+    "stt_request_bytes": 20000000
+   },
+   "set": "earnings21",
+   "cuts_in_speech": {
+    "fixed30": [
+     102,
+     115
+    ],
+    "fixed240": [
+     10,
+     14
+    ],
+    "packed": [
+     0,
+     14
+    ]
+   }
+  },
+  {
+   "video_id": "earnings21_e4382825",
+   "duration_s": 3795.11,
+   "speech_regions": 943,
+   "speech_s": 3194.5,
+   "vad_chunks": 307,
+   "forced_splits": 0,
+   "vad_audio_s": 3501.79,
+   "stt_requests": 16,
+   "packed_audio_s": 3660.19,
+   "chunk_len_median_s": 8.84,
+   "fixed30_requests": 127,
+   "fixed240_requests": 16,
+   "local_vad_seconds": 116.95,
+   "local_pack_seconds": 4.5,
+   "settings": {
+    "threshold": 0.5,
+    "neg_threshold": 0.35,
+    "min_speech_ms": 250,
+    "min_silence_ms": 100,
+    "merge_pause_ms": 600,
+    "speech_pad_ms": 150,
+    "max_chunk_seconds": 30.0,
+    "group_target_seconds": 20.0,
+    "split_overlap_ms": 250,
+    "max_audio_seconds": 10805,
+    "stt_request_seconds": 240.0,
+    "stt_request_bytes": 20000000
+   },
+   "set": "earnings21",
+   "cuts_in_speech": {
+    "fixed30": [
+     105,
+     126
+    ],
+    "fixed240": [
+     13,
+     15
+    ],
+    "packed": [
+     0,
+     15
+    ]
+   }
+  },
+  {
+   "video_id": "earnings21_e4383161",
+   "duration_s": 3376.68,
+   "speech_regions": 915,
+   "speech_s": 2866.72,
+   "vad_chunks": 274,
+   "forced_splits": 0,
+   "vad_audio_s": 3152.71,
+   "stt_requests": 15,
+   "packed_audio_s": 3291.11,
+   "chunk_len_median_s": 9.87,
+   "fixed30_requests": 113,
+   "fixed240_requests": 15,
+   "local_vad_seconds": 109.66,
+   "local_pack_seconds": 3.67,
+   "settings": {
+    "threshold": 0.5,
+    "neg_threshold": 0.35,
+    "min_speech_ms": 250,
+    "min_silence_ms": 100,
+    "merge_pause_ms": 600,
+    "speech_pad_ms": 150,
+    "max_chunk_seconds": 30.0,
+    "group_target_seconds": 20.0,
+    "split_overlap_ms": 250,
+    "max_audio_seconds": 10805,
+    "stt_request_seconds": 240.0,
+    "stt_request_bytes": 20000000
+   },
+   "set": "earnings21",
+   "cuts_in_speech": {
+    "fixed30": [
+     94,
+     112
+    ],
+    "fixed240": [
+     12,
+     14
+    ],
+    "packed": [
+     0,
+     14
+    ]
+   }
+  },
+  {
+   "video_id": "earnings21_e4384198",
+   "duration_s": 2636.34,
+   "speech_regions": 666,
+   "speech_s": 2122.46,
+   "vad_chunks": 258,
+   "forced_splits": 0,
+   "vad_audio_s": 2336.72,
+   "stt_requests": 11,
+   "packed_audio_s": 2486.64,
+   "chunk_len_median_s": 7.82,
+   "fixed30_requests": 88,
+   "fixed240_requests": 11,
+   "local_vad_seconds": 87.85,
+   "local_pack_seconds": 3.27,
+   "settings": {
+    "threshold": 0.5,
+    "neg_threshold": 0.35,
+    "min_speech_ms": 250,
+    "min_silence_ms": 100,
+    "merge_pause_ms": 600,
+    "speech_pad_ms": 150,
+    "max_chunk_seconds": 30.0,
+    "group_target_seconds": 20.0,
+    "split_overlap_ms": 250,
+    "max_audio_seconds": 10805,
+    "stt_request_seconds": 240.0,
+    "stt_request_bytes": 20000000
+   },
+   "set": "earnings21",
+   "cuts_in_speech": {
+    "fixed30": [
+     70,
+     87
+    ],
+    "fixed240": [
+     8,
+     10
+    ],
+    "packed": [
+     0,
+     10
+    ]
+   }
+  },
+  {
+   "video_id": "earnings21_e4384683",
+   "duration_s": 1476.74,
+   "speech_regions": 341,
+   "speech_s": 1215.55,
+   "vad_chunks": 137,
+   "forced_splits": 0,
+   "vad_audio_s": 1330.35,
+   "stt_requests": 7,
+   "packed_audio_s": 1413.13,
+   "chunk_len_median_s": 8.17,
+   "fixed30_requests": 50,
+   "fixed240_requests": 7,
+   "local_vad_seconds": 56.51,
+   "local_pack_seconds": 1.69,
+   "settings": {
+    "threshold": 0.5,
+    "neg_threshold": 0.35,
+    "min_speech_ms": 250,
+    "min_silence_ms": 100,
+    "merge_pause_ms": 600,
+    "speech_pad_ms": 150,
+    "max_chunk_seconds": 30.0,
+    "group_target_seconds": 20.0,
+    "split_overlap_ms": 250,
+    "max_audio_seconds": 10805,
+    "stt_request_seconds": 240.0,
+    "stt_request_bytes": 20000000
+   },
+   "set": "earnings21",
+   "cuts_in_speech": {
+    "fixed30": [
+     40,
+     49
+    ],
+    "fixed240": [
+     5,
+     6
+    ],
+    "packed": [
+     0,
+     6
+    ]
+   }
+  },
+  {
+   "video_id": "earnings21_e4384744",
+   "duration_s": 3271.97,
+   "speech_regions": 942,
+   "speech_s": 2608.06,
+   "vad_chunks": 416,
+   "forced_splits": 0,
+   "vad_audio_s": 2923.32,
+   "stt_requests": 14,
+   "packed_audio_s": 3167.81,
+   "chunk_len_median_s": 5.48,
+   "fixed30_requests": 110,
+   "fixed240_requests": 14,
+   "local_vad_seconds": 102.23,
+   "local_pack_seconds": 4.38,
+   "settings": {
+    "threshold": 0.5,
+    "neg_threshold": 0.35,
+    "min_speech_ms": 250,
+    "min_silence_ms": 100,
+    "merge_pause_ms": 600,
+    "speech_pad_ms": 150,
+    "max_chunk_seconds": 30.0,
+    "group_target_seconds": 20.0,
+    "split_overlap_ms": 250,
+    "max_audio_seconds": 10805,
+    "stt_request_seconds": 240.0,
+    "stt_request_bytes": 20000000
+   },
+   "set": "earnings21",
+   "cuts_in_speech": {
+    "fixed30": [
+     84,
+     109
+    ],
+    "fixed240": [
+     10,
+     13
+    ],
+    "packed": [
+     0,
+     13
+    ]
+   }
+  },
+  {
+   "video_id": "earnings21_e4384964",
+   "duration_s": 4022.59,
+   "speech_regions": 1327,
+   "speech_s": 3293.54,
+   "vad_chunks": 424,
+   "forced_splits": 0,
+   "vad_audio_s": 3711.36,
+   "stt_requests": 17,
+   "packed_audio_s": 3939.59,
+   "chunk_len_median_s": 7.24,
+   "fixed30_requests": 135,
+   "fixed240_requests": 17,
+   "local_vad_seconds": 101.29,
+   "local_pack_seconds": 4.5,
+   "settings": {
+    "threshold": 0.5,
+    "neg_threshold": 0.35,
+    "min_speech_ms": 250,
+    "min_silence_ms": 100,
+    "merge_pause_ms": 600,
+    "speech_pad_ms": 150,
+    "max_chunk_seconds": 30.0,
+    "group_target_seconds": 20.0,
+    "split_overlap_ms": 250,
+    "max_audio_seconds": 10805,
+    "stt_request_seconds": 240.0,
+    "stt_request_bytes": 20000000
+   },
+   "set": "earnings21",
+   "cuts_in_speech": {
+    "fixed30": [
+     111,
+     134
+    ],
+    "fixed240": [
+     14,
+     16
+    ],
+    "packed": [
+     0,
+     16
+    ]
+   }
+  },
+  {
+   "video_id": "earnings21_e4385072",
+   "duration_s": 2559.99,
+   "speech_regions": 702,
+   "speech_s": 2136.9,
+   "vad_chunks": 243,
+   "forced_splits": 0,
+   "vad_audio_s": 2366.05,
+   "stt_requests": 11,
+   "packed_audio_s": 2501.9,
+   "chunk_len_median_s": 6.28,
+   "fixed30_requests": 86,
+   "fixed240_requests": 11,
+   "local_vad_seconds": 65.32,
+   "local_pack_seconds": 2.97,
+   "settings": {
+    "threshold": 0.5,
+    "neg_threshold": 0.35,
+    "min_speech_ms": 250,
+    "min_silence_ms": 100,
+    "merge_pause_ms": 600,
+    "speech_pad_ms": 150,
+    "max_chunk_seconds": 30.0,
+    "group_target_seconds": 20.0,
+    "split_overlap_ms": 250,
+    "max_audio_seconds": 10805,
+    "stt_request_seconds": 240.0,
+    "stt_request_bytes": 20000000
+   },
+   "set": "earnings21",
+   "cuts_in_speech": {
+    "fixed30": [
+     77,
+     85
+    ],
+    "fixed240": [
+     9,
+     10
+    ],
+    "packed": [
+     0,
+     10
+    ]
+   }
+  },
+  {
+   "video_id": "earnings21_e4385388",
+   "duration_s": 4346.01,
+   "speech_regions": 1198,
+   "speech_s": 3596.8,
+   "vad_chunks": 426,
+   "forced_splits": 0,
+   "vad_audio_s": 3982.02,
+   "stt_requests": 19,
+   "packed_audio_s": 4234.47,
+   "chunk_len_median_s": 7.08,
+   "fixed30_requests": 145,
+   "fixed240_requests": 19,
+   "local_vad_seconds": 142.59,
+   "local_pack_seconds": 4.12,
+   "settings": {
+    "threshold": 0.5,
+    "neg_threshold": 0.35,
+    "min_speech_ms": 250,
+    "min_silence_ms": 100,
+    "merge_pause_ms": 600,
+    "speech_pad_ms": 150,
+    "max_chunk_seconds": 30.0,
+    "group_target_seconds": 20.0,
+    "split_overlap_ms": 250,
+    "max_audio_seconds": 10805,
+    "stt_request_seconds": 240.0,
+    "stt_request_bytes": 20000000
+   },
+   "set": "earnings21",
+   "cuts_in_speech": {
+    "fixed30": [
+     113,
+     144
+    ],
+    "fixed240": [
+     15,
+     18
+    ],
+    "packed": [
+     0,
+     18
+    ]
+   }
+  },
+  {
+   "video_id": "earnings21_e4385939",
+   "duration_s": 3049.8,
+   "speech_regions": 748,
+   "speech_s": 2656.67,
+   "vad_chunks": 236,
+   "forced_splits": 0,
+   "vad_audio_s": 2885.41,
+   "stt_requests": 14,
+   "packed_audio_s": 2999.01,
+   "chunk_len_median_s": 11.18,
+   "fixed30_requests": 102,
+   "fixed240_requests": 13,
+   "local_vad_seconds": 92.82,
+   "local_pack_seconds": 3.56,
+   "settings": {
+    "threshold": 0.5,
+    "neg_threshold": 0.35,
+    "min_speech_ms": 250,
+    "min_silence_ms": 100,
+    "merge_pause_ms": 600,
+    "speech_pad_ms": 150,
+    "max_chunk_seconds": 30.0,
+    "group_target_seconds": 20.0,
+    "split_overlap_ms": 250,
+    "max_audio_seconds": 10805,
+    "stt_request_seconds": 240.0,
+    "stt_request_bytes": 20000000
+   },
+   "set": "earnings21",
+   "cuts_in_speech": {
+    "fixed30": [
+     87,
+     101
+    ],
+    "fixed240": [
+     10,
+     12
+    ],
+    "packed": [
+     0,
+     13
+    ]
+   }
+  },
+  {
+   "video_id": "earnings21_e4386541",
+   "duration_s": 1097.1,
+   "speech_regions": 285,
+   "speech_s": 886.98,
+   "vad_chunks": 135,
+   "forced_splits": 0,
+   "vad_audio_s": 980.12,
+   "stt_requests": 5,
+   "packed_audio_s": 1063.49,
+   "chunk_len_median_s": 5.8,
+   "fixed30_requests": 37,
+   "fixed240_requests": 5,
+   "local_vad_seconds": 39.01,
+   "local_pack_seconds": 1.64,
+   "settings": {
+    "threshold": 0.5,
+    "neg_threshold": 0.35,
+    "min_speech_ms": 250,
+    "min_silence_ms": 100,
+    "merge_pause_ms": 600,
+    "speech_pad_ms": 150,
+    "max_chunk_seconds": 30.0,
+    "group_target_seconds": 20.0,
+    "split_overlap_ms": 250,
+    "max_audio_seconds": 10805,
+    "stt_request_seconds": 240.0,
+    "stt_request_bytes": 20000000
+   },
+   "set": "earnings21",
+   "cuts_in_speech": {
+    "fixed30": [
+     28,
+     36
+    ],
+    "fixed240": [
+     2,
+     4
+    ],
+    "packed": [
+     0,
+     4
+    ]
+   }
+  },
+  {
+   "video_id": "earnings21_e4387332",
+   "duration_s": 1310.16,
+   "speech_regions": 232,
+   "speech_s": 1171.47,
+   "vad_chunks": 93,
+   "forced_splits": 0,
+   "vad_audio_s": 1242.9,
+   "stt_requests": 6,
+   "packed_audio_s": 1287.98,
+   "chunk_len_median_s": 12.91,
+   "fixed30_requests": 44,
+   "fixed240_requests": 6,
+   "local_vad_seconds": 36.88,
+   "local_pack_seconds": 1.04,
+   "settings": {
+    "threshold": 0.5,
+    "neg_threshold": 0.35,
+    "min_speech_ms": 250,
+    "min_silence_ms": 100,
+    "merge_pause_ms": 600,
+    "speech_pad_ms": 150,
+    "max_chunk_seconds": 30.0,
+    "group_target_seconds": 20.0,
+    "split_overlap_ms": 250,
+    "max_audio_seconds": 10805,
+    "stt_request_seconds": 240.0,
+    "stt_request_bytes": 20000000
+   },
+   "set": "earnings21",
+   "cuts_in_speech": {
+    "fixed30": [
+     41,
+     43
+    ],
+    "fixed240": [
+     5,
+     5
+    ],
+    "packed": [
+     0,
+     5
+    ]
+   }
+  },
+  {
+   "video_id": "earnings21_e4387383",
+   "duration_s": 2158.05,
+   "speech_regions": 390,
+   "speech_s": 1092.29,
+   "vad_chunks": 155,
+   "forced_splits": 0,
+   "vad_audio_s": 1223.34,
+   "stt_requests": 6,
+   "packed_audio_s": 1321.48,
+   "chunk_len_median_s": 5.84,
+   "fixed30_requests": 72,
+   "fixed240_requests": 9,
+   "local_vad_seconds": 62.62,
+   "local_pack_seconds": 2.0,
+   "settings": {
+    "threshold": 0.5,
+    "neg_threshold": 0.35,
+    "min_speech_ms": 250,
+    "min_silence_ms": 100,
+    "merge_pause_ms": 600,
+    "speech_pad_ms": 150,
+    "max_chunk_seconds": 30.0,
+    "group_target_seconds": 20.0,
+    "split_overlap_ms": 250,
+    "max_audio_seconds": 10805,
+    "stt_request_seconds": 240.0,
+    "stt_request_bytes": 20000000
+   },
+   "set": "earnings21",
+   "cuts_in_speech": {
+    "fixed30": [
+     35,
+     71
+    ],
+    "fixed240": [
+     4,
+     8
+    ],
+    "packed": [
+     0,
+     5
+    ]
+   }
+  },
+  {
+   "video_id": "earnings21_e4387865",
+   "duration_s": 2162.57,
+   "speech_regions": 630,
+   "speech_s": 1794.2,
+   "vad_chunks": 230,
+   "forced_splits": 0,
+   "vad_audio_s": 1996.63,
+   "stt_requests": 10,
+   "packed_audio_s": 2135.18,
+   "chunk_len_median_s": 6.92,
+   "fixed30_requests": 73,
+   "fixed240_requests": 10,
+   "local_vad_seconds": 62.33,
+   "local_pack_seconds": 2.25,
+   "settings": {
+    "threshold": 0.5,
+    "neg_threshold": 0.35,
+    "min_speech_ms": 250,
+    "min_silence_ms": 100,
+    "merge_pause_ms": 600,
+    "speech_pad_ms": 150,
+    "max_chunk_seconds": 30.0,
+    "group_target_seconds": 20.0,
+    "split_overlap_ms": 250,
+    "max_audio_seconds": 10805,
+    "stt_request_seconds": 240.0,
+    "stt_request_bytes": 20000000
+   },
+   "set": "earnings21",
+   "cuts_in_speech": {
+    "fixed30": [
+     58,
+     72
+    ],
+    "fixed240": [
+     8,
+     9
+    ],
+    "packed": [
+     0,
+     9
+    ]
+   }
+  },
+  {
+   "video_id": "earnings21_e4389907",
+   "duration_s": 2058.82,
+   "speech_regions": 805,
+   "speech_s": 1589.47,
+   "vad_chunks": 235,
+   "forced_splits": 0,
+   "vad_audio_s": 1844.88,
+   "stt_requests": 9,
+   "packed_audio_s": 1985.91,
+   "chunk_len_median_s": 6.0,
+   "fixed30_requests": 69,
+   "fixed240_requests": 9,
+   "local_vad_seconds": 61.99,
+   "local_pack_seconds": 3.13,
+   "settings": {
+    "threshold": 0.5,
+    "neg_threshold": 0.35,
+    "min_speech_ms": 250,
+    "min_silence_ms": 100,
+    "merge_pause_ms": 600,
+    "speech_pad_ms": 150,
+    "max_chunk_seconds": 30.0,
+    "group_target_seconds": 20.0,
+    "split_overlap_ms": 250,
+    "max_audio_seconds": 10805,
+    "stt_request_seconds": 240.0,
+    "stt_request_bytes": 20000000
+   },
+   "set": "earnings21",
+   "cuts_in_speech": {
+    "fixed30": [
+     51,
+     68
+    ],
+    "fixed240": [
+     7,
+     8
+    ],
+    "packed": [
+     0,
+     8
+    ]
+   }
+  },
+  {
+   "video_id": "earnings21_e4392809",
+   "duration_s": 1438.01,
+   "speech_regions": 334,
+   "speech_s": 1200.16,
+   "vad_chunks": 139,
+   "forced_splits": 0,
+   "vad_audio_s": 1310.15,
+   "stt_requests": 6,
+   "packed_audio_s": 1397.19,
+   "chunk_len_median_s": 8.78,
+   "fixed30_requests": 48,
+   "fixed240_requests": 6,
+   "local_vad_seconds": 55.32,
+   "local_pack_seconds": 2.21,
+   "settings": {
+    "threshold": 0.5,
+    "neg_threshold": 0.35,
+    "min_speech_ms": 250,
+    "min_silence_ms": 100,
+    "merge_pause_ms": 600,
+    "speech_pad_ms": 150,
+    "max_chunk_seconds": 30.0,
+    "group_target_seconds": 20.0,
+    "split_overlap_ms": 250,
+    "max_audio_seconds": 10805,
+    "stt_request_seconds": 240.0,
+    "stt_request_bytes": 20000000
+   },
+   "set": "earnings21",
+   "cuts_in_speech": {
+    "fixed30": [
+     41,
+     47
+    ],
+    "fixed240": [
+     5,
+     5
+    ],
+    "packed": [
+     0,
+     5
+    ]
+   }
+  },
+  {
+   "video_id": "earnings21_e4394084",
+   "duration_s": 1758.02,
+   "speech_regions": 623,
+   "speech_s": 1294.85,
+   "vad_chunks": 235,
+   "forced_splits": 0,
+   "vad_audio_s": 1496.36,
+   "stt_requests": 7,
+   "packed_audio_s": 1656.79,
+   "chunk_len_median_s": 4.91,
+   "fixed30_requests": 59,
+   "fixed240_requests": 8,
+   "local_vad_seconds": 62.17,
+   "local_pack_seconds": 3.27,
+   "settings": {
+    "threshold": 0.5,
+    "neg_threshold": 0.35,
+    "min_speech_ms": 250,
+    "min_silence_ms": 100,
+    "merge_pause_ms": 600,
+    "speech_pad_ms": 150,
+    "max_chunk_seconds": 30.0,
+    "group_target_seconds": 20.0,
+    "split_overlap_ms": 250,
+    "max_audio_seconds": 10805,
+    "stt_request_seconds": 240.0,
+    "stt_request_bytes": 20000000
+   },
+   "set": "earnings21",
+   "cuts_in_speech": {
+    "fixed30": [
+     43,
+     58
+    ],
+    "fixed240": [
+     4,
+     7
+    ],
+    "packed": [
+     0,
+     6
+    ]
+   }
+  },
+  {
+   "video_id": "earnings21_e4397800",
+   "duration_s": 2771.64,
+   "speech_regions": 649,
+   "speech_s": 2399.87,
+   "vad_chunks": 215,
+   "forced_splits": 0,
+   "vad_audio_s": 2603.5,
+   "stt_requests": 12,
+   "packed_audio_s": 2712.24,
+   "chunk_len_median_s": 10.8,
+   "fixed30_requests": 93,
+   "fixed240_requests": 12,
+   "local_vad_seconds": 98.77,
+   "local_pack_seconds": 3.38,
+   "settings": {
+    "threshold": 0.5,
+    "neg_threshold": 0.35,
+    "min_speech_ms": 250,
+    "min_silence_ms": 100,
+    "merge_pause_ms": 600,
+    "speech_pad_ms": 150,
+    "max_chunk_seconds": 30.0,
+    "group_target_seconds": 20.0,
+    "split_overlap_ms": 250,
+    "max_audio_seconds": 10805,
+    "stt_request_seconds": 240.0,
+    "stt_request_bytes": 20000000
+   },
+   "set": "earnings21",
+   "cuts_in_speech": {
+    "fixed30": [
+     83,
+     92
+    ],
+    "fixed240": [
+     10,
+     11
+    ],
+    "packed": [
+     0,
+     11
+    ]
+   }
+  },
+  {
+   "video_id": "earnings21_e4397829",
+   "duration_s": 4472.74,
+   "speech_regions": 1308,
+   "speech_s": 3654.18,
+   "vad_chunks": 450,
+   "forced_splits": 0,
+   "vad_audio_s": 4058.69,
+   "stt_requests": 19,
+   "packed_audio_s": 4357.38,
+   "chunk_len_median_s": 7.4,
+   "fixed30_requests": 150,
+   "fixed240_requests": 19,
+   "local_vad_seconds": 174.38,
+   "local_pack_seconds": 5.74,
+   "settings": {
+    "threshold": 0.5,
+    "neg_threshold": 0.35,
+    "min_speech_ms": 250,
+    "min_silence_ms": 100,
+    "merge_pause_ms": 600,
+    "speech_pad_ms": 150,
+    "max_chunk_seconds": 30.0,
+    "group_target_seconds": 20.0,
+    "split_overlap_ms": 250,
+    "max_audio_seconds": 10805,
+    "stt_request_seconds": 240.0,
+    "stt_request_bytes": 20000000
+   },
+   "set": "earnings21",
+   "cuts_in_speech": {
+    "fixed30": [
+     129,
+     149
+    ],
+    "fixed240": [
+     14,
+     18
+    ],
+    "packed": [
+     0,
+     18
+    ]
+   }
+  },
+  {
+   "video_id": "rev16_rev10",
+   "duration_s": 2183.55,
+   "speech_regions": 177,
+   "speech_s": 2113.25,
+   "vad_chunks": 115,
+   "forced_splits": 0,
+   "vad_audio_s": 2164.97,
+   "stt_requests": 10,
+   "packed_audio_s": 2176.76,
+   "chunk_len_median_s": 20.68,
+   "fixed30_requests": 73,
+   "fixed240_requests": 10,
+   "local_vad_seconds": 91.92,
+   "local_pack_seconds": 1.57,
+   "settings": {
+    "threshold": 0.5,
+    "neg_threshold": 0.35,
+    "min_speech_ms": 250,
+    "min_silence_ms": 100,
+    "merge_pause_ms": 600,
+    "speech_pad_ms": 150,
+    "max_chunk_seconds": 30.0,
+    "group_target_seconds": 20.0,
+    "split_overlap_ms": 250,
+    "max_audio_seconds": 10805,
+    "stt_request_seconds": 240.0,
+    "stt_request_bytes": 20000000
+   },
+   "set": "rev16",
+   "cuts_in_speech": {
+    "fixed30": [
+     69,
+     72
+    ],
+    "fixed240": [
+     8,
+     9
+    ],
+    "packed": [
+     4,
+     9
+    ]
+   }
+  },
+  {
+   "video_id": "rev16_rev11",
+   "duration_s": 2379.28,
+   "speech_regions": 166,
+   "speech_s": 2282.4,
+   "vad_chunks": 119,
+   "forced_splits": 0,
+   "vad_audio_s": 2331.69,
+   "stt_requests": 11,
+   "packed_audio_s": 2359.47,
+   "chunk_len_median_s": 19.66,
+   "fixed30_requests": 80,
+   "fixed240_requests": 10,
+   "local_vad_seconds": 75.86,
+   "local_pack_seconds": 1.33,
+   "settings": {
+    "threshold": 0.5,
+    "neg_threshold": 0.35,
+    "min_speech_ms": 250,
+    "min_silence_ms": 100,
+    "merge_pause_ms": 600,
+    "speech_pad_ms": 150,
+    "max_chunk_seconds": 30.0,
+    "group_target_seconds": 20.0,
+    "split_overlap_ms": 250,
+    "max_audio_seconds": 10805,
+    "stt_request_seconds": 240.0,
+    "stt_request_bytes": 20000000
+   },
+   "set": "rev16",
+   "cuts_in_speech": {
+    "fixed30": [
+     77,
+     79
+    ],
+    "fixed240": [
+     9,
+     9
+    ],
+    "packed": [
+     2,
+     10
+    ]
+   }
+  },
+  {
+   "video_id": "rev16_rev14",
+   "duration_s": 184.63,
+   "speech_regions": 64,
+   "speech_s": 133.86,
+   "vad_chunks": 22,
+   "forced_splits": 0,
+   "vad_audio_s": 154.34,
+   "stt_requests": 1,
+   "packed_audio_s": 169.76,
+   "chunk_len_median_s": 5.07,
+   "fixed30_requests": 7,
+   "fixed240_requests": 1,
+   "local_vad_seconds": 11.2,
+   "local_pack_seconds": 0.24,
+   "settings": {
+    "threshold": 0.5,
+    "neg_threshold": 0.35,
+    "min_speech_ms": 250,
+    "min_silence_ms": 100,
+    "merge_pause_ms": 600,
+    "speech_pad_ms": 150,
+    "max_chunk_seconds": 30.0,
+    "group_target_seconds": 20.0,
+    "split_overlap_ms": 250,
+    "max_audio_seconds": 10805,
+    "stt_request_seconds": 240.0,
+    "stt_request_bytes": 20000000
+   },
+   "set": "rev16",
+   "cuts_in_speech": {
+    "fixed30": [
+     5,
+     6
+    ],
+    "fixed240": [
+     0,
+     0
+    ],
+    "packed": [
+     0,
+     0
+    ]
+   }
+  },
+  {
+   "video_id": "rev16_rev17",
+   "duration_s": 3494.03,
+   "speech_regions": 713,
+   "speech_s": 3178.3,
+   "vad_chunks": 203,
+   "forced_splits": 0,
+   "vad_audio_s": 3392.44,
+   "stt_requests": 16,
+   "packed_audio_s": 3428.4,
+   "chunk_len_median_s": 20.52,
+   "fixed30_requests": 117,
+   "fixed240_requests": 15,
+   "local_vad_seconds": 102.56,
+   "local_pack_seconds": 2.35,
+   "settings": {
+    "threshold": 0.5,
+    "neg_threshold": 0.35,
+    "min_speech_ms": 250,
+    "min_silence_ms": 100,
+    "merge_pause_ms": 600,
+    "speech_pad_ms": 150,
+    "max_chunk_seconds": 30.0,
+    "group_target_seconds": 20.0,
+    "split_overlap_ms": 250,
+    "max_audio_seconds": 10805,
+    "stt_request_seconds": 240.0,
+    "stt_request_bytes": 20000000
+   },
+   "set": "rev16",
+   "cuts_in_speech": {
+    "fixed30": [
+     111,
+     116
+    ],
+    "fixed240": [
+     13,
+     14
+    ],
+    "packed": [
+     1,
+     15
+    ]
+   }
+  },
+  {
+   "video_id": "rev16_rev18",
+   "duration_s": 3979.6,
+   "speech_regions": 825,
+   "speech_s": 3636.74,
+   "vad_chunks": 219,
+   "forced_splits": 0,
+   "vad_audio_s": 3876.36,
+   "stt_requests": 18,
+   "packed_audio_s": 3921.22,
+   "chunk_len_median_s": 20.49,
+   "fixed30_requests": 133,
+   "fixed240_requests": 17,
+   "local_vad_seconds": 119.46,
+   "local_pack_seconds": 2.65,
+   "settings": {
+    "threshold": 0.5,
+    "neg_threshold": 0.35,
+    "min_speech_ms": 250,
+    "min_silence_ms": 100,
+    "merge_pause_ms": 600,
+    "speech_pad_ms": 150,
+    "max_chunk_seconds": 30.0,
+    "group_target_seconds": 20.0,
+    "split_overlap_ms": 250,
+    "max_audio_seconds": 10805,
+    "stt_request_seconds": 240.0,
+    "stt_request_bytes": 20000000
+   },
+   "set": "rev16",
+   "cuts_in_speech": {
+    "fixed30": [
+     118,
+     132
+    ],
+    "fixed240": [
+     13,
+     16
+    ],
+    "packed": [
+     0,
+     17
+    ]
+   }
+  },
+  {
+   "video_id": "rev16_rev20",
+   "duration_s": 2152.86,
+   "speech_regions": 809,
+   "speech_s": 1441.22,
+   "vad_chunks": 544,
+   "forced_splits": 0,
+   "vad_audio_s": 1712.82,
+   "stt_requests": 9,
+   "packed_audio_s": 2089.16,
+   "chunk_len_median_s": 2.41,
+   "fixed30_requests": 72,
+   "fixed240_requests": 9,
+   "local_vad_seconds": 70.83,
+   "local_pack_seconds": 6.19,
+   "settings": {
+    "threshold": 0.5,
+    "neg_threshold": 0.35,
+    "min_speech_ms": 250,
+    "min_silence_ms": 100,
+    "merge_pause_ms": 600,
+    "speech_pad_ms": 150,
+    "max_chunk_seconds": 30.0,
+    "group_target_seconds": 20.0,
+    "split_overlap_ms": 250,
+    "max_audio_seconds": 10805,
+    "stt_request_seconds": 240.0,
+    "stt_request_bytes": 20000000
+   },
+   "set": "rev16",
+   "cuts_in_speech": {
+    "fixed30": [
+     42,
+     71
+    ],
+    "fixed240": [
+     2,
+     8
+    ],
+    "packed": [
+     0,
+     8
+    ]
+   }
+  },
+  {
+   "video_id": "rev16_rev21",
+   "duration_s": 2418.89,
+   "speech_regions": 220,
+   "speech_s": 2274.08,
+   "vad_chunks": 109,
+   "forced_splits": 0,
+   "vad_audio_s": 2336.27,
+   "stt_requests": 11,
+   "packed_audio_s": 2332.13,
+   "chunk_len_median_s": 23.76,
+   "fixed30_requests": 81,
+   "fixed240_requests": 11,
+   "local_vad_seconds": 75.85,
+   "local_pack_seconds": 1.15,
+   "settings": {
+    "threshold": 0.5,
+    "neg_threshold": 0.35,
+    "min_speech_ms": 250,
+    "min_silence_ms": 100,
+    "merge_pause_ms": 600,
+    "speech_pad_ms": 150,
+    "max_chunk_seconds": 30.0,
+    "group_target_seconds": 20.0,
+    "split_overlap_ms": 250,
+    "max_audio_seconds": 10805,
+    "stt_request_seconds": 240.0,
+    "stt_request_bytes": 20000000
+   },
+   "set": "rev16",
+   "cuts_in_speech": {
+    "fixed30": [
+     76,
+     80
+    ],
+    "fixed240": [
+     9,
+     10
+    ],
+    "packed": [
+     0,
+     10
+    ]
+   }
+  },
+  {
+   "video_id": "rev16_rev23",
+   "duration_s": 3909.15,
+   "speech_regions": 477,
+   "speech_s": 3782.5,
+   "vad_chunks": 179,
+   "forced_splits": 0,
+   "vad_audio_s": 3912.36,
+   "stt_requests": 18,
+   "packed_audio_s": 3902.68,
+   "chunk_len_median_s": 23.12,
+   "fixed30_requests": 131,
+   "fixed240_requests": 17,
+   "local_vad_seconds": 112.75,
+   "local_pack_seconds": 1.68,
+   "settings": {
+    "threshold": 0.5,
+    "neg_threshold": 0.35,
+    "min_speech_ms": 250,
+    "min_silence_ms": 100,
+    "merge_pause_ms": 600,
+    "speech_pad_ms": 150,
+    "max_chunk_seconds": 30.0,
+    "group_target_seconds": 20.0,
+    "split_overlap_ms": 250,
+    "max_audio_seconds": 10805,
+    "stt_request_seconds": 240.0,
+    "stt_request_bytes": 20000000
+   },
+   "set": "rev16",
+   "cuts_in_speech": {
+    "fixed30": [
+     124,
+     130
+    ],
+    "fixed240": [
+     16,
+     16
+    ],
+    "packed": [
+     3,
+     17
+    ]
+   }
+  },
+  {
+   "video_id": "rev16_rev24",
+   "duration_s": 6462.48,
+   "speech_regions": 1244,
+   "speech_s": 5554.98,
+   "vad_chunks": 559,
+   "forced_splits": 0,
+   "vad_audio_s": 5941.93,
+   "stt_requests": 27,
+   "packed_audio_s": 6234.01,
+   "chunk_len_median_s": 8.17,
+   "fixed30_requests": 216,
+   "fixed240_requests": 27,
+   "local_vad_seconds": 164.77,
+   "local_pack_seconds": 5.08,
+   "settings": {
+    "threshold": 0.5,
+    "neg_threshold": 0.35,
+    "min_speech_ms": 250,
+    "min_silence_ms": 100,
+    "merge_pause_ms": 600,
+    "speech_pad_ms": 150,
+    "max_chunk_seconds": 30.0,
+    "group_target_seconds": 20.0,
+    "split_overlap_ms": 250,
+    "max_audio_seconds": 10805,
+    "stt_request_seconds": 240.0,
+    "stt_request_bytes": 20000000
+   },
+   "set": "rev16",
+   "cuts_in_speech": {
+    "fixed30": [
+     190,
+     215
+    ],
+    "fixed240": [
+     21,
+     26
+    ],
+    "packed": [
+     0,
+     26
+    ]
+   }
+  },
+  {
+   "video_id": "rev16_rev26",
+   "duration_s": 4505.08,
+   "speech_regions": 688,
+   "speech_s": 4231.39,
+   "vad_chunks": 233,
+   "forced_splits": 0,
+   "vad_audio_s": 4441.61,
+   "stt_requests": 20,
+   "packed_audio_s": 4467.64,
+   "chunk_len_median_s": 21.29,
+   "fixed30_requests": 151,
+   "fixed240_requests": 19,
+   "local_vad_seconds": 108.1,
+   "local_pack_seconds": 2.2,
+   "settings": {
+    "threshold": 0.5,
+    "neg_threshold": 0.35,
+    "min_speech_ms": 250,
+    "min_silence_ms": 100,
+    "merge_pause_ms": 600,
+    "speech_pad_ms": 150,
+    "max_chunk_seconds": 30.0,
+    "group_target_seconds": 20.0,
+    "split_overlap_ms": 250,
+    "max_audio_seconds": 10805,
+    "stt_request_seconds": 240.0,
+    "stt_request_bytes": 20000000
+   },
+   "set": "rev16",
+   "cuts_in_speech": {
+    "fixed30": [
+     141,
+     150
+    ],
+    "fixed240": [
+     17,
+     18
+    ],
+    "packed": [
+     2,
+     19
+    ]
+   }
+  },
+  {
+   "video_id": "rev16_rev27",
+   "duration_s": 1306.91,
+   "speech_regions": 405,
+   "speech_s": 919.78,
+   "vad_chunks": 263,
+   "forced_splits": 0,
+   "vad_audio_s": 1046.68,
+   "stt_requests": 6,
+   "packed_audio_s": 1242.96,
+   "chunk_len_median_s": 3.18,
+   "fixed30_requests": 44,
+   "fixed240_requests": 6,
+   "local_vad_seconds": 33.1,
+   "local_pack_seconds": 2.05,
+   "settings": {
+    "threshold": 0.5,
+    "neg_threshold": 0.35,
+    "min_speech_ms": 250,
+    "min_silence_ms": 100,
+    "merge_pause_ms": 600,
+    "speech_pad_ms": 150,
+    "max_chunk_seconds": 30.0,
+    "group_target_seconds": 20.0,
+    "split_overlap_ms": 250,
+    "max_audio_seconds": 10805,
+    "stt_request_seconds": 240.0,
+    "stt_request_bytes": 20000000
+   },
+   "set": "rev16",
+   "cuts_in_speech": {
+    "fixed30": [
+     32,
+     43
+    ],
+    "fixed240": [
+     4,
+     5
+    ],
+    "packed": [
+     0,
+     5
+    ]
+   }
+  },
+  {
+   "video_id": "rev16_rev29",
+   "duration_s": 3847.04,
+   "speech_regions": 1068,
+   "speech_s": 3348.32,
+   "vad_chunks": 312,
+   "forced_splits": 0,
+   "vad_audio_s": 3679.62,
+   "stt_requests": 17,
+   "packed_audio_s": 3806.03,
+   "chunk_len_median_s": 11.12,
+   "fixed30_requests": 129,
+   "fixed240_requests": 17,
+   "local_vad_seconds": 91.36,
+   "local_pack_seconds": 2.76,
+   "settings": {
+    "threshold": 0.5,
+    "neg_threshold": 0.35,
+    "min_speech_ms": 250,
+    "min_silence_ms": 100,
+    "merge_pause_ms": 600,
+    "speech_pad_ms": 150,
+    "max_chunk_seconds": 30.0,
+    "group_target_seconds": 20.0,
+    "split_overlap_ms": 250,
+    "max_audio_seconds": 10805,
+    "stt_request_seconds": 240.0,
+    "stt_request_bytes": 20000000
+   },
+   "set": "rev16",
+   "cuts_in_speech": {
+    "fixed30": [
+     107,
+     128
+    ],
+    "fixed240": [
+     14,
+     16
+    ],
+    "packed": [
+     0,
+     16
+    ]
+   }
+  },
+  {
+   "video_id": "rev16_rev3",
+   "duration_s": 7931.3,
+   "speech_regions": 1049,
+   "speech_s": 7333.15,
+   "vad_chunks": 520,
+   "forced_splits": 0,
+   "vad_audio_s": 7658.12,
+   "stt_requests": 35,
+   "packed_audio_s": 7835.41,
+   "chunk_len_median_s": 14.86,
+   "fixed30_requests": 265,
+   "fixed240_requests": 34,
+   "local_vad_seconds": 217.05,
+   "local_pack_seconds": 7.33,
+   "settings": {
+    "threshold": 0.5,
+    "neg_threshold": 0.35,
+    "min_speech_ms": 250,
+    "min_silence_ms": 100,
+    "merge_pause_ms": 600,
+    "speech_pad_ms": 150,
+    "max_chunk_seconds": 30.0,
+    "group_target_seconds": 20.0,
+    "split_overlap_ms": 250,
+    "max_audio_seconds": 10805,
+    "stt_request_seconds": 240.0,
+    "stt_request_bytes": 20000000
+   },
+   "set": "rev16",
+   "cuts_in_speech": {
+    "fixed30": [
+     245,
+     264
+    ],
+    "fixed240": [
+     29,
+     33
+    ],
+    "packed": [
+     3,
+     34
+    ]
+   }
+  },
+  {
+   "video_id": "rev16_rev32",
+   "duration_s": 2877.5,
+   "speech_regions": 775,
+   "speech_s": 2521.5,
+   "vad_chunks": 154,
+   "forced_splits": 0,
+   "vad_audio_s": 2757.48,
+   "stt_requests": 13,
+   "packed_audio_s": 2783.41,
+   "chunk_len_median_s": 20.72,
+   "fixed30_requests": 96,
+   "fixed240_requests": 12,
+   "local_vad_seconds": 65.14,
+   "local_pack_seconds": 2.49,
+   "settings": {
+    "threshold": 0.5,
+    "neg_threshold": 0.35,
+    "min_speech_ms": 250,
+    "min_silence_ms": 100,
+    "merge_pause_ms": 600,
+    "speech_pad_ms": 150,
+    "max_chunk_seconds": 30.0,
+    "group_target_seconds": 20.0,
+    "split_overlap_ms": 250,
+    "max_audio_seconds": 10805,
+    "stt_request_seconds": 240.0,
+    "stt_request_bytes": 20000000
+   },
+   "set": "rev16",
+   "cuts_in_speech": {
+    "fixed30": [
+     83,
+     95
+    ],
+    "fixed240": [
+     11,
+     11
+    ],
+    "packed": [
+     0,
+     12
+    ]
+   }
+  },
+  {
+   "video_id": "rev16_rev4",
+   "duration_s": 7573.68,
+   "speech_regions": 918,
+   "speech_s": 7093.89,
+   "vad_chunks": 472,
+   "forced_splits": 0,
+   "vad_audio_s": 7376.55,
+   "stt_requests": 33,
+   "packed_audio_s": 7513.81,
+   "chunk_len_median_s": 16.08,
+   "fixed30_requests": 253,
+   "fixed240_requests": 32,
+   "local_vad_seconds": 278.13,
+   "local_pack_seconds": 5.89,
+   "settings": {
+    "threshold": 0.5,
+    "neg_threshold": 0.35,
+    "min_speech_ms": 250,
+    "min_silence_ms": 100,
+    "merge_pause_ms": 600,
+    "speech_pad_ms": 150,
+    "max_chunk_seconds": 30.0,
+    "group_target_seconds": 20.0,
+    "split_overlap_ms": 250,
+    "max_audio_seconds": 10805,
+    "stt_request_seconds": 240.0,
+    "stt_request_bytes": 20000000
+   },
+   "set": "rev16",
+   "cuts_in_speech": {
+    "fixed30": [
+     233,
+     252
+    ],
+    "fixed240": [
+     29,
+     31
+    ],
+    "packed": [
+     3,
+     32
+    ]
+   }
+  },
+  {
+   "video_id": "rev16_rev9",
+   "duration_s": 2974.08,
+   "speech_regions": 377,
+   "speech_s": 2831.17,
+   "vad_chunks": 152,
+   "forced_splits": 0,
+   "vad_audio_s": 2940.23,
+   "stt_requests": 13,
+   "packed_audio_s": 2957.33,
+   "chunk_len_median_s": 21.61,
+   "fixed30_requests": 100,
+   "fixed240_requests": 13,
+   "local_vad_seconds": 114.58,
+   "local_pack_seconds": 2.38,
+   "settings": {
+    "threshold": 0.5,
+    "neg_threshold": 0.35,
+    "min_speech_ms": 250,
+    "min_silence_ms": 100,
+    "merge_pause_ms": 600,
+    "speech_pad_ms": 150,
+    "max_chunk_seconds": 30.0,
+    "group_target_seconds": 20.0,
+    "split_overlap_ms": 250,
+    "max_audio_seconds": 10805,
+    "stt_request_seconds": 240.0,
+    "stt_request_bytes": 20000000
+   },
+   "set": "rev16",
+   "cuts_in_speech": {
+    "fixed30": [
+     94,
+     99
+    ],
+    "fixed240": [
+     12,
+     12
+    ],
+    "packed": [
+     2,
+     12
+    ]
+   }
+  },
+  {
+   "video_id": "tedlium_AimeeMullins",
+   "duration_s": 1249.02,
+   "speech_regions": 496,
+   "speech_s": 926.46,
+   "vad_chunks": 234,
+   "forced_splits": 0,
+   "vad_audio_s": 1090.07,
+   "stt_requests": 6,
+   "packed_audio_s": 1233.98,
+   "chunk_len_median_s": 3.08,
+   "fixed30_requests": 42,
+   "fixed240_requests": 6,
+   "local_vad_seconds": 43.33,
+   "local_pack_seconds": 2.81,
+   "settings": {
+    "threshold": 0.5,
+    "neg_threshold": 0.35,
+    "min_speech_ms": 250,
+    "min_silence_ms": 100,
+    "merge_pause_ms": 600,
+    "speech_pad_ms": 150,
+    "max_chunk_seconds": 30.0,
+    "group_target_seconds": 20.0,
+    "split_overlap_ms": 250,
+    "max_audio_seconds": 10805,
+    "stt_request_seconds": 240.0,
+    "stt_request_bytes": 20000000
+   },
+   "set": "tedlium",
+   "cuts_in_speech": {
+    "fixed30": [
+     27,
+     41
+    ],
+    "fixed240": [
+     3,
+     5
+    ],
+    "packed": [
+     0,
+     5
+    ]
+   }
+  },
+  {
+   "video_id": "tedlium_BillGates",
+   "duration_s": 1505.81,
+   "speech_regions": 553,
+   "speech_s": 1297.94,
+   "vad_chunks": 96,
+   "forced_splits": 0,
+   "vad_audio_s": 1477.44,
+   "stt_requests": 7,
+   "packed_audio_s": 1502.49,
+   "chunk_len_median_s": 19.15,
+   "fixed30_requests": 51,
+   "fixed240_requests": 7,
+   "local_vad_seconds": 53.14,
+   "local_pack_seconds": 1.12,
+   "settings": {
+    "threshold": 0.5,
+    "neg_threshold": 0.35,
+    "min_speech_ms": 250,
+    "min_silence_ms": 100,
+    "merge_pause_ms": 600,
+    "speech_pad_ms": 150,
+    "max_chunk_seconds": 30.0,
+    "group_target_seconds": 20.0,
+    "split_overlap_ms": 250,
+    "max_audio_seconds": 10805,
+    "stt_request_seconds": 240.0,
+    "stt_request_bytes": 20000000
+   },
+   "set": "tedlium",
+   "cuts_in_speech": {
+    "fixed30": [
+     41,
+     50
+    ],
+    "fixed240": [
+     5,
+     6
+    ],
+    "packed": [
+     0,
+     6
+    ]
+   }
+  },
+  {
+   "video_id": "tedlium_DanBarber",
+   "duration_s": 834.05,
+   "speech_regions": 304,
+   "speech_s": 676.67,
+   "vad_chunks": 94,
+   "forced_splits": 0,
+   "vad_audio_s": 773.07,
+   "stt_requests": 4,
+   "packed_audio_s": 825.12,
+   "chunk_len_median_s": 4.2,
+   "fixed30_requests": 28,
+   "fixed240_requests": 4,
+   "local_vad_seconds": 31.81,
+   "local_pack_seconds": 1.02,
+   "settings": {
+    "threshold": 0.5,
+    "neg_threshold": 0.35,
+    "min_speech_ms": 250,
+    "min_silence_ms": 100,
+    "merge_pause_ms": 600,
+    "speech_pad_ms": 150,
+    "max_chunk_seconds": 30.0,
+    "group_target_seconds": 20.0,
+    "split_overlap_ms": 250,
+    "max_audio_seconds": 10805,
+    "stt_request_seconds": 240.0,
+    "stt_request_bytes": 20000000
+   },
+   "set": "tedlium",
+   "cuts_in_speech": {
+    "fixed30": [
+     19,
+     27
+    ],
+    "fixed240": [
+     3,
+     3
+    ],
+    "packed": [
+     0,
+     3
+    ]
+   }
+  },
+  {
+   "video_id": "tedlium_DanBarber_2010_S103",
+   "duration_s": 5.55,
+   "speech_regions": 1,
+   "speech_s": 5.29,
+   "vad_chunks": 1,
+   "forced_splits": 0,
+   "vad_audio_s": 5.44,
+   "stt_requests": 1,
+   "packed_audio_s": 5.44,
+   "chunk_len_median_s": 5.44,
+   "fixed30_requests": 1,
+   "fixed240_requests": 1,
+   "local_vad_seconds": 3.88,
+   "local_pack_seconds": 0.01,
+   "settings": {
+    "threshold": 0.5,
+    "neg_threshold": 0.35,
+    "min_speech_ms": 250,
+    "min_silence_ms": 100,
+    "merge_pause_ms": 600,
+    "speech_pad_ms": 150,
+    "max_chunk_seconds": 30.0,
+    "group_target_seconds": 20.0,
+    "split_overlap_ms": 250,
+    "max_audio_seconds": 10805,
+    "stt_request_seconds": 240.0,
+    "stt_request_bytes": 20000000
+   },
+   "set": "tedlium",
+   "cuts_in_speech": {
+    "fixed30": [
+     0,
+     0
+    ],
+    "fixed240": [
+     0,
+     0
+    ],
+    "packed": [
+     0,
+     0
+    ]
+   }
+  },
+  {
+   "video_id": "tedlium_DanielKahneman",
+   "duration_s": 1095.54,
+   "speech_regions": 334,
+   "speech_s": 951.78,
+   "vad_chunks": 90,
+   "forced_splits": 0,
+   "vad_audio_s": 1053.08,
+   "stt_requests": 5,
+   "packed_audio_s": 1092.08,
+   "chunk_len_median_s": 11.15,
+   "fixed30_requests": 37,
+   "fixed240_requests": 5,
+   "local_vad_seconds": 33.69,
+   "local_pack_seconds": 1.14,
+   "settings": {
+    "threshold": 0.5,
+    "neg_threshold": 0.35,
+    "min_speech_ms": 250,
+    "min_silence_ms": 100,
+    "merge_pause_ms": 600,
+    "speech_pad_ms": 150,
+    "max_chunk_seconds": 30.0,
+    "group_target_seconds": 20.0,
+    "split_overlap_ms": 250,
+    "max_audio_seconds": 10805,
+    "stt_request_seconds": 240.0,
+    "stt_request_bytes": 20000000
+   },
+   "set": "tedlium",
+   "cuts_in_speech": {
+    "fixed30": [
+     32,
+     36
+    ],
+    "fixed240": [
+     4,
+     4
+    ],
+    "packed": [
+     0,
+     4
+    ]
+   }
+  },
+  {
+   "video_id": "tedlium_EricMead_2009P_EricMead",
+   "duration_s": 459.13,
+   "speech_regions": 100,
+   "speech_s": 403.01,
+   "vad_chunks": 41,
+   "forced_splits": 0,
+   "vad_audio_s": 434.81,
+   "stt_requests": 2,
+   "packed_audio_s": 456.48,
+   "chunk_len_median_s": 8.17,
+   "fixed30_requests": 16,
+   "fixed240_requests": 2,
+   "local_vad_seconds": 16.39,
+   "local_pack_seconds": 0.41,
+   "settings": {
+    "threshold": 0.5,
+    "neg_threshold": 0.35,
+    "min_speech_ms": 250,
+    "min_silence_ms": 100,
+    "merge_pause_ms": 600,
+    "speech_pad_ms": 150,
+    "max_chunk_seconds": 30.0,
+    "group_target_seconds": 20.0,
+    "split_overlap_ms": 250,
+    "max_audio_seconds": 10805,
+    "stt_request_seconds": 240.0,
+    "stt_request_bytes": 20000000
+   },
+   "set": "tedlium",
+   "cuts_in_speech": {
+    "fixed30": [
+     12,
+     15
+    ],
+    "fixed240": [
+     1,
+     1
+    ],
+    "packed": [
+     0,
+     1
+    ]
+   }
+  },
+  {
+   "video_id": "tedlium_GaryFlake",
+   "duration_s": 345.21,
+   "speech_regions": 77,
+   "speech_s": 314.59,
+   "vad_chunks": 23,
+   "forced_splits": 0,
+   "vad_audio_s": 338.21,
+   "stt_requests": 2,
+   "packed_audio_s": 344.92,
+   "chunk_len_median_s": 18.0,
+   "fixed30_requests": 12,
+   "fixed240_requests": 2,
+   "local_vad_seconds": 13.29,
+   "local_pack_seconds": 0.26,
+   "settings": {
+    "threshold": 0.5,
+    "neg_threshold": 0.35,
+    "min_speech_ms": 250,
+    "min_silence_ms": 100,
+    "merge_pause_ms": 600,
+    "speech_pad_ms": 150,
+    "max_chunk_seconds": 30.0,
+    "group_target_seconds": 20.0,
+    "split_overlap_ms": 250,
+    "max_audio_seconds": 10805,
+    "stt_request_seconds": 240.0,
+    "stt_request_bytes": 20000000
+   },
+   "set": "tedlium",
+   "cuts_in_speech": {
+    "fixed30": [
+     10,
+     11
+    ],
+    "fixed240": [
+     1,
+     1
+    ],
+    "packed": [
+     0,
+     1
+    ]
+   }
+  },
+  {
+   "video_id": "tedlium_JamesCameron",
+   "duration_s": 982.36,
+   "speech_regions": 246,
+   "speech_s": 869.65,
+   "vad_chunks": 83,
+   "forced_splits": 0,
+   "vad_audio_s": 949.92,
+   "stt_requests": 5,
+   "packed_audio_s": 980.36,
+   "chunk_len_median_s": 10.99,
+   "fixed30_requests": 33,
+   "fixed240_requests": 5,
+   "local_vad_seconds": 31.75,
+   "local_pack_seconds": 0.96,
+   "settings": {
+    "threshold": 0.5,
+    "neg_threshold": 0.35,
+    "min_speech_ms": 250,
+    "min_silence_ms": 100,
+    "merge_pause_ms": 600,
+    "speech_pad_ms": 150,
+    "max_chunk_seconds": 30.0,
+    "group_target_seconds": 20.0,
+    "split_overlap_ms": 250,
+    "max_audio_seconds": 10805,
+    "stt_request_seconds": 240.0,
+    "stt_request_bytes": 20000000
+   },
+   "set": "tedlium",
+   "cuts_in_speech": {
+    "fixed30": [
+     25,
+     32
+    ],
+    "fixed240": [
+     4,
+     4
+    ],
+    "packed": [
+     0,
+     4
+    ]
+   }
+  },
+  {
+   "video_id": "tedlium_JaneMcGonigal",
+   "duration_s": 1167.58,
+   "speech_regions": 204,
+   "speech_s": 1091.74,
+   "vad_chunks": 66,
+   "forced_splits": 0,
+   "vad_audio_s": 1152.87,
+   "stt_requests": 6,
+   "packed_audio_s": 1166.59,
+   "chunk_len_median_s": 19.21,
+   "fixed30_requests": 39,
+   "fixed240_requests": 5,
+   "local_vad_seconds": 37.19,
+   "local_pack_seconds": 0.79,
+   "settings": {
+    "threshold": 0.5,
+    "neg_threshold": 0.35,
+    "min_speech_ms": 250,
+    "min_silence_ms": 100,
+    "merge_pause_ms": 600,
+    "speech_pad_ms": 150,
+    "max_chunk_seconds": 30.0,
+    "group_target_seconds": 20.0,
+    "split_overlap_ms": 250,
+    "max_audio_seconds": 10805,
+    "stt_request_seconds": 240.0,
+    "stt_request_bytes": 20000000
+   },
+   "set": "tedlium",
+   "cuts_in_speech": {
+    "fixed30": [
+     35,
+     38
+    ],
+    "fixed240": [
+     4,
+     4
+    ],
+    "packed": [
+     0,
+     5
+    ]
+   }
+  },
+  {
+   "video_id": "tedlium_MichaelSpecter",
+   "duration_s": 921.06,
+   "speech_regions": 268,
+   "speech_s": 819.04,
+   "vad_chunks": 66,
+   "forced_splits": 0,
+   "vad_audio_s": 901.67,
+   "stt_requests": 4,
+   "packed_audio_s": 919.92,
+   "chunk_len_median_s": 14.6,
+   "fixed30_requests": 31,
+   "fixed240_requests": 4,
+   "local_vad_seconds": 31.78,
+   "local_pack_seconds": 0.64,
+   "settings": {
+    "threshold": 0.5,
+    "neg_threshold": 0.35,
+    "min_speech_ms": 250,
+    "min_silence_ms": 100,
+    "merge_pause_ms": 600,
+    "speech_pad_ms": 150,
+    "max_chunk_seconds": 30.0,
+    "group_target_seconds": 20.0,
+    "split_overlap_ms": 250,
+    "max_audio_seconds": 10805,
+    "stt_request_seconds": 240.0,
+    "stt_request_bytes": 20000000
+   },
+   "set": "tedlium",
+   "cuts_in_speech": {
+    "fixed30": [
+     28,
+     30
+    ],
+    "fixed240": [
+     3,
+     3
+    ],
+    "packed": [
+     0,
+     3
+    ]
+   }
+  },
+  {
+   "video_id": "tedlium_RobertGupta",
+   "duration_s": 339.99,
+   "speech_regions": 90,
+   "speech_s": 272.41,
+   "vad_chunks": 51,
+   "forced_splits": 0,
+   "vad_audio_s": 301.77,
+   "stt_requests": 2,
+   "packed_audio_s": 333.95,
+   "chunk_len_median_s": 4.14,
+   "fixed30_requests": 12,
+   "fixed240_requests": 2,
+   "local_vad_seconds": 16.3,
+   "local_pack_seconds": 0.77,
+   "settings": {
+    "threshold": 0.5,
+    "neg_threshold": 0.35,
+    "min_speech_ms": 250,
+    "min_silence_ms": 100,
+    "merge_pause_ms": 600,
+    "speech_pad_ms": 150,
+    "max_chunk_seconds": 30.0,
+    "group_target_seconds": 20.0,
+    "split_overlap_ms": 250,
+    "max_audio_seconds": 10805,
+    "stt_request_seconds": 240.0,
+    "stt_request_bytes": 20000000
+   },
+   "set": "tedlium",
+   "cuts_in_speech": {
+    "fixed30": [
+     9,
+     11
+    ],
+    "fixed240": [
+     1,
+     1
+    ],
+    "packed": [
+     0,
+     1
+    ]
+   }
+  }
+ ]
+}

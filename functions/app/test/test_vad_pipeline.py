@@ -146,6 +146,13 @@ class ChunkTranscriptionTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(map_request_words(requests[0],
             [{"word": "later", "start": 12, "end": 13}]),
             [{"text": "later", "start": 31, "end": 32}])
+        mapped = map_request_words(requests[0], [
+            {"word": "pause", "start": 10.2, "end": 10.6},
+            {"word": "first", "start": 12, "end": 12.5},
+            {"word": "second", "start": 11.8, "end": 12.2},
+        ])
+        self.assertEqual([word["text"] for word in mapped], ["pause", "first", "second"])
+        self.assertEqual([word["start"] for word in mapped], [15, 31, 31])
 
     async def test_groq_wav_word_request_and_missing_timing_rejection(self):
         create = AsyncMock(return_value=SimpleNamespace(words=[{"word": "hello", "start": 0, "end": 1}], text="hello"))

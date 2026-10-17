@@ -1,0 +1,20 @@
+{
+ "answerable": {
+  "n": 138,
+  "correct": 124,
+  "correct_in": 122,
+  "partial": 2,
+  "partial_in": 1,
+  "refused": 11,
+  "refused_in": 5,
+  "wrong": 1,
+  "wrong_in": 0,
+  "hallucinated": 0
+ },
+ "unanswerable": {
+  "n": 20,
+  "declined": 19,
+  "hallucinated": 1
+ },
+ "latency_median_s": 0.95
+}

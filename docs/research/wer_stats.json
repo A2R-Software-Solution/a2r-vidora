@@ -1,0 +1,130 @@
+{
+ "files": 10,
+ "ref_words": 26558,
+ "aggregate": {
+  "packed": {
+   "wer": 0.0336,
+   "sub": 0.0084,
+   "del": 0.02,
+   "ins": 0.0052,
+   "requests": 43,
+   "ref_words": 26558
+  },
+  "fixed240": {
+   "wer": 0.0334,
+   "sub": 0.0085,
+   "del": 0.0202,
+   "ins": 0.0047,
+   "requests": 42,
+   "ref_words": 26558
+  },
+  "fixed30": {
+   "wer": 0.0398,
+   "sub": 0.0103,
+   "del": 0.0216,
+   "ins": 0.0079,
+   "requests": 301,
+   "ref_words": 26558
+  },
+  "packed_prefix": {
+   "wer": 0.0763,
+   "sub": 0.0105,
+   "del": 0.0457,
+   "ins": 0.0201,
+   "requests": 43,
+   "ref_words": 26558
+  }
+ },
+ "ci_packed_minus_fixed240": [
+  -0.0022,
+  0.0044
+ ],
+ "ci_packed_minus_fixed30": [
+  -0.01,
+  -0.0012
+ ],
+ "packed_beats_fixed30": 9,
+ "packed_beats_fixed240": 8,
+ "per_file": [
+  {
+   "key": "tedlium_AimeeMullins",
+   "ref_words": 2977,
+   "prefix": 0.0887,
+   "packed": 0.0282,
+   "fixed240": 0.0255,
+   "fixed30": 0.0356
+  },
+  {
+   "key": "tedlium_BillGates",
+   "ref_words": 4481,
+   "prefix": 0.0806,
+   "packed": 0.0469,
+   "fixed240": 0.0475,
+   "fixed30": 0.0536
+  },
+  {
+   "key": "tedlium_DanBarber",
+   "ref_words": 2448,
+   "prefix": 0.0645,
+   "packed": 0.0261,
+   "fixed240": 0.027,
+   "fixed30": 0.0433
+  },
+  {
+   "key": "tedlium_DanielKahneman",
+   "ref_words": 3045,
+   "prefix": 0.0677,
+   "packed": 0.0233,
+   "fixed240": 0.0269,
+   "fixed30": 0.0322
+  },
+  {
+   "key": "tedlium_EricMead_2009P_EricMead",
+   "ref_words": 1561,
+   "prefix": 0.1044,
+   "packed": 0.0545,
+   "fixed240": 0.0301,
+   "fixed30": 0.0327
+  },
+  {
+   "key": "tedlium_GaryFlake",
+   "ref_words": 1137,
+   "prefix": 0.0765,
+   "packed": 0.0229,
+   "fixed240": 0.0255,
+   "fixed30": 0.0413
+  },
+  {
+   "key": "tedlium_JamesCameron",
+   "ref_words": 3018,
+   "prefix": 0.11,
+   "packed": 0.0709,
+   "fixed240": 0.0726,
+   "fixed30": 0.0755
+  },
+  {
+   "key": "tedlium_JaneMcGonigal",
+   "ref_words": 3861,
+   "prefix": 0.0505,
+   "packed": 0.0148,
+   "fixed240": 0.0171,
+   "fixed30": 0.0192
+  },
+  {
+   "key": "tedlium_MichaelSpecter",
+   "ref_words": 3146,
+   "prefix": 0.0636,
+   "packed": 0.0223,
+   "fixed240": 0.0245,
+   "fixed30": 0.0296
+  },
+  {
+   "key": "tedlium_RobertGupta",
+   "ref_words": 884,
+   "prefix": 0.069,
+   "packed": 0.0124,
+   "fixed240": 0.0147,
+   "fixed30": 0.0147
+  }
+ ]
+}

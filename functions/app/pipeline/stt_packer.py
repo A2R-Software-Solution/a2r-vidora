@@ -105,23 +105,36 @@ def pack_stt_requests(batch: AudioBatch, settings: VadSettings) -> tuple[SttRequ
 
 
 def map_request_words(request: SttRequest, words: list[dict]) -> list[dict]:
-    """Convert request-local word times into absolute video timestamps."""
+    """Convert request-local word times into absolute video timestamps.
+
+    Words keep the provider's emission order. Provider word timings around
+    pauses are imprecise: a word whose midpoint lands in an inserted silence
+    gap is attached to the nearest span instead of being dropped, and start
+    times are made non-decreasing so later sorting cannot scramble words.
+    """
     from math import isfinite
 
+    def distance(span: SttSpan, middle: float) -> float:
+        if span.packed_start <= middle < span.packed_end:
+            return 0.0
+        return min(abs(middle - span.packed_start), abs(middle - span.packed_end))
+
     mapped = []
+    previous_start = 0.0
     for word in words:
         start, end = float(word["start"]), float(word["end"])
         if not (isfinite(start) and isfinite(end) and 0 <= start < end <= request.audio_seconds + 0.25):
             continue
-        middle = (start + end) * SAMPLE_RATE / 2
-        span = next((span for span in request.spans if span.packed_start <= middle < span.packed_end), None)
-        if span is None:
-            continue
         text = word["word"].strip()
-        if text:
-            source_start = (span.source_start + max(start * SAMPLE_RATE - span.packed_start, 0)) / SAMPLE_RATE
-            source_end = (span.source_start + min(end * SAMPLE_RATE - span.packed_start,
-                                                  span.packed_end - span.packed_start)) / SAMPLE_RATE
-            if source_end > source_start:
-                mapped.append({"text": text, "start": source_start, "end": source_end})
+        if not text:
+            continue
+        middle = (start + end) * SAMPLE_RATE / 2
+        span = min(request.spans, key=lambda span: distance(span, middle))
+        length = span.packed_end - span.packed_start
+        local_start = min(max(start * SAMPLE_RATE - span.packed_start, 0), length)
+        local_end = min(max(end * SAMPLE_RATE - span.packed_start, 0), length)
+        source_start = max((span.source_start + local_start) / SAMPLE_RATE, previous_start)
+        source_end = max((span.source_start + local_end) / SAMPLE_RATE, source_start + 0.01)
+        mapped.append({"text": text, "start": source_start, "end": source_end})
+        previous_start = source_start
     return mapped

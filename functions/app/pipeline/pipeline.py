@@ -112,6 +112,11 @@ async def run_pipeline(video_id: uuid.UUID, youtube_url: str, *, db: AsyncSessio
         await record_stage("persist")
         await chunk_service.replace_all_for_video(video.id, embedded_chunks, commit=False)
         video = await video_service.mark_completed(video, summary=summary)
+        # Durations are purged with the video after ~24 h; keep them in logs
+        # so processing time can be normalised by video length later.
+        logger.info("analysis_metrics video_id=%s duration_seconds=%s retrieval_chunks=%s "
+                    "stt_requests=%s elapsed_seconds=%.2f", video_id, download_result.duration,
+                    len(embedded_chunks), video.processing_total_chunks, monotonic() - started)
         await record_stage("completed", completed_chunks=video.processing_total_chunks)
         logger.info(f"Pipeline completed for video {video.id}")
         return video

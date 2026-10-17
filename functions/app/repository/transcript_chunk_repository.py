@@ -122,13 +122,22 @@ class TranscriptChunkRepository:
                 order by embedding <=> :query_embedding
                 limit :candidate_pool
             ),
+            -- plainto_tsquery ANDs every content word, so a natural-language
+            -- question matched no chunk almost every time. Re-join the same
+            -- stemmed terms with OR and let ts_rank order by how many match.
+            lexical_query as (
+                select replace(
+                    plainto_tsquery('english', :query_text)::text, ' & ', ' | '
+                )::tsquery as tsq
+            ),
             keyword as (
                 select id, row_number() over (
-                    order by ts_rank(search_vector, plainto_tsquery('english', :query_text)) desc
+                    order by ts_rank(search_vector, lexical_query.tsq) desc
                 ) as rank
-                from transcript_chunks
+                from transcript_chunks, lexical_query
                 where video_id = :video_id
-                  and search_vector @@ plainto_tsquery('english', :query_text)
+                  and search_vector @@ lexical_query.tsq
+                order by ts_rank(search_vector, lexical_query.tsq) desc
                 limit :candidate_pool
             ),
             fused as (

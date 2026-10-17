@@ -35,6 +35,16 @@ async def transcribe_chunks(batch: AudioBatch, *,
     if len(batch.paths) != len(batch.chunks):
         raise ValueError("Audio manifest/file count mismatch")
     requests = pack_stt_requests(batch, settings.vad)
+    # Audio accounting for cost analysis: seconds exported by VAD vs seconds
+    # actually billed after silence compression. No transcript content.
+    logger.info(
+        "stt_packing video_id=%s vad_chunks=%s forced_splits=%s stt_requests=%s "
+        "speech_span_seconds=%.2f vad_audio_seconds=%.2f packed_audio_seconds=%.2f",
+        video_id, len(batch.chunks), sum(chunk.forced_split for chunk in batch.chunks), len(requests),
+        sum(c.speech_end_sample - c.speech_start_sample for c in batch.chunks) / SAMPLE_RATE,
+        sum(c.end_sample - c.start_sample for c in batch.chunks) / SAMPLE_RATE,
+        sum(request.audio_seconds for request in requests),
+    )
     if progress:
         await progress(0, len(requests))
     results: dict[int, list[dict]] = {}
@@ -48,6 +58,7 @@ async def transcribe_chunks(batch: AudioBatch, *,
                 async with AsyncSessionLocal() as session:
                     cached = await SttCheckpointRepository(session).get(video_id, request.first_sequence, digest)
                 if cached is not None:
+                    logger.info("stt_request_cached first=%s last=%s", request.first_sequence, request.last_sequence)
                     return request.first_sequence, cached
             for attempt in range(4):
                 await reserve_stt_request(request.audio_seconds)
@@ -100,7 +111,9 @@ async def transcribe_chunks(batch: AudioBatch, *,
             right = (request.end_sample + following.start_sample) / (2 * SAMPLE_RATE)
         segments.extend(segment for segment in results[request.first_sequence]
                         if left <= (segment["start"] + segment["end"]) / 2 < right)
-    segments.sort(key=lambda segment: (segment["start"], segment["end"]))
+    # Requests never overlap and each request's words are non-decreasing, so a
+    # stable sort on start keeps the provider's word order intact.
+    segments.sort(key=lambda segment: segment["start"])
     if not segments:
         raise EmptyTranscriptionError("No usable speech returned for this video.")
     return segments
