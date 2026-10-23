@@ -31,6 +31,7 @@ from app.schemas.video_schema import VideoCreate
 from app.utils.youtube import extract_youtube_id
 from app.models.short_model import Short
 from app.integration import short_storage
+from app.services.credit_service import CreditOwner, CreditService, video_credit_cost
 from sqlalchemy import select
 
 
@@ -114,7 +115,9 @@ class VideoService:
         return video
 
     async def submit_once(self, payload: VideoCreate, *, user_id: uuid.UUID | None,
-                          request_id: uuid.UUID) -> tuple[Video, bool]:
+                          request_id: uuid.UUID,
+                          owner: CreditOwner | None = None) -> tuple[Video, bool]:
+        """owner is the wallet to charge; None skips credits (internal callers)."""
         youtube_id = extract_youtube_id(payload.youtube_url)
         existing = await self._repo.get_by_id(request_id)
         if existing is not None:
@@ -123,13 +126,29 @@ class VideoService:
             return existing, False
 
         now = datetime.now(timezone.utc)
+        guest_key = owner.guest_key if owner is not None else None
+        guest_cap_key = owner.cap_key if owner is not None else None
         reusable = await self._repo.find_reusable_completed(youtube_id, now=now)
         if reusable is not None:
+            priority = False
+            if owner is not None:
+                # The result is delivered now, so the charge is final now. Not
+                # committed until the copy below is, so they succeed together.
+                credits = CreditService(self._db, commit=False)
+                priority = (await credits.summary(owner)).is_paid
+                hold = await credits.reserve_video(owner, request_id, video_credit_cost(reusable.duration or 1))
+                await credits.settle(hold.id)
+            # Free copies never outlive their source; a paid copy owns its
+            # chunks (copied below), so it keeps the full paid retention.
+            expires_at = (now + timedelta(hours=settings.paid_retention_hours) if priority
+                          else min(reusable.expires_at, now + timedelta(hours=settings.video_retention_hours)))
             # A requester gets their own record, Q&A history and Shorts quota.
             # Transcript chunks are copied so source cleanup cannot affect it.
             video = Video(
                 id=request_id,
                 user_id=user_id,
+                guest_key=guest_key,
+                guest_cap_key=guest_cap_key,
                 youtube_id=youtube_id,
                 youtube_url=f"https://www.youtube.com/watch?v={youtube_id}",
                 title=reusable.title,
@@ -139,10 +158,8 @@ class VideoService:
                 processing_stage="completed",
                 processing_total_chunks=reusable.processing_total_chunks,
                 processing_completed_chunks=reusable.processing_completed_chunks,
-                expires_at=min(
-                    reusable.expires_at,
-                    now + timedelta(hours=settings.video_retention_hours),
-                ),
+                priority=priority,
+                expires_at=expires_at,
             )
             self._db.add(video)
             source_chunks = await self._chunk_repo.list_by_video(reusable.id)
@@ -161,10 +178,17 @@ class VideoService:
             logger.info("analysis_reused video_id=%s source_video_id=%s", video.id, reusable.id)
             return video, False
 
+        priority = False
+        if owner is not None:
+            # The cost is known only after the worker reads the duration; it
+            # reserves then. Here we only refuse when nothing is left at all.
+            priority = (await CreditService(self._db).ensure_available(owner)).is_paid
+        retention = settings.paid_retention_hours if priority else settings.video_retention_hours
         created = await self._repo.create_once(
-            request_id, user_id=user_id, youtube_id=youtube_id,
+            request_id, user_id=user_id, guest_key=guest_key, guest_cap_key=guest_cap_key,
+            priority=priority, youtube_id=youtube_id,
             youtube_url=f"https://www.youtube.com/watch?v={youtube_id}",
-            expires_at=now + timedelta(hours=settings.video_retention_hours),
+            expires_at=now + timedelta(hours=retention),
         )
         await self._db.commit()
         video = await self.get_for_user(request_id, user_id=user_id)

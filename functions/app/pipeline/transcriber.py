@@ -28,8 +28,9 @@ from app.pipeline.stt_packer import map_request_words, pack_stt_requests
 
 async def transcribe_chunks(batch: AudioBatch, *,
                             progress: Callable[[int, int], Awaitable[None]] | None = None,
-                            video_id: uuid.UUID | None = None) -> list[dict]:
-    """Pack VAD clips, enforce shared quotas, and assemble by video time."""
+                            video_id: uuid.UUID | None = None, priority: bool = False) -> list[dict]:
+    """Pack VAD clips, enforce shared quotas, and assemble by video time.
+    priority (paid videos) may use the STT quota share free videos cannot."""
     if not batch.chunks:
         raise EmptyTranscriptionError("No speech detected in this video.")
     if len(batch.paths) != len(batch.chunks):
@@ -61,7 +62,7 @@ async def transcribe_chunks(batch: AudioBatch, *,
                     logger.info("stt_request_cached first=%s last=%s", request.first_sequence, request.last_sequence)
                     return request.first_sequence, cached
             for attempt in range(4):
-                await reserve_stt_request(request.audio_seconds)
+                await reserve_stt_request(request.audio_seconds, priority=priority)
                 try:
                     words = await transcribe_audio_words(str(request.path))
                     segments = map_request_words(request, words)

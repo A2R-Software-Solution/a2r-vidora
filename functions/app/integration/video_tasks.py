@@ -11,8 +11,10 @@ from app.core.config import settings
 
 
 async def enqueue_video_processing(video_id: uuid.UUID, youtube_url: str, *,
-                                   delay_seconds: float = 0) -> None:
-    queue = admin_functions.task_queue(settings.video_processing_task)
+                                   delay_seconds: float = 0, priority: bool = False) -> None:
+    """Paid videos use their own queue so they never wait behind free ones."""
+    queue = admin_functions.task_queue(settings.video_priority_processing_task if priority
+                                       else settings.video_processing_task)
     options = admin_functions.TaskOptions(
         dispatch_deadline_seconds=settings.task_function_timeout_seconds,
         task_id=(f"video-{video_id.hex}" if delay_seconds <= 0

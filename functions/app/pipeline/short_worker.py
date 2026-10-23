@@ -10,6 +10,24 @@ from app.repository.transcript_chunk_repository import TranscriptChunkRepository
 from app.pipeline.short_renderer import render_short
 from app.integration import short_storage
 from app.middleware.logging import logger
+from app.services.credit_service import CreditService, short_reservation_key
+
+
+async def _finish_credits(short_id, attempt_id, *, succeeded: bool, reason: str | None = None) -> None:
+    """Settles or refunds this attempt's hold. A failure here is only logged:
+    the cleanup job reconciles any hold left open."""
+    try:
+        async with AsyncSessionLocal() as db:
+            credits = CreditService(db)
+            hold = await credits.reservation_id(short_reservation_key(short_id, attempt_id))
+            if hold is None:
+                return
+            if succeeded:
+                await credits.settle(hold)
+            else:
+                await credits.finish_failed(hold, reason=reason)
+    except Exception:
+        logger.exception("short_credit_finish_failed short_id=%s", short_id)
 
 
 async def process_short(short_id, attempt_id):
@@ -21,6 +39,7 @@ async def process_short(short_id, attempt_id):
         if job.expires_at <= datetime.now(timezone.utc):
             job.status = "expired"
             await db.commit()
+            await _finish_credits(short_id, attempt_id, succeeded=False, reason="expired")
             return
         job.status, job.updated_at = "rendering", datetime.now(timezone.utc)
         video = await db.get(Video, job.video_id)
@@ -39,9 +58,10 @@ async def process_short(short_id, attempt_id):
                 return
             job.status, job.object_name, job.updated_at = "completed", object_name, datetime.now(timezone.utc)
             await db.commit()
+        await _finish_credits(short_id, attempt_id, succeeded=True)
     except Exception:
         logger.exception("short_render_failed short_id=%s", short_id)
-        # Delete partial uploads; failed attempts don't consume the allowance.
+        # Delete partial uploads; failed attempts are refunded below.
         try:
             await short_storage.delete(object_name)
         except Exception:
@@ -52,3 +72,4 @@ async def process_short(short_id, attempt_id):
                 job.status, job.error_code = "failed", "RENDER_FAILED"
                 job.updated_at = datetime.now(timezone.utc)
                 await db.commit()
+        await _finish_credits(short_id, attempt_id, succeeded=False, reason="RENDER_FAILED")

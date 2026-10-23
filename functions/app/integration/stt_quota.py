@@ -19,9 +19,15 @@ _WINDOWS = ((60, settings.stt_requests_per_minute, None),
 
 
 def _wait_for_capacity(rows: list[tuple[datetime, int]], now: datetime,
-                       audio_seconds: int) -> float:
+                       audio_seconds: int, share: float = 1.0) -> float:
+    """Seconds to wait until the request fits. share < 1 limits a caller to
+    that fraction of every window (free videos), keeping the rest for others."""
     wait = 0.0
     for window, request_limit, seconds_limit in _WINDOWS:
+        if request_limit is not None:
+            request_limit = max(1, int(request_limit * share))
+        if seconds_limit is not None:
+            seconds_limit = int(seconds_limit * share)
         recent = [(at, seconds) for at, seconds in rows
                   if at > now - timedelta(seconds=window)]
         if request_limit is not None and len(recent) >= request_limit:
@@ -46,11 +52,14 @@ class SttQuotaDeferred(Exception):
         self.delay_seconds = delay_seconds
 
 
-async def reserve_stt_request(audio_seconds: float) -> None:
-    """Wait for capacity, then reserve atomically before sending a request."""
+async def reserve_stt_request(audio_seconds: float, *, priority: bool = False) -> None:
+    """Wait for capacity, then reserve atomically before sending a request.
+    Free videos may only use settings.stt_free_share of each window; paid
+    (priority) videos may use all of it."""
     if not 0 < audio_seconds <= settings.stt_audio_seconds_per_hour:
         raise ValueError("Invalid STT request duration")
     audio_seconds = math.ceil(audio_seconds)
+    share = 1.0 if priority else settings.stt_free_share
     while True:
         async with AsyncSessionLocal() as session:
             async with session.begin():
@@ -65,7 +74,7 @@ async def reserve_stt_request(audio_seconds: float) -> None:
                     "SELECT reserved_at, audio_seconds FROM stt_quota_reservations "
                     "WHERE reserved_at > :oldest ORDER BY reserved_at"
                 ), {"oldest": now - timedelta(days=1)})).all()
-                wait = _wait_for_capacity(rows, now, audio_seconds)
+                wait = _wait_for_capacity(rows, now, audio_seconds, share)
                 if wait <= 0:
                     await session.execute(text(
                         "INSERT INTO stt_quota_reservations (reserved_at, audio_seconds) "

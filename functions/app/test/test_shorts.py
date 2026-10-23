@@ -33,16 +33,33 @@ class ShortsTests(unittest.IsolatedAsyncioTestCase):
         self.assertIs(result, job)
         self.assertFalse(created)
 
-    async def test_two_reservations_reject_third(self):
+    async def test_shorts_are_limited_by_credits_not_a_per_video_count(self):
+        from app.services.credit_service import CreditOwner, InsufficientCreditsError, short_reservation_key
         jobs = [SimpleNamespace(start_time=0, end_time=30, status=state, updated_at=datetime.now(timezone.utc)) for state in ["queued", "completed"]]
-        db = Mock(execute=AsyncMock(side_effect=[Mock(), Mock(scalars=Mock(return_value=jobs))]))
-        service = ShortService(db)
-        service._video = AsyncMock(return_value=SimpleNamespace(duration=100))
-        with patch("app.services.short_service.VideoService"), patch("app.services.short_service.TranscriptChunkRepository") as chunks:
-            chunks.return_value.find_in_time_range = AsyncMock(return_value=[SimpleNamespace(chunk_text="hello")])
-            with self.assertRaises(HTTPException) as error:
-                await service.create(uuid.uuid4(), ShortRequest(start_time=40, end_time=70), None)
-        self.assertEqual(error.exception.status_code, 409)
+        owner = CreditOwner(user_id=uuid.uuid4())
+        for credits_left in (True, False):
+            with self.subTest(credits_left=credits_left):
+                db = Mock(add=Mock(), commit=AsyncMock(), refresh=AsyncMock(),
+                          execute=AsyncMock(side_effect=[Mock(), Mock(scalars=Mock(return_value=jobs))]))
+                service = ShortService(db)
+                service._video = AsyncMock(return_value=SimpleNamespace(duration=100, expires_at=datetime.now(timezone.utc) + timedelta(hours=1)))
+                reserve = AsyncMock(side_effect=None if credits_left else InsufficientCreditsError(5, 0))
+                with patch("app.services.short_service.VideoService"), \
+                     patch("app.services.short_service.TranscriptChunkRepository") as chunks, \
+                     patch("app.services.short_service.CreditService", return_value=Mock(reserve=reserve)) as credits:
+                    chunks.return_value.find_in_time_range = AsyncMock(return_value=[SimpleNamespace(chunk_text="hello")])
+                    if credits_left:
+                        job, created = await service.create(uuid.uuid4(), ShortRequest(start_time=40, end_time=70), None, owner)
+                        self.assertTrue(created)
+                        db.commit.assert_awaited_once()
+                        self.assertEqual(reserve.call_args.kwargs["idempotency_key"],
+                                         short_reservation_key(job.id, job.attempt_id))
+                        self.assertFalse(credits.call_args.kwargs["commit"])
+                    else:
+                        with self.assertRaises(InsufficientCreditsError):
+                            await service.create(uuid.uuid4(), ShortRequest(start_time=40, end_time=70), None, owner)
+                        # The queued job is never committed without its charge.
+                        db.commit.assert_not_awaited()
 
     def test_stalled_jobs_release_slot(self):
         job = SimpleNamespace(status="rendering", updated_at=datetime.now(timezone.utc) - timedelta(hours=2))

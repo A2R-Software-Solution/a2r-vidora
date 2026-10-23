@@ -14,6 +14,9 @@ from app.routes.video_routes import router as video_router
 from app.routes.qa_log_routes import router as qa_log_router
 from app.routes.short_suggestion_routes import router as short_suggestion_router
 from app.routes.short_routes import router as short_router
+from app.routes.credit_routes import router as credit_router
+from app.routes.billing_routes import router as billing_router
+from app.services.credit_service import ChatLimitError, InsufficientCreditsError
 
 
 @asynccontextmanager
@@ -43,6 +46,24 @@ app.include_router(video_router)
 app.include_router(qa_log_router)
 app.include_router(short_suggestion_router)
 app.include_router(short_router)
+app.include_router(credit_router)
+app.include_router(billing_router)
+
+
+@app.exception_handler(InsufficientCreditsError)
+async def insufficient_credits(request: Request, exc: InsufficientCreditsError) -> JSONResponse:
+    return JSONResponse(status_code=402, content={
+        "detail": "Not enough credits for this request.", "code": "insufficient_credits",
+        "needed": exc.needed, "available": exc.available,
+    })
+
+
+@app.exception_handler(ChatLimitError)
+async def chat_limit_reached(request: Request, exc: ChatLimitError) -> JSONResponse:
+    return JSONResponse(status_code=429, content={
+        "detail": "Daily question limit reached. It resets at midnight IST.",
+        "code": "daily_question_limit", "limit": exc.limit,
+    })
 
 
 @app.exception_handler(Exception)

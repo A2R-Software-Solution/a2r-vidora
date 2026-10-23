@@ -17,8 +17,10 @@ from firebase_functions.options import (
 from app.core.config import settings
 from app.jobs.cleanup_job import run_cleanup
 from app.main import app as fastapi_app
+from app.integration.groq_client import EmptyTranscriptionError
 from app.pipeline.pipeline import PipelineError, run_pipeline
 from app.pipeline.youtube_downloader import UnsupportedVideoError, VideoTooLongError
+from app.services.credit_service import InsufficientCreditsError
 from app.db.session import AsyncSessionLocal
 from app.integration.embedding_client import embed_text
 
@@ -110,7 +112,8 @@ def _wsgi_app(environ, start_response):
 
 @https_fn.on_request(
     concurrency=settings.vidora_function_concurrency,
-    secrets=["GROQ_API_KEY", "GROQ_API_KEY_FALLBACK", "DATABASE_URL", "RECAPTCHA_SECRET_KEY"],
+    secrets=["GROQ_API_KEY", "GROQ_API_KEY_FALLBACK", "DATABASE_URL", "RECAPTCHA_SECRET_KEY",
+             "RAZORPAY_KEY_SECRET", "RAZORPAY_WEBHOOK_SECRET"],
 )
 def api(req: https_fn.Request) -> https_fn.Response:
     if req.method == "POST" and req.args.get("warmup", "").lower() == "true":
@@ -141,6 +144,19 @@ async def _process_video(data: dict) -> None:
         await run_pipeline(uuid.UUID(video_id), youtube_url, db=db)
 
 
+def _run_video_task(request) -> None:
+    try:
+        asyncio.run(_process_video(request.data))
+    except PipelineError as exc:
+        # Duration violations, missing credits and speechless videos are
+        # permanent; retrying would repeat the same outcome (and could charge
+        # again). Transient failures remain retryable.
+        if isinstance(exc.__cause__, (VideoTooLongError, UnsupportedVideoError,
+                                      InsufficientCreditsError, EmptyTranscriptionError)):
+            return
+        raise
+
+
 @tasks_fn.on_task_dispatched(
     secrets=["GROQ_API_KEY", "GROQ_API_KEY_FALLBACK", "DATABASE_URL"],
     timeout_sec=settings.task_function_timeout_seconds,
@@ -148,14 +164,19 @@ async def _process_video(data: dict) -> None:
     rate_limits=RateLimits(max_concurrent_dispatches=settings.task_max_concurrent_dispatches),
 )
 def processvideo(request) -> None:
-    try:
-        asyncio.run(_process_video(request.data))
-    except PipelineError as exc:
-        # Duration violations are permanent input errors; retrying would only
-        # repeat the same metadata lookup. Transient failures remain retryable.
-        if isinstance(exc.__cause__, (VideoTooLongError, UnsupportedVideoError)):
-            return
-        raise
+    _run_video_task(request)
+
+
+# Same work for paid videos, on its own queue and concurrency so a backlog of
+# free videos never delays them. Name must match VIDEO_PRIORITY_PROCESSING_TASK.
+@tasks_fn.on_task_dispatched(
+    secrets=["GROQ_API_KEY", "GROQ_API_KEY_FALLBACK", "DATABASE_URL"],
+    timeout_sec=settings.task_function_timeout_seconds,
+    retry_config=RetryConfig(max_attempts=settings.task_max_attempts),
+    rate_limits=RateLimits(max_concurrent_dispatches=settings.task_priority_max_concurrent_dispatches),
+)
+def processvideopriority(request) -> None:
+    _run_video_task(request)
 
 
 @tasks_fn.on_task_dispatched(

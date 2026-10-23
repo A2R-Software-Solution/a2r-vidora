@@ -2,7 +2,7 @@ import enum
 import uuid
 from datetime import datetime
 
-from sqlalchemy import String, Integer, Text, DateTime, Enum, ForeignKey, func
+from sqlalchemy import Boolean, String, Integer, Text, DateTime, Enum, ForeignKey, func
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.dialects.postgresql import UUID
 
@@ -24,6 +24,12 @@ class Video(Base):
     user_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id"), nullable=True
     )
+    # Credit wallet of a guest submitter, so the worker knows whom to charge.
+    guest_key: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    guest_cap_key: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    # Submitted by an account holding purchased credits: priority lane and
+    # paid retention for the video and its Shorts.
+    priority: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="false")
     youtube_id: Mapped[str] = mapped_column(String(250), nullable=False)
     youtube_url: Mapped[str] = mapped_column(String(500), nullable=False)
     title: Mapped[str] = mapped_column(String(500), nullable=True)

@@ -175,7 +175,7 @@ class IngestionWiringTests(unittest.IsolatedAsyncioTestCase):
         self.addCleanup(self.stack.close)
         self.video = SimpleNamespace(
             id=uuid.uuid4(), status=VideoStatus.PROCESSING, user_id=None,
-            processing_total_chunks=0,
+            processing_total_chunks=0, priority=False,
         )
         self.service = Mock(get_for_processing=AsyncMock(return_value=self.video),
             mark_metadata=AsyncMock(return_value=self.video), mark_completed=AsyncMock(return_value=self.video),
@@ -196,6 +196,73 @@ class IngestionWiringTests(unittest.IsolatedAsyncioTestCase):
         self.embed = self.stack.enter_context(patch.object(pipeline.embedder, "embed_chunks", AsyncMock(return_value=[
             {"chunk_text": "hello", "start_time": 1, "end_time": 2, "embedding": [0.0] * 384}])))
         self.summary = self.stack.enter_context(patch.object(pipeline.summarizer, "summarize", AsyncMock(return_value="Summary")))
+        self.hold = SimpleNamespace(id=uuid.uuid4())
+        self.credits = Mock(video_hold=AsyncMock(return_value=None),
+            summary=AsyncMock(return_value=SimpleNamespace(available=10_000)),
+            reserve_video=AsyncMock(return_value=self.hold), settle=AsyncMock(), finish_failed=AsyncMock())
+        self.stack.enter_context(patch.object(pipeline, "CreditService", return_value=self.credits))
+
+    async def test_signed_in_run_reserves_by_duration_then_settles(self):
+        self.video.user_id = uuid.uuid4()
+        await pipeline.run_pipeline(self.video.id, "url", db=self.db)
+        self.assertEqual(self.credits.reserve_video.call_args.args[1:], (self.video.id, 1))
+        self.credits.settle.assert_awaited_once_with(self.hold.id)
+        self.credits.finish_failed.assert_not_awaited()
+
+    async def test_our_failure_refunds_the_hold(self):
+        self.video.user_id = uuid.uuid4()
+        self.stt.side_effect = RuntimeError("provider unavailable")
+        with self.assertRaises(pipeline.PipelineError):
+            await pipeline.run_pipeline(self.video.id, "url", db=self.db)
+        self.credits.finish_failed.assert_awaited_once_with(self.hold.id, reason=None)
+        self.credits.settle.assert_not_awaited()
+
+    async def test_speechless_video_is_charged(self):
+        self.video.user_id = uuid.uuid4()
+        self.stt.side_effect = groq_client.EmptyTranscriptionError("No speech detected in this video.")
+        with self.assertRaises(pipeline.PipelineError):
+            await pipeline.run_pipeline(self.video.id, "url", db=self.db)
+        self.service.mark_failed.assert_awaited_once_with(self.video, reason="no_speech")
+        self.credits.finish_failed.assert_awaited_once_with(self.hold.id, reason="no_speech")
+
+    async def test_empty_wallet_fails_before_download(self):
+        self.video.user_id = uuid.uuid4()
+        self.credits.summary.return_value = SimpleNamespace(available=0)
+        with self.assertRaises(pipeline.PipelineError):
+            await pipeline.run_pipeline(self.video.id, "url", db=self.db)
+        pipeline.download_audio.assert_not_awaited()
+        self.service.mark_failed.assert_awaited_once_with(self.video, reason="insufficient_credits")
+        self.credits.reserve_video.assert_not_awaited()
+
+    async def test_download_is_capped_by_affordable_minutes(self):
+        self.video.user_id = uuid.uuid4()
+        self.credits.summary.return_value = SimpleNamespace(available=10)
+        pipeline.download_audio.side_effect = VideoTooLongError("too long")
+        with self.assertRaises(pipeline.PipelineError):
+            await pipeline.run_pipeline(self.video.id, "url", db=self.db)
+        self.assertEqual(pipeline.download_audio.call_args.kwargs["max_duration_seconds"], 600)
+        self.service.mark_failed.assert_awaited_once_with(self.video, reason="insufficient_credits")
+
+    async def test_resumed_run_reuses_its_hold_without_rechecking_balance(self):
+        self.video.user_id = uuid.uuid4()
+        self.credits.video_hold.return_value = self.hold
+        await pipeline.run_pipeline(self.video.id, "url", db=self.db)
+        self.credits.summary.assert_not_awaited()
+        self.credits.reserve_video.assert_not_awaited()
+        self.credits.settle.assert_awaited_once_with(self.hold.id)
+
+    async def test_paid_video_keeps_its_lane_for_stt_and_requeue(self):
+        self.video.priority = True
+        self.stt.side_effect = SttQuotaDeferred(30)
+        with patch.object(pipeline, "enqueue_video_processing", AsyncMock()) as enqueue:
+            await pipeline.run_pipeline(self.video.id, "url", db=self.db)
+        self.assertTrue(self.stt.call_args.kwargs["priority"])
+        self.assertTrue(enqueue.call_args.kwargs["priority"])
+
+    async def test_legacy_guest_video_without_wallet_is_not_charged(self):
+        await pipeline.run_pipeline(self.video.id, "url", db=self.db)
+        self.credits.summary.assert_not_awaited()
+        self.credits.reserve_video.assert_not_awaited()
 
     async def test_real_pipeline_uses_vad_and_publishes_complete_result(self):
         result = await pipeline.run_pipeline(self.video.id, "https://youtu.be/yYF2Vf1Gc14", db=self.db)
@@ -255,7 +322,8 @@ class IngestionWiringTests(unittest.IsolatedAsyncioTestCase):
         with patch.object(pipeline, "enqueue_video_processing", AsyncMock()) as enqueue:
             result = await pipeline.run_pipeline(self.video.id, "https://youtu.be/yYF2Vf1Gc14", db=self.db)
         self.assertIs(result, self.video)
-        enqueue.assert_awaited_once_with(self.video.id, "https://youtu.be/yYF2Vf1Gc14", delay_seconds=75)
+        enqueue.assert_awaited_once_with(self.video.id, "https://youtu.be/yYF2Vf1Gc14", delay_seconds=75,
+                                         priority=False)
         self.service.mark_failed.assert_not_awaited()
         self.chunks.replace_all_for_video.assert_not_awaited()
         self.assertEqual(self.service.mark_progress.call_args.kwargs["stage"], "waiting_for_quota")

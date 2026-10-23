@@ -7,7 +7,7 @@ from app.middleware.logging import logger
 from app.core.config import settings
 from app.core.recaptcha import verify_recaptcha
 from app.deps import get_db
-from app.core.rate_limit import rate_limit_user
+from app.core.rate_limit import credit_owner_for, rate_limit_user
 from app.schemas.video_schema import VideoCreate, VideoResponse
 from app.services.video_service import (
     VideoAccessDeniedError,
@@ -20,8 +20,8 @@ from app.models.video_model import VideoStatus
 from app.integration.video_tasks import enqueue_video_processing
 
 
-async def _enqueue_video_processing(video_id: uuid.UUID, youtube_url: str) -> None:
-    await enqueue_video_processing(video_id, youtube_url)
+async def _enqueue_video_processing(video_id: uuid.UUID, youtube_url: str, *, priority: bool = False) -> None:
+    await enqueue_video_processing(video_id, youtube_url, priority=priority)
 
 
 async def submit_video(
@@ -39,6 +39,7 @@ async def submit_video(
     try:
         video, created = await service.submit_once(
             payload, user_id=user_id, request_id=idempotency_key or uuid.uuid4(),
+            owner=credit_owner_for(request, user_id),
         )
     except (SubmissionConflictError, VideoAccessDeniedError, VideoExpiredError) as exc:
         raise HTTPException(status_code=409, detail="Submission identifier is unavailable.") from exc
@@ -58,7 +59,7 @@ async def submit_video(
         )
 
     try:
-        await _enqueue_video_processing(video.id, video.youtube_url)
+        await _enqueue_video_processing(video.id, video.youtube_url, priority=video.priority)
     except Exception as exc:
         # The row has already been committed. Do not leave a job that cannot
         # be dispatched indefinitely in PROCESSING.

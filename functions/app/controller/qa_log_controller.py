@@ -5,7 +5,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.deps import get_db
-from app.core.rate_limit import rate_limit_user
+from app.core.rate_limit import credit_owner_for, rate_limit_user
+from app.services.credit_service import CreditService
 from app.integration.embedding_client import embed_text
 from app.integration.groq_client import generate_answer
 from app.integration.groq_client import GroqRequestError
@@ -28,14 +29,23 @@ async def ask_question(
     if not settings.ai_enabled:
         raise HTTPException(status_code=503, detail="AI processing is temporarily paused.")
     service = QALogService(db)
+    owner = credit_owner_for(request, user_id)
+    credits = CreditService(db)
+    await credits.consume_question(owner)
     try:
-        log = await service.ask(
-            video_id,
-            payload.question,
-            user_id=user_id,
-            embed_fn=embed_text,
-            answer_fn=generate_answer,
-        )
+        try:
+            log = await service.ask(
+                video_id,
+                payload.question,
+                user_id=user_id,
+                embed_fn=embed_text,
+                answer_fn=generate_answer,
+            )
+        except Exception:
+            # Unanswered questions (bad input, missing video, provider outage) don't count.
+            await db.rollback()
+            await credits.return_question(owner)
+            raise
     except VideoNotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
     except VideoExpiredError as exc:

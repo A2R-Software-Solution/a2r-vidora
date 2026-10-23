@@ -58,6 +58,11 @@ class RateLimitTests(unittest.TestCase):
         patcher = patch.object(video_controller, "verify_recaptcha", AsyncMock())
         patcher.start()
         self.addCleanup(patcher.stop)
+        # Credits have their own tests; here questions are always allowed.
+        patcher = patch.object(qa_log_controller, "CreditService", return_value=Mock(
+            consume_question=AsyncMock(), return_question=AsyncMock()))
+        patcher.start()
+        self.addCleanup(patcher.stop)
         self.client = TestClient(app)
         self.addCleanup(self.client.close)
 

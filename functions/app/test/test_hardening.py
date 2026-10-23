@@ -19,7 +19,7 @@ from datetime import datetime, timedelta, timezone
 
 class HardeningTests(unittest.IsolatedAsyncioTestCase):
     async def test_queue_failure_marks_job_failed_without_leaking_details(self):
-        saved = SimpleNamespace(id=uuid.uuid4(), youtube_url="https://youtu.be/yYF2Vf1Gc14")
+        saved = SimpleNamespace(id=uuid.uuid4(), youtube_url="https://youtu.be/yYF2Vf1Gc14", priority=False)
         service = Mock(submit_once=AsyncMock(return_value=(saved, True)), mark_failed=AsyncMock())
         with patch.object(controller, "VideoService", return_value=service), patch.object(controller, "verify_recaptcha", AsyncMock()), patch.object(controller, "_enqueue_video_processing", AsyncMock(side_effect=RuntimeError("private queue details"))):
             with self.assertRaises(HTTPException) as caught:
@@ -52,14 +52,15 @@ class HardeningTests(unittest.IsolatedAsyncioTestCase):
                 self.assertEqual(list(Path(directory).iterdir()), [])
 
     async def test_fresh_submission_enqueues_canonical_url(self):
-        saved = SimpleNamespace(id=uuid.uuid4(), youtube_url="https://www.youtube.com/watch?v=yYF2Vf1Gc14")
+        saved = SimpleNamespace(id=uuid.uuid4(), youtube_url="https://www.youtube.com/watch?v=yYF2Vf1Gc14",
+                                priority=False)
         service = Mock(submit_once=AsyncMock(return_value=(saved, True)))
         with patch.object(controller, "VideoService", return_value=service), patch.object(controller.VideoResponse, "model_validate", return_value="processing"), patch.object(controller, "_enqueue_video_processing", new_callable=AsyncMock) as enqueue:
             db = Mock()
             result = await controller.submit_video(VideoCreate(youtube_url="https://youtu.be/yYF2Vf1Gc14"),
                                                    saved.id, db=db, user_id=None, request=Request({"type": "http"}), response=Response())
             self.assertEqual(result, "processing")
-            enqueue.assert_awaited_once_with(saved.id, saved.youtube_url)
+            enqueue.assert_awaited_once_with(saved.id, saved.youtube_url, priority=False)
 
     async def test_pause_prevents_new_analysis(self):
         with patch.object(controller.settings, "ai_enabled", False), patch.object(controller, "VideoService") as service:

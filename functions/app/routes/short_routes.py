@@ -4,7 +4,8 @@ from fastapi import Depends, HTTPException, Query, Request, Response
 from sqlalchemy import select
 from firebase_admin import functions as admin_functions
 from app.core.config import settings
-from app.core.rate_limit import limiter, rate_limit_user
+from app.core.rate_limit import credit_owner_for, limiter, rate_limit_user
+from app.services.credit_service import CreditService, short_reservation_key
 from app.deps import get_db
 from app.models.short_model import Short
 from app.schemas.short_schema import ShortRequest, ShortResponse
@@ -32,7 +33,8 @@ async def create_short(video_id: uuid.UUID, payload: ShortRequest, request: Requ
                        db=Depends(get_db), user_id=Depends(rate_limit_user)):
     if not settings.ai_enabled or not settings.shorts_enabled or not settings.shorts_bucket:
         raise HTTPException(503, "Short creation is not available yet.")
-    job, created = await _handle(ShortService(db).create(video_id, payload, user_id))
+    job, created = await _handle(ShortService(db).create(video_id, payload, user_id,
+                                                         credit_owner_for(request, user_id)))
     if created:
         try:
             queue = admin_functions.task_queue(settings.shorts_processing_task)
@@ -48,6 +50,10 @@ async def create_short(video_id: uuid.UUID, payload: ShortRequest, request: Requ
             if locked.attempt_id == attempt and locked.status == "queued":
                 locked.status, locked.error_code = "failed", "QUEUE_UNAVAILABLE"
                 await db.commit()
+                credits = CreditService(db)
+                hold = await credits.reservation_id(short_reservation_key(job.id, attempt))
+                if hold is not None:
+                    await credits.finish_failed(hold, reason="QUEUE_UNAVAILABLE")
             raise HTTPException(503, "Short creation queue is unavailable. Please retry.") from exc
     return job
 
@@ -57,8 +63,13 @@ async def create_short(video_id: uuid.UUID, payload: ShortRequest, request: Requ
 async def list_shorts(video_id: uuid.UUID, request: Request, response: Response,
                       db=Depends(get_db), user_id=Depends(rate_limit_user)):
     jobs = await _handle(ShortService(db).list(video_id, user_id))
-    return {"items": [ShortResponse.model_validate(job) for job in jobs], "free_limit": 2,
-            "used": sum(job.status != "failed" for job in jobs)}
+    used = sum(job.status != "failed" for job in jobs)
+    available = (await CreditService(db).summary(credit_owner_for(request, user_id))).available
+    return {"items": [ShortResponse.model_validate(job) for job in jobs],
+            "credit_cost": settings.short_credit_cost, "used": used,
+            # Deprecated: only for the pre-credits frontend, which enables
+            # "create" while used < free_limit. Remove with the credits UI.
+            "free_limit": used + available // settings.short_credit_cost}
 
 
 @router.get("/{short_id}", response_model=ShortResponse)

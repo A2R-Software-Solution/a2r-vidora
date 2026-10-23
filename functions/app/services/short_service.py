@@ -8,8 +8,7 @@ from app.models.short_model import Short
 from app.services.video_service import VideoService
 from app.integration import short_storage
 from app.repository.transcript_chunk_repository import TranscriptChunkRepository
-
-FREE_SHORT_LIMIT = 2
+from app.services.credit_service import CreditOwner, CreditService, short_reservation_key
 
 
 class ShortService:
@@ -34,7 +33,8 @@ class ShortService:
             if job.status in {"queued", "rendering"} and job.updated_at < now - timedelta(seconds=settings.shorts_timeout_seconds + 1800):
                 job.status, job.error_code = "failed", "JOB_TIMED_OUT"
 
-    async def create(self, video_id, payload, user_id):
+    async def create(self, video_id, payload, user_id, owner: CreditOwner | None = None):
+        """owner is the wallet charged per render attempt; None skips credits."""
         video = await self._video(video_id, user_id)
         VideoService(self.db).ensure_ready_for_qa(video)
         if not video.duration or payload.end_time > video.duration:
@@ -51,17 +51,26 @@ class ShortService:
         if existing and existing.status != "failed":
             await self.db.commit()
             return existing, False
-        if sum(j.status != "failed" for j in jobs) >= FREE_SHORT_LIMIT:
-            raise HTTPException(409, "This video has used its two free Shorts. Jobs in progress reserve an allowance.")
-        expires = min(video.expires_at, now + timedelta(hours=settings.shorts_retention_hours))
+        # A paid video's Shorts share its paid retention.
+        retention = (settings.paid_retention_hours if getattr(video, "priority", False)
+                     else settings.shorts_retention_hours)
+        expires = min(video.expires_at, now + timedelta(hours=retention))
         if existing:
             job = existing
             job.status, job.error_code, job.attempt_id = "queued", None, uuid.uuid4()
             job.updated_at, job.expires_at = now, expires
         else:
-            job = Short(video_id=video_id, start_time=payload.start_time, end_time=payload.end_time,
-                        status="queued", expires_at=expires, updated_at=now, attempt_id=uuid.uuid4())
+            job = Short(id=uuid.uuid4(), video_id=video_id, start_time=payload.start_time,
+                        end_time=payload.end_time, status="queued", expires_at=expires,
+                        updated_at=now, attempt_id=uuid.uuid4())
             self.db.add(job)
+        if owner is not None:
+            # Flushed only: committed together with the job, or rolled back with
+            # it when credits are insufficient.
+            await CreditService(self.db, commit=False).reserve(
+                owner, source_type="short", source_id=job.id,
+                idempotency_key=short_reservation_key(job.id, job.attempt_id),
+                amount=settings.short_credit_cost)
         await self.db.commit()
         await self.db.refresh(job)
         return job, True

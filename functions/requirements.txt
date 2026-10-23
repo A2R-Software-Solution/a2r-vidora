@@ -22,3 +22,4 @@ asyncpg
 a2wsgi
 asgiref
 email-validator
+httpx

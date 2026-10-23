@@ -96,6 +96,32 @@ class Settings(BaseSettings):
     retrieval_candidate_multiplier: int = Field(gt=0)
     retrieval_min_candidates: int = Field(gt=0)
     retrieval_rrf_k: int = Field(gt=0)
+    # Credits: 1 credit = 1 started minute of analysed video. Free allowances
+    # reset at midnight IST and never roll over.
+    guest_daily_credits: int = Field(default=45, ge=0)
+    user_daily_credits: int = Field(default=80, ge=0)
+    short_credit_cost: int = Field(default=5, gt=0)
+    guest_daily_questions: int = Field(default=10, ge=0)
+    # Shared by all guest devices on one IP; bounds new-device-id abuse.
+    guest_ip_daily_credits: int = Field(default=135, ge=0)
+    guest_ip_daily_questions: int = Field(default=30, ge=0)
+    user_daily_questions: int = Field(default=50, ge=0)
+    # "Unlimited" chat for accounts holding purchased credits, with an abuse cap.
+    paid_daily_questions: int = Field(default=500, ge=0)
+    # Perks for accounts holding purchased credits when they submit a video.
+    paid_retention_hours: int = Field(default=168, gt=0)
+    video_priority_processing_task: str = "processvideopriority"
+    task_priority_max_concurrent_dispatches: int = Field(default=2, gt=0)
+    # Share of every STT quota window that free videos may use; the rest is
+    # kept for paid videos. 1.0 disables the reservation.
+    stt_free_share: float = Field(default=0.8, gt=0, le=1)
+    # Credit pack payments through Razorpay. Secrets come from Secret Manager.
+    payments_enabled: bool = False
+    razorpay_key_id: str | None = None
+    razorpay_key_secret: str | None = None
+    razorpay_webhook_secret: str | None = None
+    razorpay_api_url: str = "https://api.razorpay.com/v1"
+    razorpay_timeout_seconds: float = Field(default=10, gt=0)
 
     @property
     def cors_origins(self) -> list[str]:
