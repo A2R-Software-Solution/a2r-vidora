@@ -9,6 +9,9 @@ import ProductHome from "./pages/ProductHome";
 import HowItWorksSection from "./components/landing/HowItWorksSection";
 import WorkspacePage from "./pages/WorkspacePage";
 import PublicPage from "./pages/PublicPage";
+import PricingPage from "./pages/PricingPage";
+import { pricingMeta } from "./utils/pricing";
+import { refreshCredits } from "./hooks/useCredits";
 import { publicPages } from "./content/publicPages";
 import { getCurrentPath, subscribeToNavigation } from "./utils/siteNavigation";
 import SpotlightGlow from "./components/common/SpotlightGlow";
@@ -18,6 +21,7 @@ import "./App.css";
 function App() {
   const path = useSyncExternalStore(subscribeToNavigation, getCurrentPath);
   const isHome = path === "/";
+  const isPricing = path === "/pricing";
   const isTool = path === "/reels" || path === "/analyze";
   const mode = path === "/reels" ? "reels" : "analyze";
   const [video, setVideo] = useState(null);
@@ -26,9 +30,12 @@ function App() {
   const [hasVisitedHome, setHasVisitedHome] = useState(isTool);
   // Mount on first home visit, then retain drafts and the workspace while reading.
   if (isTool && !hasVisitedHome) setHasVisitedHome(true);
-  const publicPage = Object.hasOwn(publicPages, path) ? publicPages[path] : null;
+  const publicPage = isPricing ? pricingMeta : Object.hasOwn(publicPages, path) ? publicPages[path] : null;
 
   useEffect(() => onAuthStateChanged(auth, setUser), []);
+
+  // The wallet changes with the account (guest ↔ signed in).
+  useEffect(() => { void refreshCredits(); }, [user]);
 
   useEffect(() => {
     const previous = window.history.scrollRestoration;
@@ -70,7 +77,8 @@ function App() {
           {video && <WorkspacePage key={video.id} video={video} active={isTool} mode={mode} onSignIn={() => setAuthOpen(true)} signedIn={!!user} />}
           {mode === "analyze" && <HowItWorksSection />}
         </div>}
-        {!isHome && !isTool && <PublicPage page={publicPage} hasAnalysis={!!video} />}
+        {isPricing && <PricingPage signedIn={!!user} onSignIn={() => setAuthOpen(true)} />}
+        {!isHome && !isTool && !isPricing && <PublicPage page={publicPage} hasAnalysis={!!video} />}
       </main>
       <Footer currentPath={path} />
       <BugReportButton />

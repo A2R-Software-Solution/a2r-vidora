@@ -10,7 +10,6 @@ export const config = Object.freeze({
   bugReportUrl: httpUrl(env.VITE_BUG_REPORT_URL, "VITE_BUG_REPORT_URL"),
   analysisTimeoutMs: positiveInteger(env.VITE_ANALYSIS_TIMEOUT_MS, "VITE_ANALYSIS_TIMEOUT_MS"),
   warmupTimeoutMs: positiveInteger(env.VITE_WARMUP_TIMEOUT_MS, "VITE_WARMUP_TIMEOUT_MS"),
-  maxQuestions: positiveInteger(env.VITE_MAX_QUESTIONS, "VITE_MAX_QUESTIONS"),
   maxQuestionChars: positiveInteger(env.VITE_MAX_QUESTION_CHARS, "VITE_MAX_QUESTION_CHARS"),
   youtubePlayerScriptUrl: httpUrl(env.VITE_YOUTUBE_PLAYER_SCRIPT_URL, "VITE_YOUTUBE_PLAYER_SCRIPT_URL"),
 });

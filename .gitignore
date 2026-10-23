@@ -109,5 +109,11 @@ frontend/.prerender/
 # dataconnect generated files
 .dataconnect
 
+# Local notes and docs. Files already tracked by git stay tracked; this only
+# keeps new ones out. README files are always kept.
+docs/
+*.md
+!README.md
+
 venv/
 __pycache__/

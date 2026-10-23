@@ -1,3 +1,5 @@
+import { CREDITS_MESSAGE } from "./videoInput.js";
+
 export const clipKey = (clip) => `${clip.start_time}-${clip.end_time}`;
 export const isShortPending = (job) => job.status === "queued" || job.status === "rendering";
 export const isShortExpired = (job, now = Date.now()) => job.status === "expired" ||
@@ -15,6 +17,7 @@ export function shortCards(suggestions, jobs) {
 
 export function shortError(error) {
   const status = error?.response?.status;
+  if (status === 402) return CREDITS_MESSAGE;
   if (status === 404) return "Short creation isn't available on this server yet.";
   if (status === 410) return "This video or Short has expired. Analyze the video again to continue.";
   if (status === 401 || status === 403) return "Sign in to the account that owns this video to access its Shorts.";

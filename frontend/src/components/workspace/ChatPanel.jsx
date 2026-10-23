@@ -3,16 +3,24 @@ import { useVideoQA } from "../../hooks/useVideoQA";
 import MessageBubble from "./MessageBubble";
 import TimestampChip from "./TimestampChip";
 import YouTubeUnavailable from "../landing/YouTubeUnavailable";
+import SiteLink from "../common/SiteLink";
+import { useCredits } from "../../hooks/useCredits";
+import { QUESTIONS_MESSAGE, analysisFailure } from "../../utils/videoInput";
 
 import { config } from "../../config";
 const MAX_CHARS = config.maxQuestionChars;
 
 export default function ChatPanel({ videoId, videoTitle, youtubeUrl, onSeek, ready = true, progress, active = true, onSignIn, signedIn = false }) {
-  const { messages, fetchHistory, askVideo, loading, error, limitReached, questionCount, questionLimit } = useVideoQA(videoId, signedIn);
+  const { messages, fetchHistory, askVideo, loading, error } = useVideoQA(videoId);
+  const credits = useCredits();
+  // Unknown (null) while the balance loads or on an older backend: allow asking.
+  const questionsLeft = credits?.questions_left ?? null;
+  const limitReached = questionsLeft === 0;
   const [question, setQuestion] = useState("");
   const [charError, setCharError] = useState("");
   const failed = progress?.status === "failed";
   const cookieFailure = failed && progress?.processing_stage === "youtube_session_unavailable";
+  const failure = failed ? analysisFailure(progress?.processing_stage, signedIn) : null;
 
   useEffect(() => {
     if (ready) fetchHistory();
@@ -29,7 +37,8 @@ export default function ChatPanel({ videoId, videoTitle, youtubeUrl, onSeek, rea
 
     setCharError("");
     setQuestion("");
-    await askVideo(trimmed);
+    // The hook shows the error; nothing else to do here.
+    await askVideo(trimmed).catch(() => {});
   };
 
   const handleKeyDown = (e) => {
@@ -67,20 +76,20 @@ export default function ChatPanel({ videoId, videoTitle, youtubeUrl, onSeek, rea
       <div className="chat-tabs">
         <span className="chat-tab active">✨ AI Answer</span>
         <span className="chat-tab">💬 Chat</span>
-        <span className="question-counter">{questionCount}/{questionLimit} questions</span>
+        <span className="question-counter">
+          {questionsLeft === null ? `${messages.length} questions` : `${questionsLeft} questions left today`}
+        </span>
         {messages.length > 0 && <button type="button" className="download-history" onClick={downloadHistory}>Download Q&A</button>}
       </div>
 
       {!ready && cookieFailure && <YouTubeUnavailable onDismiss={() => window.location.reload()} active={active} />}
       {!ready && !cookieFailure && <div className="messages"><div className="message ai"><b>{failed ? "We couldn't process this video" : "Processing your video"}</b><br />
-        {failed ? (
-          progress?.processing_stage === "anonymous_duration_limit" ? <>
-            This video is longer than the 35-minute guest limit. Sign in to analyze longer videos, then submit it again.
-            <br /><button type="button" className="duration-sign-in" onClick={onSignIn}>Sign in</button>
-          </> : progress?.processing_stage === "video_duration_limit" ?
-            "This video exceeds the 3-hour limit." :
-            "Please try again."
-        ) : <>
+        {failed ? <>
+          {failure.text}
+          {(failure.pricing || failure.signIn) && <br />}
+          {failure.pricing && <SiteLink className="duration-sign-in" href="/pricing">See pricing</SiteLink>}
+          {failure.signIn && <button type="button" className="duration-sign-in" onClick={onSignIn}>Sign in</button>}
+        </> : <>
           {progress?.processing_stage === "queued" && "Your analysis is queued."}
           {progress?.processing_stage === "download" && "Downloading and preparing audio."}
           {progress?.processing_stage === "vad_chunking" && "Detecting speech and creating audio chunks."}
@@ -108,12 +117,13 @@ export default function ChatPanel({ videoId, videoTitle, youtubeUrl, onSeek, rea
         ))}
       </div>}
 
-      {error && <div className="error-text">{error}</div>}
+      {error && !limitReached && <div className="error-text">{error}</div>}
       {charError && <div className="error-text">{charError}</div>}
 
       {!ready ? <div className="ask-hint">Questions unlock automatically when analysis is complete.</div> : limitReached ? (
         <div className="limit-reached-text">
-          You've asked {messages.length} questions — limit reached for this video.
+          {QUESTIONS_MESSAGE}
+          {!credits?.is_paid && <> <SiteLink href="/pricing">Credit packs include more questions.</SiteLink></>}
         </div>
       ) : (
         <>

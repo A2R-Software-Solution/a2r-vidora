@@ -1,9 +1,11 @@
 import { signOut } from "firebase/auth";
 import { auth } from "../../firebase";
 import SiteLink from "../common/SiteLink";
+import { useCredits } from "../../hooks/useCredits";
 import "./Navbar.css";
 
 export default function Navbar({ onHome, user, onAuth, currentPath }) {
+  const credits = useCredits();
   return (
     <nav className="site-navbar" aria-label="Main navigation">
       <SiteLink className="logo" href="/" onClick={onHome} aria-label="Vidora AI home">
@@ -18,7 +20,14 @@ export default function Navbar({ onHome, user, onAuth, currentPath }) {
         <div className="tool-navigation">
           <SiteLink className="tool-link" href="/reels" aria-current={currentPath === "/reels" ? "page" : undefined}>Create Reel</SiteLink>
           <SiteLink className="tool-link" href="/analyze" aria-current={currentPath === "/analyze" ? "page" : undefined}>Analyze</SiteLink>
+          <SiteLink className="tool-link" href="/pricing" aria-current={currentPath === "/pricing" ? "page" : undefined}>Pricing</SiteLink>
         </div>
+        {credits && (
+          <SiteLink className="credit-chip" href="/pricing"
+            aria-label={`${credits.available} credits available. View pricing`}>
+            <span aria-hidden="true">⚡</span> {credits.available}<span className="credit-chip-label"> credits</span>
+          </SiteLink>
+        )}
         {user ? (
           <button type="button" className="signup" onClick={() => signOut(auth)}>Log out</button>
         ) : (

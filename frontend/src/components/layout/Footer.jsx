@@ -8,6 +8,7 @@ const linkGroups = [
     links: [
       { href: "/about", label: "About Vidora" },
       { href: "/how-it-works", label: "How it works" },
+      { href: "/pricing", label: "Pricing" },
       { href: "/faq", label: "FAQ" },
     ],
   },

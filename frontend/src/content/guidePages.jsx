@@ -145,7 +145,7 @@ export const guidePages = {
         <p>The current beta supports public YouTube videos. Private, unavailable, live, and upcoming videos may not work. Other sources are not available yet, even where the interface mentions them as planned.</p>
       </> },
       { id: "limits", title: "How long can a video be?", content: <>
-        <p>Guests can analyze videos up to 35 minutes. Signed-in users can analyze videos up to 3 hours. Processing time depends on the video length and current service demand.</p>
+        <p>Guests can analyze videos up to 35 minutes, and the longest video is 3 hours. Each minute of video uses one credit: guests get 45 free credits a day and signed-in users get 80, and <SiteLink href="/pricing">credit packs</SiteLink> add more for longer videos. Processing time depends on the video length and current service demand.</p>
       </> },
       { id: "accuracy", title: "How accurate are the answers?", content: <>
         <p>Speech recognition and AI answers can contain errors, especially with names, numbers, accents, background music, or specialist terms. Always verify important information against the video using the timestamp links. Read our <SiteLink href="/guides/ask-better-questions">guide to asking better questions</SiteLink> for tips.</p>

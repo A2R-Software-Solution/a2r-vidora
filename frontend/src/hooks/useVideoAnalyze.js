@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { analyzeVideo, getVideos } from "../api/videoApi";
-import { isYouTubeVideoUrl, YOUTUBE_LINK_MESSAGE, friendlyApiError, isYouTubeSessionUnavailable } from "../utils/videoInput";
+import { isYouTubeVideoUrl, YOUTUBE_LINK_MESSAGE, creditProblem, friendlyApiError, isYouTubeSessionUnavailable } from "../utils/videoInput";
+import { refreshCredits } from "./useCredits";
 
 const VIDEO_ID_STORAGE_KEY = "vidora_video_id";
 const PENDING_KEY = "vidora_pending_analysis";
@@ -36,8 +37,11 @@ export function useVideoAnalyze() {
       localStorage.setItem(VIDEO_ID_STORAGE_KEY, pending.id);
       const { data } = await analyzeVideo({ youtube_url: youtubeUrl }, pending.id);
       setVideo(data);
+      // A reused analysis is charged immediately.
+      void refreshCredits();
       return data;
     } catch (err) {
+      if (creditProblem(err)) void refreshCredits();
       const detail = err?.response?.data?.detail;
       if (isYouTubeSessionUnavailable(err)) {
         setYoutubeUnavailable(true);

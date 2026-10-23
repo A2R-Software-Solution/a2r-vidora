@@ -2,6 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import { createShort, getShortDownload, listShorts, suggestShorts } from "../../api/videoApi";
 import { formatTime } from "../../utils/formatTime";
 import { clipKey, isShortExpired, isShortPending, shortCards, shortError } from "../../utils/shorts";
+import { SHORT_CREDIT_COST } from "../../utils/pricing";
+import { refreshCredits, useCredits } from "../../hooks/useCredits";
+import SiteLink from "../common/SiteLink";
 
 function ShortCard({ clip, videoId, active, onSeek, onCreate, creating, canCreate }) {
   const job = clip.job;
@@ -54,7 +57,7 @@ function ShortCard({ clip, videoId, active, onSeek, onCreate, creating, canCreat
     <div className="short-status" role="status">
       {expired ? "Expired" : pending ? (job.status === "queued" ? "Queued — waiting to start" : "Creating your video with captions…") :
         job?.status === "completed" ? "Ready to download" : job?.status === "failed" ?
-          "Creation failed. You can retry; this attempt doesn't use a free slot." : "Vertical video · captions · 720p"}
+          "Creation failed and its credits were returned. You can retry." : "Vertical video · captions · 720p"}
     </div>
     {job && <p className="short-expiry">{expired ? "Expired" : "Available until"} {new Date(job.expires_at).toLocaleString()}</p>}
     <div className="short-actions">
@@ -86,6 +89,9 @@ export default function ShortSuggestions({ videoId, onSeek, active = true }) {
   const [refresh, setRefresh] = useState(0);
   const createBusy = useRef(false);
   const suggestionBusy = useRef(false);
+  const wasPending = useRef(false);
+  const credits = useCredits();
+  const creditCost = history?.credit_cost ?? SHORT_CREDIT_COST;
 
   useEffect(() => {
     if (!active) return undefined;
@@ -98,7 +104,11 @@ export default function ShortSuggestions({ videoId, onSeek, active = true }) {
         if (controller.signal.aborted) return;
         setHistory(data);
         setHistoryError("");
-        if (data.items.some(isShortPending)) delay = 5000;
+        const pending = data.items.some(isShortPending);
+        // A finished render settles its credits; a failed one returns them.
+        if (wasPending.current && !pending) void refreshCredits();
+        wasPending.current = pending;
+        if (pending) delay = 5000;
       } catch (err) {
         if (controller.signal.aborted) return;
         setHistoryError(shortError(err));
@@ -134,27 +144,35 @@ export default function ShortSuggestions({ videoId, onSeek, active = true }) {
       const { data: job } = await createShort(videoId, clip);
       setHistory((previous) => {
         const items = [...(previous?.items || []).filter((item) => item.id !== job.id), job];
-        return { items, free_limit: previous?.free_limit ?? 2, used: items.filter((item) => item.status !== "failed").length };
+        return { ...previous, items, used: items.filter((item) => item.status !== "failed").length };
       });
     } catch (err) {
       setError(shortError(err));
     } finally {
       // Reconcile a lost response: the server may have accepted the job.
       setRefresh((value) => value + 1);
+      void refreshCredits();
       createBusy.current = false;
       setCreating("");
     }
   };
 
   const cards = shortCards(suggestions, history?.items || []);
-  const canCreate = !!history && !historyError && history.used < history.free_limit && !creating;
+  // An unknown balance never blocks creating; the server answers 402 if short.
+  const affordable = credits == null || credits.available >= creditCost;
+  const canCreate = !!history && !historyError && affordable && !creating;
   return <section className="short-suggestions" aria-labelledby="shorts-heading">
     <div className="shorts-heading">
       <div><h2 id="shorts-heading">Create your reel</h2><p>Find two standout moments, then choose a clip to turn into a reel.</p></div>
       <button type="button" onClick={generate} disabled={loading}>{loading ? "Finding ideas…" : "Find reel ideas"}</button>
     </div>
-    <p className="short-allowance" role="status">{history ? `${history.used}/${history.free_limit} free Shorts used for this video` : "Checking your free Shorts allowance…"}</p>
-    {history && history.used >= history.free_limit && <p className="shorts-note">Your free slots are used or reserved by videos in progress.</p>}
+    <p className="short-allowance" role="status">
+      Each Short uses {creditCost} credits{credits ? ` · You have ${credits.available}` : ""}
+    </p>
+    {!affordable && <p className="shorts-note">
+      You need {creditCost} credits to create a Short. Free credits renew at midnight IST.{" "}
+      <SiteLink href="/pricing">See pricing</SiteLink>
+    </p>}
     {historyError && <div className="shorts-error" role="alert">{historyError} <button type="button" className="short-refresh" onClick={() => setRefresh((value) => value + 1)}>Refresh status</button></div>}
     {error && <p className="shorts-error" role="alert">{error}</p>}
     {cards.length > 0 && <div className="shorts-list">

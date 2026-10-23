@@ -2,7 +2,10 @@ import { useEffect, useRef, useState } from "react";
 import VideoPlayer from "../components/workspace/VideoPlayer";
 import ChatPanel from "../components/workspace/ChatPanel";
 import ShortSuggestions from "../components/workspace/ShortSuggestions";
+import SiteLink from "../components/common/SiteLink";
 import { getVideos } from "../api/videoApi";
+import { refreshCredits } from "../hooks/useCredits";
+import { analysisFailure } from "../utils/videoInput";
 
 export default function WorkspacePage({ video, active = true, onSignIn, signedIn = false, mode = "analyze" }) {
   const reels = mode === "reels";
@@ -26,6 +29,8 @@ export default function WorkspacePage({ video, active = true, onSignIn, signedIn
       try {
         const { data } = await getVideos(currentVideo.id);
         if (data?.[0]) setCurrentVideo(data[0]);
+        // Finishing settles or refunds the video's credits.
+        if (data?.[0] && data[0].status !== "processing") void refreshCredits();
       } catch { /* The next poll can recover a transient network error. */ }
     }, 3000);
     return () => clearInterval(timer);
@@ -36,6 +41,8 @@ export default function WorkspacePage({ video, active = true, onSignIn, signedIn
   }, [active]);
 
   useEffect(() => { playerRef.current?.pause(); }, [mode]);
+
+  const failure = currentVideo?.status === "failed" ? analysisFailure(currentVideo.processing_stage, signedIn) : null;
 
   const handleSeek = (seconds) => {
     playerRef.current?.seekTo(seconds);
@@ -86,8 +93,9 @@ export default function WorkspacePage({ video, active = true, onSignIn, signedIn
               {currentVideo?.status === "completed" ? <ShortSuggestions key={currentVideo.id} videoId={currentVideo.id} onSeek={handleSeek} active={active && reels} /> :
                 <div className="reel-preparation" role="status">
                   <h2>{currentVideo?.status === "failed" ? "Couldn't prepare this video" : "Preparing your video"}</h2>
-                  <p>{currentVideo?.status === "failed" ? "Try submitting your YouTube link again. Guests can use videos up to 35 minutes; sign in for videos up to 3 hours." : "We're processing the video's audio to find moments for your reel. Clip suggestions will unlock here when it's ready."}</p>
-                  {currentVideo?.status === "failed" && !signedIn && <button type="button" className="duration-sign-in" onClick={onSignIn}>Sign in</button>}
+                  <p>{failure ? failure.text : "We're processing the video's audio to find moments for your reel. Clip suggestions will unlock here when it's ready."}</p>
+                  {failure?.pricing && <SiteLink className="duration-sign-in" href="/pricing">See pricing</SiteLink>}
+                  {failure && !signedIn && <button type="button" className="duration-sign-in" onClick={onSignIn}>Sign in</button>}
                 </div>}
             </div>}
           </div>

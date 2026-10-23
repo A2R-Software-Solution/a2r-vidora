@@ -6,6 +6,9 @@ background Firebase task, private storage, signed preview/download URLs,
 and expiry cleanup. Captions are estimated from chunk timings because the
 current analysis retains transcript chunks rather than word timings.
 
+> **Superseded:** the two-Shorts-per-video allowance below was replaced by
+> credits (5 per Short). See [CREDITS_AND_PAYMENTS.md](CREDITS_AND_PAYMENTS.md).
+
 The allowance is two completed or reserved Shorts per analysis (video UUID),
 for guests and signed-in users alike. This is not a per-account quota.
 Failed jobs free a slot; POSTing the same failed range retries it. Duplicate

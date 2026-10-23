@@ -1,6 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { isYouTubeVideoUrl, friendlyApiError, YOUTUBE_LINK_MESSAGE, isYouTubeSessionUnavailable } from "./videoInput.js";
+import { isYouTubeVideoUrl, friendlyApiError, YOUTUBE_LINK_MESSAGE, isYouTubeSessionUnavailable,
+  CREDITS_MESSAGE, QUESTIONS_MESSAGE, analysisFailure, creditProblem } from "./videoInput.js";
+import { shortError } from "./shorts.js";
 
 test("accepts supported YouTube video links and share parameters", () => {
   for (const url of [
@@ -39,6 +41,29 @@ test("all API errors produce safe text, including structured validation details"
   assert.ok(!friendlyApiError(new Error("INTERNAL_SECRET")).includes("INTERNAL_SECRET"));
 });
 
+
+test("credit and daily-question limits get their own messages", () => {
+  const noCredits = { response: { status: 402, data: { code: "insufficient_credits", needed: 60, available: 40 } } };
+  const noQuestions = { response: { status: 429, data: { code: "daily_question_limit", limit: 10 } } };
+  const rateLimited = { response: { status: 429, data: { detail: "Too many requests." } } };
+  assert.equal(creditProblem(noCredits), "credits");
+  assert.equal(creditProblem(noQuestions), "questions");
+  assert.equal(creditProblem(rateLimited), null);
+  assert.equal(friendlyApiError(noCredits), CREDITS_MESSAGE);
+  assert.equal(friendlyApiError(noQuestions, "qa"), QUESTIONS_MESSAGE);
+  assert.match(friendlyApiError(rateLimited, "qa"), /wait a moment/);
+  assert.equal(shortError(noCredits), CREDITS_MESSAGE);
+});
+
+test("failed analyses explain credits, speech and duration problems", () => {
+  const credits = analysisFailure("insufficient_credits", false);
+  assert.ok(credits.pricing && credits.signIn);
+  assert.equal(analysisFailure("insufficient_credits", true).signIn, false);
+  assert.match(analysisFailure("no_speech").text, /speech/);
+  assert.ok(analysisFailure("anonymous_duration_limit").signIn);
+  assert.match(analysisFailure("video_duration_limit").text, /3-hour/);
+  assert.match(analysisFailure("stale_processing").text, /returned/);
+});
 
 test("only the explicit YouTube session error enables the outage UI", () => {
   const outage = { response: { status: 503, data: { detail: { code: "YOUTUBE_SESSION_UNAVAILABLE" } } } };

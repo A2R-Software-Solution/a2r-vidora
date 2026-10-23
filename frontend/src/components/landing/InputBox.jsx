@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from "react";
-import { isYouTubeVideoUrl, YOUTUBE_LINK_MESSAGE } from "../../utils/videoInput";
+import { CREDITS_MESSAGE, isYouTubeVideoUrl, YOUTUBE_LINK_MESSAGE } from "../../utils/videoInput";
+import SiteLink from "../common/SiteLink";
 
 function AnalysisStatus({ restoring }) {
   const [takingLonger, setTakingLonger] = useState(false);
@@ -80,12 +81,16 @@ export default function InputBox({ onAnalyze, loading, restoring = false, error,
         </button>
       </div>
       {loading && <AnalysisStatus restoring={restoring} />}
-      {visibleError && <div id="analysis-input-error" className="analysis-status analysis-error" role="alert">{visibleError}</div>}
+      {visibleError && <div id="analysis-input-error" className="analysis-status analysis-error" role="alert">
+        {visibleError}
+        {visibleError === CREDITS_MESSAGE && <> <SiteLink href="/pricing">See pricing</SiteLink></>}
+      </div>}
       <div className="providers reveal-up delay-4">
         <span><span className="provider-icon yt">▶</span> YouTube</span>
       </div>
       <div className="hint reveal-up delay-4">
-        Guests: up to 35 minutes. Signed-in users: up to 3 hours.
+        1 credit per minute of video. Free every day: 45 credits as a guest, 80 when signed in.{" "}
+        <SiteLink href="/pricing">Pricing</SiteLink>
       </div>
     </>
   );
