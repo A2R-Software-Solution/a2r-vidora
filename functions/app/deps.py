@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.db.session import AsyncSessionLocal
+from app.models.user_model import User
 from app.repository.user_repository import UserRepository
 
 
@@ -85,3 +86,14 @@ async def require_user_id(
             detail="Authentication required for this endpoint.",
         )
     return user_id
+
+
+async def require_admin(
+    user_id: uuid.UUID = Depends(require_user_id),
+    db: AsyncSession = Depends(get_db),
+) -> User:
+    """Admin endpoints: a signed-in user whose users.is_admin flag is set."""
+    user = await UserRepository(db).get_by_id(user_id)
+    if user is None or not user.is_admin:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required.")
+    return user

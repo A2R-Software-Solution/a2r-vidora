@@ -361,6 +361,19 @@ class CreditService:
         await self._done()
         return taken
 
+    async def adjust(self, user_id: uuid.UUID, amount: int, *, note: str) -> int:
+        """Manual grant (positive) or deduction (negative) on the purchased
+        balance. Returns the new balance; never lets it go below zero."""
+        account = await self._lock(user_id=user_id)
+        if account.purchased_balance + amount < 0:
+            await self.db.rollback()
+            raise InsufficientCreditsError(-amount, account.purchased_balance)
+        account.purchased_balance += amount
+        self._ledger(account, kind="adjust", bucket="purchased", amount=amount, note=note[:250])
+        balance = account.purchased_balance
+        await self._done()
+        return balance
+
     async def consume_question(self, owner: CreditOwner) -> CreditSummary:
         """Counts one question against today's limit before it is answered."""
         account, cap = await self._accounts(owner)

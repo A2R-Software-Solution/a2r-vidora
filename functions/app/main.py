@@ -16,6 +16,7 @@ from app.routes.short_suggestion_routes import router as short_suggestion_router
 from app.routes.short_routes import router as short_router
 from app.routes.credit_routes import router as credit_router
 from app.routes.billing_routes import router as billing_router
+from app.routes.admin_routes import router as admin_router
 from app.services.credit_service import ChatLimitError, InsufficientCreditsError
 
 
@@ -48,6 +49,7 @@ app.include_router(short_suggestion_router)
 app.include_router(short_router)
 app.include_router(credit_router)
 app.include_router(billing_router)
+app.include_router(admin_router)
 
 
 @app.exception_handler(InsufficientCreditsError)

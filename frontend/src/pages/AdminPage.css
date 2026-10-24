@@ -1,0 +1,37 @@
+.admin { width: min(1100px, 100% - 32px); margin: 0 auto; padding: 40px 0 80px; color: #28221e; }
+.admin h1 { margin: 0 0 20px; font-size: clamp(26px, 3vw, 34px); letter-spacing: -0.03em; }
+.admin h2 { margin: 28px 0 12px; font-size: 20px; }
+.admin h3 { margin: 28px 0 10px; font-size: 16px; }
+.admin-muted { color: #786457; font-size: 14px; }
+.admin-error { padding: 12px 14px; border: 1px solid #e3b4a6; border-radius: 10px; background: #fdeee9; color: #8a2d12; }
+
+.admin-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
+.admin-tabs button { padding: 8px 16px; border: 1px solid #e1cdbd; border-radius: 999px; background: #fffaf5; color: #51473f; font: inherit; font-size: 14px; cursor: pointer; }
+.admin-tabs button[aria-selected="true"] { border-color: #b74d23; background: #b74d23; color: #fff; }
+
+.admin-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
+.admin-tile { display: flex; flex-direction: column; gap: 6px; padding: 18px; border: 1px solid #edd8c6; border-radius: 16px; background: #fffcf8; }
+.admin-tile strong { color: #a34320; font-size: 26px; letter-spacing: -0.02em; }
+.admin-tile-label { color: #665b54; font-size: 13px; font-weight: 600; }
+
+.admin-plain { margin: 0; padding: 0; list-style: none; }
+.admin-plain li { padding: 6px 0; font-size: 15px; }
+
+.admin-filters { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; }
+.admin-filters input, .admin-filters select { min-height: 40px; padding: 8px 12px; border: 1px solid #e1cdbd; border-radius: 10px; background: #fff; font: inherit; font-size: 14px; }
+.admin-filters input[type="search"], .admin-filters input[type="text"] { flex: 1 1 240px; }
+.admin-filters button, .admin-pager button, .admin-button { min-height: 40px; padding: 8px 16px; border: 1px solid #b74d23; border-radius: 10px; background: #b74d23; color: #fff; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
+.admin-filters button:disabled, .admin-pager button:disabled { border-color: #dcc6b6; background: #f2e5da; color: #7c6858; cursor: not-allowed; }
+.admin-link { margin: 0 0 12px; padding: 0; border: 0; background: none; color: #a34320; font: inherit; font-size: 14px; cursor: pointer; }
+
+.admin-table-wrap { overflow-x: auto; border: 1px solid #edd8c6; border-radius: 14px; background: #fffcf8; }
+.admin-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.admin-table th, .admin-table td { padding: 10px 14px; border-bottom: 1px solid #f1e3d6; text-align: left; vertical-align: top; }
+.admin-table th { color: #665b54; font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase; white-space: nowrap; }
+.admin-table tr:last-child td { border-bottom: 0; }
+.admin-table tr.is-clickable { cursor: pointer; }
+.admin-table tr.is-clickable:hover { background: #fff1e5; }
+
+.admin-pager { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 16px; }
+
+.admin button:focus-visible, .admin input:focus-visible, .admin select:focus-visible { outline: 3px solid #b8522b; outline-offset: 2px; }

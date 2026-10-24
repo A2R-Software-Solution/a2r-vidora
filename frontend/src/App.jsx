@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useState, useSyncExternalStore } from "react";
+import { lazy, Suspense, useEffect, useLayoutEffect, useState, useSyncExternalStore } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "./firebase";
 import AuthModal from "./components/auth/AuthModal";
@@ -18,10 +18,14 @@ import SpotlightGlow from "./components/common/SpotlightGlow";
 import BugReportButton from "./components/common/BugReportButton";
 import "./App.css";
 
+// Loaded only on /admin so admin code stays out of the main bundle.
+const AdminPage = lazy(() => import("./pages/AdminPage"));
+
 function App() {
   const path = useSyncExternalStore(subscribeToNavigation, getCurrentPath);
   const isHome = path === "/";
   const isPricing = path === "/pricing";
+  const isAdmin = path === "/admin";
   const isTool = path === "/reels" || path === "/analyze";
   const mode = path === "/reels" ? "reels" : "analyze";
   const [video, setVideo] = useState(null);
@@ -44,7 +48,7 @@ function App() {
   }, []);
 
   useLayoutEffect(() => {
-    document.title = isHome ? "Vidora AI — Understand your videos" : `${publicPage?.label || "Page not found"} | Vidora AI`;
+    document.title = isHome ? "Vidora AI — Understand your videos" : `${isAdmin ? "Admin" : publicPage?.label || "Page not found"} | Vidora AI`;
     document.querySelector('meta[name="description"]')?.setAttribute("content",
       publicPage?.description || "Explore YouTube videos with AI summaries and timestamp-linked questions. A product of A2R Software Solutions.");
     const frame = window.requestAnimationFrame(() => {
@@ -57,7 +61,7 @@ function App() {
       else window.scrollTo({ top: window.history.state?.vidoraScroll || 0, behavior: "instant" });
     });
     return () => window.cancelAnimationFrame(frame);
-  }, [path, isHome, isTool, mode, publicPage]);
+  }, [path, isHome, isAdmin, isTool, mode, publicPage]);
 
   return (
     <div className={`page${isHome ? "" : " page--reading"}`}>
@@ -78,7 +82,8 @@ function App() {
           {mode === "analyze" && <HowItWorksSection />}
         </div>}
         {isPricing && <PricingPage signedIn={!!user} onSignIn={() => setAuthOpen(true)} />}
-        {!isHome && !isTool && !isPricing && <PublicPage page={publicPage} hasAnalysis={!!video} />}
+        {isAdmin && <Suspense fallback={null}><AdminPage user={user} onSignIn={() => setAuthOpen(true)} /></Suspense>}
+        {!isHome && !isTool && !isPricing && !isAdmin && <PublicPage page={publicPage} hasAnalysis={!!video} />}
       </main>
       <Footer currentPath={path} />
       <BugReportButton />

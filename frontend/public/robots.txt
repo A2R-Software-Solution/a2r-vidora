@@ -1,7 +1,9 @@
 User-agent: *
 Allow: /
+Disallow: /admin
 
 User-agent: Mediapartners-Google
 Allow: /
+Disallow: /admin
 
 Sitemap: https://vidoraa.com/sitemap.xml
