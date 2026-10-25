@@ -1,0 +1,71 @@
+.merger-balance { display: inline-block; margin: 24px 0 0; padding: 10px 16px; border: 1px solid #edd8c6; border-radius: 999px; background: #fff7ef; color: #5d4a3e; font-size: 14px; }
+.merger-balance strong { color: #a34320; font-weight: 700; }
+
+.merger-form section, .merger-history { margin-top: 44px; }
+.merger-form h2, .merger-history h2 { margin: 0 0 18px; color: #27211e; font-size: clamp(22px, 2.6vw, 30px); letter-spacing: -0.03em; }
+
+.merger-tracks, .merger-results { display: grid; gap: 16px; margin: 0; padding: 0; list-style: none; }
+.merger-track, .merger-result, .merger-summary, .merger-options-grid { border: 1px solid #e1cdbd; border-radius: 20px; background: #fffaf5; color: #28221e; }
+.merger-track, .merger-result, .merger-summary { padding: 22px; }
+.merger-options-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; padding: 22px; }
+
+.merger-track-head, .merger-result-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.merger-track-head h3, .merger-result-head h3 { margin: 0; color: #27211e; font-size: 18px; letter-spacing: -0.02em; }
+.merger-result-head span { color: #a34320; font-size: 14px; font-weight: 700; white-space: nowrap; }
+.merger-track-tools { display: flex; gap: 8px; }
+
+.merger-source { display: flex; flex-wrap: wrap; gap: 8px 22px; margin: 16px 0 0; padding: 0; border: 0; }
+.merger-source legend { margin-bottom: 8px; padding: 0; color: #786457; font-size: 13px; font-weight: 650; }
+.merger-source label { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; font-size: 15px; cursor: pointer; }
+.merger-source input { width: 18px; height: 18px; accent-color: #b74d23; }
+
+.merger-field { display: flex; flex-direction: column; gap: 6px; margin-top: 14px; }
+.merger-field label { color: #51473f; font-size: 14px; font-weight: 650; }
+.merger-field input[type="text"], .merger-field input[type="url"], .merger-field select, .merger-field input[type="file"] {
+  min-height: 46px; padding: 10px 12px; border: 1px solid #d9c3b2; border-radius: 12px; background: #fff; color: #28221e; font: inherit; font-size: 15px;
+}
+.merger-field input[type="file"] { padding: 8px 10px; }
+.merger-field [aria-invalid="true"] { border-color: #b64032; }
+.merger-field input:focus-visible, .merger-field select:focus-visible { outline: 3px solid #b8522b; outline-offset: 2px; }
+
+.merger-times { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; align-items: end; gap: 14px; }
+.merger-length { margin: 0 0 12px; color: #786457; font-size: 13px; white-space: nowrap; }
+
+.merger-track-tools button, .merger-actions button, .merger-add {
+  min-height: 44px; padding: 8px 14px; border: 1px solid #e7bca5; border-radius: 10px; background: #fff; color: #9c4825; font: inherit; font-size: 14px; cursor: pointer;
+}
+.merger-track-tools button { min-width: 44px; }
+.merger-track-tools button:hover:not(:disabled), .merger-actions button:hover:not(:disabled), .merger-add:hover:not(:disabled) { background: #fff1e5; }
+.merger-track-tools button:disabled, .merger-actions button:disabled, .merger-add:disabled { opacity: 0.5; cursor: not-allowed; }
+.merger-add { margin-top: 16px; font-weight: 650; }
+
+.merger-summary dl { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin: 0 0 14px; }
+.merger-summary dt { color: #786457; font-size: 13px; }
+.merger-summary dd { margin: 4px 0 0; color: #27211e; font-size: 24px; font-weight: 750; letter-spacing: -0.03em; }
+
+.merger-consent { display: flex; align-items: flex-start; gap: 10px; margin-top: 18px; font-size: 14px; line-height: 1.6; cursor: pointer; }
+.merger-consent input { flex: none; width: 20px; height: 20px; margin-top: 2px; accent-color: #b74d23; }
+
+.merger-submit { width: 100%; min-height: 50px; margin-top: 18px; border: 1px solid #b74d23; border-radius: 12px; background: #b74d23; color: #fff; font: inherit; font-size: 16px; font-weight: 700; cursor: pointer; }
+.merger-submit:hover:not(:disabled) { background: #943c1c; }
+.merger-submit:disabled { cursor: wait; opacity: 0.7; }
+.merger-submit:focus-visible, .merger-track-tools button:focus-visible, .merger-actions button:focus-visible, .merger-add:focus-visible, .merger-link:focus-visible { outline: 3px solid #b8522b; outline-offset: 3px; }
+
+.merger-hint { margin: 8px 0 0; color: #786457; font-size: 13px; line-height: 1.5; }
+.merger-note { margin: 12px 0 0; padding: 12px 14px; border-radius: 12px; background: #fff1e5; color: #684638; font-size: 14px; line-height: 1.5; }
+.merger-error { margin: 12px 0 0; color: #b64032; font-size: 14px; line-height: 1.5; }
+.merger-success { margin: 12px 0 0; color: #2f6b3a; font-size: 14px; }
+.merger-status { margin: 12px 0 0; color: #684638; font-size: 15px; }
+.merger-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+.merger-audio { display: block; width: 100%; margin-top: 14px; }
+.merger-link { border: 0; padding: 0; background: none; color: #a34320; font: inherit; text-decoration: underline; cursor: pointer; }
+
+@media (max-width: 640px) {
+  .merger-form section, .merger-history { margin-top: 34px; }
+  .merger-track, .merger-result, .merger-summary { padding: 18px; }
+  .merger-options-grid { grid-template-columns: 1fr; padding: 18px; }
+  .merger-times { grid-template-columns: 1fr 1fr; }
+  .merger-length { grid-column: 1 / -1; margin: 0; }
+  .merger-track-head { flex-wrap: wrap; }
+  .merger-summary dl { grid-template-columns: 1fr; }
+}

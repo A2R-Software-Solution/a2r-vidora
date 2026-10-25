@@ -85,6 +85,21 @@ class Settings(BaseSettings):
     shorts_processing_task: str = "processshort"
     shorts_timeout_seconds: int = Field(default=600, ge=60, le=800)
     shorts_retention_hours: int = Field(default=24, gt=0)
+    # Song Merger: joins trimmed sections of YouTube videos / uploaded audio.
+    audio_merge_enabled: bool = False
+    audio_merge_bucket: str | None = None
+    audio_merge_signer_email: str | None = None
+    audio_merge_processing_task: str = "processaudiomerge"
+    audio_merge_timeout_seconds: int = Field(default=600, ge=60, le=800)
+    audio_merge_retention_hours: int = Field(default=24, gt=0)
+    audio_merge_max_tracks: int = Field(default=10, ge=2, le=20)
+    audio_merge_max_segment_seconds: int = Field(default=600, gt=0)
+    audio_merge_max_total_seconds: int = Field(default=1800, gt=0)
+    audio_merge_max_upload_bytes: int = Field(default=10 * 1024 * 1024, gt=0)
+    # Whole request, so many uploads cannot exceed the platform's body limit.
+    audio_merge_max_request_bytes: int = Field(default=25 * 1024 * 1024, gt=0)
+    # Cost = started minutes of selected audio + this per track after the first.
+    audio_merge_extra_track_credits: int = Field(default=1, ge=0)
     cleanup_schedule: str
     qa_page_size: int = Field(gt=0)
     qa_max_page_size: int = Field(gt=0)

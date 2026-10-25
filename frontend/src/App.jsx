@@ -10,7 +10,9 @@ import HowItWorksSection from "./components/landing/HowItWorksSection";
 import WorkspacePage from "./pages/WorkspacePage";
 import PublicPage from "./pages/PublicPage";
 import PricingPage from "./pages/PricingPage";
+import SongMergerPage from "./pages/SongMergerPage";
 import { pricingMeta } from "./utils/pricing";
+import { songMergerMeta } from "./utils/audioMerge";
 import { refreshCredits } from "./hooks/useCredits";
 import { publicPages } from "./content/publicPages";
 import { getCurrentPath, subscribeToNavigation } from "./utils/siteNavigation";
@@ -26,6 +28,7 @@ function App() {
   const isHome = path === "/";
   const isPricing = path === "/pricing";
   const isAdmin = path === "/admin";
+  const isMerger = path === "/song-merger";
   const isTool = path === "/reels" || path === "/analyze";
   const mode = path === "/reels" ? "reels" : "analyze";
   const [video, setVideo] = useState(null);
@@ -34,7 +37,7 @@ function App() {
   const [hasVisitedHome, setHasVisitedHome] = useState(isTool);
   // Mount on first home visit, then retain drafts and the workspace while reading.
   if (isTool && !hasVisitedHome) setHasVisitedHome(true);
-  const publicPage = isPricing ? pricingMeta : Object.hasOwn(publicPages, path) ? publicPages[path] : null;
+  const publicPage = isPricing ? pricingMeta : isMerger ? songMergerMeta : Object.hasOwn(publicPages, path) ? publicPages[path] : null;
 
   useEffect(() => onAuthStateChanged(auth, setUser), []);
 
@@ -82,8 +85,9 @@ function App() {
           {mode === "analyze" && <HowItWorksSection />}
         </div>}
         {isPricing && <PricingPage signedIn={!!user} onSignIn={() => setAuthOpen(true)} />}
+        {isMerger && <SongMergerPage signedIn={!!user} />}
         {isAdmin && <Suspense fallback={null}><AdminPage user={user} onSignIn={() => setAuthOpen(true)} /></Suspense>}
-        {!isHome && !isTool && !isPricing && !isAdmin && <PublicPage page={publicPage} hasAnalysis={!!video} />}
+        {!isHome && !isTool && !isPricing && !isMerger && !isAdmin && <PublicPage page={publicPage} hasAnalysis={!!video} />}
       </main>
       <Footer currentPath={path} />
       <BugReportButton />

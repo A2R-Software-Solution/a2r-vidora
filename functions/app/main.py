@@ -14,6 +14,7 @@ from app.routes.video_routes import router as video_router
 from app.routes.qa_log_routes import router as qa_log_router
 from app.routes.short_suggestion_routes import router as short_suggestion_router
 from app.routes.short_routes import router as short_router
+from app.routes.audio_merge_routes import router as audio_merge_router
 from app.routes.credit_routes import router as credit_router
 from app.routes.billing_routes import router as billing_router
 from app.routes.admin_routes import router as admin_router
@@ -47,6 +48,7 @@ app.include_router(video_router)
 app.include_router(qa_log_router)
 app.include_router(short_suggestion_router)
 app.include_router(short_router)
+app.include_router(audio_merge_router)
 app.include_router(credit_router)
 app.include_router(billing_router)
 app.include_router(admin_router)

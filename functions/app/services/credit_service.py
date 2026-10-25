@@ -18,6 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.models.credit_model import CreditAccount, CreditLedgerEntry, CreditReservation, Payment
+from app.models.audio_merge_model import AudioMerge
 from app.models.short_model import Short
 from app.models.video_model import Video, VideoStatus
 
@@ -109,6 +110,24 @@ def owner_for_video(video) -> CreditOwner | None:
 def short_reservation_key(short_id: uuid.UUID, attempt_id: uuid.UUID) -> str:
     # A retried Short reuses its row with a new attempt, so each attempt holds separately.
     return f"short:{short_id}:{attempt_id}"
+
+
+def audio_merge_credit_cost(segment_seconds: list[int]) -> int:
+    """Started minutes of all selected audio, plus a fixed fee per track after the first."""
+    if not segment_seconds or min(segment_seconds) <= 0:
+        raise ValueError("Every audio segment must have a positive length.")
+    return (math.ceil(sum(segment_seconds) / 60)
+            + (len(segment_seconds) - 1) * settings.audio_merge_extra_track_credits)
+
+
+def audio_merge_reservation_key(merge_id: uuid.UUID, attempt_id: uuid.UUID) -> str:
+    return f"audio_merge:{merge_id}:{attempt_id}"
+
+
+def owner_for_merge(merge) -> CreditOwner:
+    if merge.user_id is not None:
+        return CreditOwner(user_id=merge.user_id)
+    return CreditOwner(guest_key=merge.guest_key, cap_key=merge.guest_cap_key)
 
 
 def daily_free_credits(owner: CreditOwner) -> int:
@@ -441,6 +460,19 @@ class CreditService:
             if (video.processing_stage != "waiting_for_quota" and video.processing_updated_at
                     < now - timedelta(seconds=settings.stale_processing_seconds)):
                 return False, "stale_processing"
+            return None
+        if source_type == "audio_merge":
+            merge = await self.db.get(AudioMerge, source_id)
+            if merge is None:
+                return False, "source_missing"
+            if key != audio_merge_reservation_key(merge.id, merge.attempt_id):
+                return False, "attempt_superseded"
+            if merge.status == "completed":
+                return True, None
+            if merge.status in {"failed", "expired"}:
+                return False, merge.error_code or merge.status
+            if merge.updated_at < now - timedelta(seconds=settings.audio_merge_timeout_seconds + 1800):
+                return False, "JOB_TIMED_OUT"
             return None
         short = await self.db.get(Short, source_id)
         if short is None:

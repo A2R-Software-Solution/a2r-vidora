@@ -13,6 +13,7 @@ from datetime import timedelta
 from app.core.config import settings
 from app.middleware.logging import logger
 from app.db.session import AsyncSessionLocal
+from app.services.audio_merge_service import AudioMergeService
 from app.services.credit_service import CreditService
 from app.services.video_service import VideoService
 
@@ -25,6 +26,7 @@ async def run_cleanup() -> int:
         logger.info("credit_holds_reconciled count=%s", finished)
         service = VideoService(db)
         purged_count = await service.purge_expired()
+        await AudioMergeService(db).purge_expired()
         await db.commit()
         return purged_count
 
