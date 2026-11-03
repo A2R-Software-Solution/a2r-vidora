@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { signOut } from "firebase/auth";
 import { auth } from "../../firebase";
 import SiteLink from "../common/SiteLink";
@@ -6,6 +7,15 @@ import "./Navbar.css";
 
 export default function Navbar({ onHome, user, onAuth, currentPath }) {
   const credits = useCredits();
+  const [menuOpen, setMenuOpen] = useState(false);
+  // Close the phone menu on navigation (path change) or Escape.
+  useEffect(() => { setMenuOpen(false); }, [currentPath]);
+  useEffect(() => {
+    if (!menuOpen) return undefined;
+    const onKey = (event) => { if (event.key === "Escape") setMenuOpen(false); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [menuOpen]);
   return (
     <nav className="site-navbar" aria-label="Main navigation">
       <SiteLink className="logo" href="/" onClick={onHome} aria-label="Vidora AI home">
@@ -17,7 +27,7 @@ export default function Navbar({ onHome, user, onAuth, currentPath }) {
         Vidora<span>AI</span>
       </SiteLink>
       <div className="nav-right">
-        <div className="tool-navigation">
+        <div id="tool-navigation" className={`tool-navigation${menuOpen ? " is-open" : ""}`}>
           <SiteLink className="tool-link" href="/reels" aria-current={currentPath === "/reels" ? "page" : undefined}>Create Reel</SiteLink>
           <SiteLink className="tool-link" href="/analyze" aria-current={currentPath === "/analyze" ? "page" : undefined}>Analyze</SiteLink>
           <SiteLink className="tool-link" href="/song-merger" aria-current={currentPath === "/song-merger" ? "page" : undefined}>Song Merger <span className="new-tag">New</span></SiteLink>
@@ -51,6 +61,12 @@ export default function Navbar({ onHome, user, onAuth, currentPath }) {
             </svg>
           </button>
         )}
+        <button type="button" className="nav-menu-button" aria-label="Menu" aria-expanded={menuOpen}
+          aria-controls="tool-navigation" onClick={() => setMenuOpen((open) => !open)}>
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false">
+            <path d={menuOpen ? "M6 6l12 12M18 6 6 18" : "M4 7h16M4 12h16M4 17h16"} />
+          </svg>
+        </button>
       </div>
     </nav>
   );

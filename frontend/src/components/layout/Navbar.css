@@ -111,6 +111,50 @@
   .nav-auth-arrow { display: none; }
 }
 
+.nav-menu-button { display: none; }
+
+/* Phones: header = logo, credits, account/log out, menu; the tool links drop down from the menu. */
+@media (max-width: 760px) {
+  .page .site-navbar { --nav-edge: 16px; height: 60px; }
+  .page .site-navbar .nav-right { display: contents; }
+  .page .site-navbar .logo { order: 1; margin-right: auto; }
+  .page .site-navbar .credit-chip { order: 2; margin-right: 8px; }
+  .page .site-navbar .nav-auth-button,
+  .page .site-navbar .signup { order: 3; flex-shrink: 0; white-space: nowrap; }
+  .page .site-navbar .nav-auth-label { display: inline; }
+  .page .site-navbar .nav-auth-button { padding: 4px 14px 4px 5px; }
+  .page .site-navbar .nav-menu-button {
+    order: 4;
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    margin-left: 6px;
+    border: 1px solid #e9bda2;
+    border-radius: 12px;
+    background: #fffaf5;
+    color: #583421;
+  }
+  .nav-menu-button svg { width: 22px; height: 22px; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+  .nav-menu-button:focus-visible { outline: 3px solid #a9411d; outline-offset: 3px; }
+  .page .site-navbar .tool-navigation {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    flex-direction: column;
+    gap: 2px;
+    padding: 8px 16px 14px;
+    background: #fdf1e7;
+    border-bottom: 1px solid #ecc9b2;
+    box-shadow: 0 14px 24px rgba(91, 52, 30, 0.12);
+  }
+  .page .site-navbar .tool-navigation.is-open { display: flex; }
+  .page .site-navbar .tool-link { padding: 14px 12px; font-size: 16px; border-radius: 12px; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .nav-auth-button, .nav-auth-arrow { transition: none; }
   .nav-auth-button:hover, .nav-auth-button:hover .nav-auth-arrow { transform: none; }
