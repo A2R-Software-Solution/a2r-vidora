@@ -3,8 +3,10 @@ from __future__ import annotations
 import asyncio
 import shutil
 import tempfile
+from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Iterator
 
 import yt_dlp
 
@@ -94,10 +96,14 @@ class DownloadResult:
     duration: int | None
 
 
-def _run_download(youtube_url: str, output_dir: str, max_duration_seconds: int) -> DownloadResult:
-    """Synchronous yt-dlp call — executed off the event loop by the caller."""
-    output_template = str(Path(output_dir) / "%(id)s.%(ext)s")
+@contextmanager
+def _cookie_file(output_dir: str) -> Iterator[str]:
+    """Writes the YouTube session cookies to a temp file for one yt-dlp call.
 
+    yt-dlp may rewrite that file with a refreshed session, so it is saved back
+    to Secret Manager on exit. The file is deleted either way: it holds a live
+    session and must not stay on disk longer than the call needs it.
+    """
     secret_id, cookie_content = secret_manager_client.get_youtube_cookie()
     cookie_file = tempfile.NamedTemporaryFile(
         mode="w", suffix=".txt", delete=False, dir=output_dir
@@ -105,7 +111,27 @@ def _run_download(youtube_url: str, output_dir: str, max_duration_seconds: int) 
     try:
         cookie_file.write(cookie_content)
         cookie_file.close()
+        try:
+            yield cookie_file.name
+        finally:
+            # yt-dlp rewrites the cookiefile in-place if YouTube handed it
+            # a refreshed session during this call. Persist that back to
+            # Secret Manager so the next call (possibly a different
+            # instance) starts from the newer session instead of the one
+            # we started with — this is what buys extra time before a
+            # full manual re-export is needed.
+            refreshed_content = Path(cookie_file.name).read_text(encoding="utf-8")
+            if refreshed_content != cookie_content:
+                secret_manager_client.update_youtube_cookie(secret_id, refreshed_content)
+    finally:
+        Path(cookie_file.name).unlink(missing_ok=True)
 
+
+def _run_download(youtube_url: str, output_dir: str, max_duration_seconds: int) -> DownloadResult:
+    """Synchronous yt-dlp call — executed off the event loop by the caller."""
+    output_template = str(Path(output_dir) / "%(id)s.%(ext)s")
+
+    with _cookie_file(output_dir) as cookiefile:
         ydl_opts = {
             "format": "bestaudio/best",
             "outtmpl": output_template,
@@ -121,7 +147,7 @@ def _run_download(youtube_url: str, output_dir: str, max_duration_seconds: int) 
             "no_warnings": True,
             "nocheckcertificate": False,
             "logger": _YtDlpLogger(),
-            "cookiefile": cookie_file.name,
+            "cookiefile": cookiefile,
             "js_runtimes": _resolve_js_runtime(),
             "socket_timeout": settings.download_timeout_seconds,
             "retries": settings.download_retries,
@@ -153,20 +179,6 @@ def _run_download(youtube_url: str, output_dir: str, max_duration_seconds: int) 
             if is_youtube_bot_challenge(str(exc)):
                 raise YouTubeBotChallengeError("YouTube session temporarily unavailable.") from exc
             raise DownloadError(f"yt-dlp failed for {youtube_url}: {exc}") from exc
-        finally:
-            # yt-dlp rewrites the cookiefile in-place if YouTube handed it
-            # a refreshed session during this call. Persist that back to
-            # Secret Manager so the next call (possibly a different
-            # instance) starts from the newer session instead of the one
-            # we started with — this is what buys extra time before a
-            # full manual re-export is needed.
-            refreshed_content = Path(cookie_file.name).read_text(encoding="utf-8")
-            if refreshed_content != cookie_content:
-                secret_manager_client.update_youtube_cookie(secret_id, refreshed_content)
-    finally:
-        # Cookie file holds a live session — never leave it on disk longer
-        # than this call needs it.
-        Path(cookie_file.name).unlink(missing_ok=True)
 
     duration = info.get("duration")
     if duration is None:

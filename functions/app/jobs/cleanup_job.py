@@ -14,6 +14,7 @@ from app.core.config import settings
 from app.middleware.logging import logger
 from app.db.session import AsyncSessionLocal
 from app.services.audio_merge_service import AudioMergeService
+from app.services.media_download_service import MediaDownloadService
 from app.services.credit_service import CreditService
 from app.services.video_service import VideoService
 
@@ -27,6 +28,7 @@ async def run_cleanup() -> int:
         service = VideoService(db)
         purged_count = await service.purge_expired()
         await AudioMergeService(db).purge_expired()
+        await MediaDownloadService(db).purge_expired()
         await db.commit()
         return purged_count
 

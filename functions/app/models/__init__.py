@@ -6,6 +6,8 @@ from app.models.rate_limit_model import RateLimitBucket
 from app.models.short_model import Short
 from app.models.credit_model import CreditAccount, CreditReservation, Payment, CreditLedgerEntry
 from app.models.audio_merge_model import AudioMerge
+from app.models.media_download_model import MediaDownload
 
 __all__ = ["User", "Video", "TranscriptChunk", "QALog", "RateLimitBucket", "Short",
-           "CreditAccount", "CreditReservation", "Payment", "CreditLedgerEntry", "AudioMerge"]
+           "CreditAccount", "CreditReservation", "Payment", "CreditLedgerEntry", "AudioMerge",
+           "MediaDownload"]

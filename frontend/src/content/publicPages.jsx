@@ -67,6 +67,7 @@ const corePages = {
           <li><strong>Video and analysis information:</strong> the submitted YouTube URL, video title and duration when available, temporary audio, transcripts, timestamps, summaries, and processing status.</li>
           <li><strong>Questions and answers:</strong> questions you submit and the answers generated for your analysis.</li>
           <li><strong>Usage and technical information:</strong> requests, errors, browser or device information, IP addresses, and identifiers used by our hosting, analytics, and abuse-prevention services.</li>
+          <li><strong>Media download information:</strong> when you use the Media Downloader, the YouTube link, title, length, chosen quality, the time you confirmed the content is your own, and the resulting file.</li>
           <li><strong>Support messages:</strong> information you choose to send by email or through the issue-report form.</li>
         </ul>
       </> },
@@ -74,6 +75,10 @@ const corePages = {
         <p>We use this information to authenticate accounts, process videos, answer questions, restore analyses, operate the service, investigate problems, and limit abuse.</p>
         <p>Firebase and Google Cloud provide authentication and backend services, Vercel serves the website, and Supabase provides database storage. Groq receives audio for transcription and relevant transcript text and questions for AI summaries and answers. These providers process information needed to deliver their services.</p>
         <p>The site also uses Google Analytics, reCAPTCHA, YouTube embeds, and a Google AdSense script. An embedded player or third-party script may send browser, request, and device information to its provider when loaded or used. External sites and support forms have their own privacy practices.</p>
+      </> },
+      { id: "media-downloads", title: "Media downloads", content: <>
+        <p>The Media Downloader lets you download audio or video from a YouTube link. You must confirm, before each download, that the content is your own or that you have the right to download it. We record the time of that confirmation with the download. We do not verify ownership.</p>
+        <p>The downloaded file is kept on private storage for a limited time (currently 24 hours, or 7 days for accounts holding purchased credits) and is then deleted. Download links are signed and expire after a short time. Each download is processed with the YouTube session that the service uses, and YouTube’s own terms and privacy practices apply to the content.</p>
       </> },
       { id: "cookies", title: "Cookies, local storage, and advertising", content: <>
         <p>Authentication services use browser storage to maintain sign-in. Vidora stores the recent analysis identifier and submitted URL in local storage to support resuming or retrying an analysis. Signing out does not necessarily clear those saved browser records.</p>

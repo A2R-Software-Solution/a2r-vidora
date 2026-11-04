@@ -201,6 +201,17 @@ def processaudiomerge(request) -> None:
     asyncio.run(process_audio_merge(request.data["merge_id"], request.data["attempt_id"]))
 
 
+@tasks_fn.on_task_dispatched(
+    secrets=["DATABASE_URL"],
+    timeout_sec=settings.media_download_timeout_seconds + 120,
+    retry_config=RetryConfig(max_attempts=3),
+    rate_limits=RateLimits(max_concurrent_dispatches=2),
+)
+def processmediadownload(request) -> None:
+    from app.pipeline.media_download_worker import process_media_download
+    asyncio.run(process_media_download(request.data["download_id"], request.data["attempt_id"]))
+
+
 @scheduler_fn.on_schedule(
     schedule=settings.cleanup_schedule, secrets=["GROQ_API_KEY", "DATABASE_URL"]
 )

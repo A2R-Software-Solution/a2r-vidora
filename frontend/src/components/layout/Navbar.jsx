@@ -31,6 +31,7 @@ export default function Navbar({ onHome, user, onAuth, currentPath }) {
           <SiteLink className="tool-link" href="/reels" aria-current={currentPath === "/reels" ? "page" : undefined}>Create Reel</SiteLink>
           <SiteLink className="tool-link" href="/analyze" aria-current={currentPath === "/analyze" ? "page" : undefined}>Analyze</SiteLink>
           <SiteLink className="tool-link" href="/song-merger" aria-current={currentPath === "/song-merger" ? "page" : undefined}>Song Merger <span className="new-tag">New</span></SiteLink>
+          <SiteLink className="tool-link" href="/downloader" aria-current={currentPath === "/downloader" ? "page" : undefined}>Downloader <span className="new-tag">New</span></SiteLink>
           <SiteLink className="tool-link" href="/pricing" aria-current={currentPath === "/pricing" ? "page" : undefined}>Pricing</SiteLink>
         </div>
         {credits && (

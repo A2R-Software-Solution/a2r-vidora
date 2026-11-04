@@ -9,6 +9,7 @@ const linkGroups = [
       { href: "/about", label: "About Vidora" },
       { href: "/how-it-works", label: "How it works" },
       { href: "/song-merger", label: "Song Merger" },
+      { href: "/downloader", label: "Media Downloader" },
       { href: "/pricing", label: "Pricing" },
       { href: "/faq", label: "FAQ" },
     ],

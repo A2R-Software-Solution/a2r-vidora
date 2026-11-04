@@ -11,8 +11,10 @@ import WorkspacePage from "./pages/WorkspacePage";
 import PublicPage from "./pages/PublicPage";
 import PricingPage from "./pages/PricingPage";
 import SongMergerPage from "./pages/SongMergerPage";
+import DownloaderPage from "./pages/DownloaderPage";
 import { pricingMeta } from "./utils/pricing";
 import { songMergerMeta } from "./utils/audioMerge";
+import { downloaderMeta } from "./utils/mediaDownload";
 import { refreshCredits } from "./hooks/useCredits";
 import { publicPages } from "./content/publicPages";
 import { getCurrentPath, subscribeToNavigation } from "./utils/siteNavigation";
@@ -29,6 +31,7 @@ function App() {
   const isPricing = path === "/pricing";
   const isAdmin = path === "/admin";
   const isMerger = path === "/song-merger";
+  const isDownloader = path === "/downloader";
   const isTool = path === "/reels" || path === "/analyze";
   const mode = path === "/reels" ? "reels" : "analyze";
   const [video, setVideo] = useState(null);
@@ -37,7 +40,8 @@ function App() {
   const [hasVisitedHome, setHasVisitedHome] = useState(isTool);
   // Mount on first home visit, then retain drafts and the workspace while reading.
   if (isTool && !hasVisitedHome) setHasVisitedHome(true);
-  const publicPage = isPricing ? pricingMeta : isMerger ? songMergerMeta : Object.hasOwn(publicPages, path) ? publicPages[path] : null;
+  const publicPage = isPricing ? pricingMeta : isMerger ? songMergerMeta : isDownloader ? downloaderMeta
+    : Object.hasOwn(publicPages, path) ? publicPages[path] : null;
 
   useEffect(() => onAuthStateChanged(auth, setUser), []);
 
@@ -86,8 +90,9 @@ function App() {
         </div>}
         {isPricing && <PricingPage signedIn={!!user} onSignIn={() => setAuthOpen(true)} />}
         {isMerger && <SongMergerPage signedIn={!!user} />}
+        {isDownloader && <DownloaderPage signedIn={!!user} />}
         {isAdmin && <Suspense fallback={null}><AdminPage user={user} onSignIn={() => setAuthOpen(true)} /></Suspense>}
-        {!isHome && !isTool && !isPricing && !isMerger && !isAdmin && <PublicPage page={publicPage} hasAnalysis={!!video} />}
+        {!isHome && !isTool && !isPricing && !isMerger && !isDownloader && !isAdmin && <PublicPage page={publicPage} hasAnalysis={!!video} />}
       </main>
       <Footer currentPath={path} />
       <BugReportButton />

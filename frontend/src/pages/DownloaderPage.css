@@ -1,0 +1,62 @@
+.dl-balance { display: inline-block; margin: 24px 0 0; padding: 10px 16px; border: 1px solid #edd8c6; border-radius: 999px; background: #fff7ef; color: #5d4a3e; font-size: 14px; }
+.dl-balance strong { color: #a34320; font-weight: 700; }
+
+.dl-warning { margin: 28px 0 0; padding: 16px 18px; border: 1px solid #e9c99b; border-radius: 16px; background: #fff6e0; color: #5b4321; font-size: 15px; line-height: 1.55; }
+.dl-warning strong { color: #8a4a12; }
+
+.dl-check { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 14px; margin-top: 32px; }
+.dl-check .dl-field { flex: 1 1 320px; }
+
+.dl-field { display: flex; flex-direction: column; gap: 6px; }
+.dl-field label { color: #51473f; font-size: 14px; font-weight: 650; }
+.dl-field input { min-height: 46px; padding: 10px 12px; border: 1px solid #d9c3b2; border-radius: 12px; background: #fff; color: #28221e; font: inherit; font-size: 15px; }
+.dl-field input[aria-invalid="true"] { border-color: #b64032; }
+.dl-field input:focus-visible, .dl-primary:focus-visible, .dl-quality input:focus-visible, .dl-consent input:focus-visible {
+  outline: 3px solid #b8522b; outline-offset: 2px;
+}
+
+.dl-primary { min-height: 46px; padding: 10px 20px; border: 0; border-radius: 12px; background: #b74d23; color: #fff; font: inherit; font-size: 15px; font-weight: 650; cursor: pointer; }
+.dl-primary:hover:not(:disabled) { background: #9c4825; }
+.dl-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.dl-preview, .dl-history { margin-top: 40px; }
+.dl-preview { padding: 22px; border: 1px solid #e1cdbd; border-radius: 20px; background: #fffaf5; color: #28221e; }
+.dl-preview h2, .dl-history h2 { margin: 0 0 14px; color: #27211e; font-size: clamp(20px, 2.4vw, 26px); letter-spacing: -0.03em; }
+.dl-preview-media { display: flex; align-items: center; gap: 16px; margin-bottom: 18px; }
+.dl-preview-media img { flex: 0 0 160px; width: 160px; height: 90px; border-radius: 12px; object-fit: cover; }
+.dl-preview-media h2 { font-size: 19px; }
+
+.dl-qualities { margin: 16px 0 0; padding: 0; border: 0; }
+.dl-qualities legend { margin-bottom: 8px; color: #786457; font-size: 13px; font-weight: 650; }
+.dl-quality { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 6px 12px; border: 1px solid #e7d3c3; border-radius: 12px; background: #fff; cursor: pointer; }
+.dl-quality + .dl-quality { margin-top: 8px; }
+.dl-quality input { width: 18px; height: 18px; accent-color: #b74d23; }
+.dl-quality-label { flex: 1; font-size: 15px; }
+.dl-quality-cost { color: #a34320; font-size: 14px; font-weight: 700; white-space: nowrap; }
+.dl-quality--off { background: #f6f0ea; cursor: not-allowed; opacity: 0.65; }
+.dl-quality--off .dl-quality-cost { color: #786457; font-weight: 650; }
+
+.dl-consent { display: flex; align-items: flex-start; gap: 10px; margin-top: 22px; font-size: 15px; line-height: 1.5; cursor: pointer; }
+.dl-consent input { flex: 0 0 18px; width: 18px; height: 18px; margin-top: 3px; accent-color: #b74d23; }
+.dl-submit { margin-top: 16px; }
+
+.dl-hint, .dl-note, .dl-error, .dl-success { margin: 10px 0 0; font-size: 14px; line-height: 1.5; }
+.dl-hint { color: #786457; }
+.dl-note { padding: 10px 14px; border-radius: 12px; background: #fff1e5; color: #6b3d25; }
+.dl-error { color: #b64032; font-weight: 600; }
+.dl-success { color: #2f6b3a; font-weight: 600; }
+
+.dl-jobs { display: grid; gap: 14px; margin: 0; padding: 0; list-style: none; }
+.dl-job { padding: 18px 20px; border: 1px solid #e1cdbd; border-radius: 18px; background: #fffaf5; }
+.dl-job-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.dl-job-head h3 { margin: 0; color: #27211e; font-size: 17px; letter-spacing: -0.02em; overflow-wrap: anywhere; }
+.dl-status { flex: 0 0 auto; padding: 4px 10px; border-radius: 999px; background: #efe7df; color: #5d4a3e; font-size: 13px; font-weight: 650; }
+.dl-status--completed { background: #e3f1e5; color: #2f6b3a; }
+.dl-status--failed, .dl-status--expired { background: #f8e1dc; color: #9c2f22; }
+.dl-status--queued, .dl-status--processing { background: #fff1e5; color: #a34320; }
+.dl-open { margin-top: 12px; }
+
+@media (max-width: 600px) {
+  .dl-preview-media { flex-direction: column; align-items: flex-start; }
+  .dl-preview-media img { width: 100%; height: auto; aspect-ratio: 16 / 9; flex-basis: auto; }
+}

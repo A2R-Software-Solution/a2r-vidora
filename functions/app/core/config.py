@@ -100,6 +100,15 @@ class Settings(BaseSettings):
     audio_merge_max_request_bytes: int = Field(default=25 * 1024 * 1024, gt=0)
     # Cost = started minutes of selected audio + this per track after the first.
     audio_merge_extra_track_credits: int = Field(default=1, ge=0)
+    # Media Downloader: audio/video files from YouTube links, priced by quality.
+    # Paid from the same credits as analysis.
+    media_download_enabled: bool = False
+    media_download_bucket: str | None = None
+    media_download_signer_email: str | None = None
+    media_download_processing_task: str = "processmediadownload"
+    media_download_timeout_seconds: int = Field(default=900, ge=60, le=1500)
+    media_download_retention_hours: int = Field(default=24, gt=0)
+    media_download_max_seconds: int = Field(default=1800, gt=0)
     cleanup_schedule: str
     qa_page_size: int = Field(gt=0)
     qa_max_page_size: int = Field(gt=0)

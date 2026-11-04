@@ -32,6 +32,15 @@ export default function ProductHome() {
         <span className="product-details">Trim · Crossfade · MP3 or M4A download</span>
         <span className="product-cta">Try Our Song Merger <span aria-hidden="true">↗</span></span>
       </SiteLink>
+      <SiteLink href="/downloader" className="product-option">
+        <span className="new-tag new-tag--card">New</span>
+        <span className="product-icon" aria-hidden="true">⇩</span>
+        <span className="product-kicker">SAVE YOUR OWN FILES</span>
+        <h2>Your video.<br />Your file.</h2>
+        <p>Download audio or video from your own YouTube content, in the quality you choose.</p>
+        <span className="product-details">MP3 · MP4 up to 1080p · Quality-based credits</span>
+        <span className="product-cta">Try Our Media Downloader <span aria-hidden="true">↗</span></span>
+      </SiteLink>
     </div>
     <p className="product-footnote">Start with a YouTube link, or your own audio for Song Merger. Choose what you want to do with it.</p>
   </section>;

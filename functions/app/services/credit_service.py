@@ -19,6 +19,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import settings
 from app.models.credit_model import CreditAccount, CreditLedgerEntry, CreditReservation, Payment
 from app.models.audio_merge_model import AudioMerge
+from app.models.media_download_model import MediaDownload
 from app.models.short_model import Short
 from app.models.video_model import Video, VideoStatus
 
@@ -122,6 +123,10 @@ def audio_merge_credit_cost(segment_seconds: list[int]) -> int:
 
 def audio_merge_reservation_key(merge_id: uuid.UUID, attempt_id: uuid.UUID) -> str:
     return f"audio_merge:{merge_id}:{attempt_id}"
+
+
+def media_download_reservation_key(download_id: uuid.UUID, attempt_id: uuid.UUID) -> str:
+    return f"download:{download_id}:{attempt_id}"
 
 
 def owner_for_merge(merge) -> CreditOwner:
@@ -240,7 +245,8 @@ class CreditService:
     async def reserve(self, owner: CreditOwner, *, source_type: str, source_id: uuid.UUID,
                       idempotency_key: str, amount: int) -> CreditReservation:
         """Holds credits for one unit of work. Repeating a key returns the
-        original reservation without charging again."""
+        original reservation without charging again. Free credits come from the
+        daily allowance, then from the purchased balance."""
         account, cap = await self._accounts(owner)
         existing = (await self.db.execute(select(CreditReservation).where(
             CreditReservation.idempotency_key == idempotency_key))).scalar_one_or_none()
@@ -472,6 +478,19 @@ class CreditService:
             if merge.status in {"failed", "expired"}:
                 return False, merge.error_code or merge.status
             if merge.updated_at < now - timedelta(seconds=settings.audio_merge_timeout_seconds + 1800):
+                return False, "JOB_TIMED_OUT"
+            return None
+        if source_type == "download":
+            download = await self.db.get(MediaDownload, source_id)
+            if download is None:
+                return False, "source_missing"
+            if key != media_download_reservation_key(download.id, download.attempt_id):
+                return False, "attempt_superseded"
+            if download.status == "completed":
+                return True, None
+            if download.status in {"failed", "expired"}:
+                return False, download.error_code or download.status
+            if download.updated_at < now - timedelta(seconds=settings.media_download_timeout_seconds + 1800):
                 return False, "JOB_TIMED_OUT"
             return None
         short = await self.db.get(Short, source_id)
