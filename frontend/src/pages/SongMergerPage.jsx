@@ -253,7 +253,10 @@ export default function SongMergerPage({ signedIn = false }) {
         <p className="public-intro">
           Pick a section of each YouTube video or audio file, put them in order, and download one merged song.
         </p>
-        {credits && <p className="merger-balance" role="status">You have <strong>{credits.available} credits</strong> available.</p>}
+        {credits
+          ? <p className="merger-balance" role="status">You have <strong>{credits.available} credits</strong> available.</p>
+          // Hold the pill's space until the balance arrives, so the form doesn't jump.
+          : <p className="merger-balance balance-pending" aria-hidden="true">&nbsp;</p>}
       </header>
 
       {!enabled ? (

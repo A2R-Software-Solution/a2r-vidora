@@ -1,5 +1,8 @@
-import { useState } from "react";
-import { GoogleAuthProvider, createUserWithEmailAndPassword, signInWithEmailAndPassword, signInWithPopup } from "firebase/auth";
+import { useEffect, useState } from "react";
+import {
+  GoogleAuthProvider, browserPopupRedirectResolver, createUserWithEmailAndPassword, getRedirectResult,
+  signInWithEmailAndPassword, signInWithPopup,
+} from "firebase/auth";
 import { auth } from "../../firebase";
 import { createOrGetUser } from "../../api/userApi";
 
@@ -14,6 +17,10 @@ export default function AuthModal({ onClose }) {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  // Warm up Google's sign-in iframe while the modal is open, so the popup opens on the
+  // click itself (browsers block popups that open after a slow load).
+  useEffect(() => { getRedirectResult(auth, browserPopupRedirectResolver).catch(() => {}); }, []);
 
   const run = async (operation) => {
     setLoading(true);
@@ -44,7 +51,7 @@ export default function AuthModal({ onClose }) {
       <h2>{mode === "signup" ? "Create your account" : "Welcome back"}</h2>
       <p>{mode === "signup" ? "Sign up for 80 free credits a day and videos longer than 35 minutes." : "Sign in to continue your analyses."}</p>
       <button className="google-auth" type="button" disabled={loading} onClick={() => run(async () => {
-        const credential = await signInWithPopup(auth, new GoogleAuthProvider());
+        const credential = await signInWithPopup(auth, new GoogleAuthProvider(), browserPopupRedirectResolver);
         await registerProfile(credential.user);
       })}>
         <svg className="google-auth-mark" viewBox="0 0 18 18" aria-hidden="true" focusable="false">

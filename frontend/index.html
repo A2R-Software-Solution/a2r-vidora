@@ -1,13 +1,28 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-GT8RXR1N4S"></script>
+    <!-- Google tag (gtag.js) and AdSense. Calls queue in dataLayer straight away; the
+         scripts themselves load after the page has, so they don't slow its first paint. -->
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
       gtag('config', 'G-GT8RXR1N4S');
+      (function () {
+        function add(src, crossOrigin) {
+          var s = document.createElement('script');
+          s.async = true;
+          s.src = src;
+          if (crossOrigin) s.crossOrigin = 'anonymous';
+          document.head.appendChild(s);
+        }
+        function loadThirdParty() {
+          add('https://www.googletagmanager.com/gtag/js?id=G-GT8RXR1N4S');
+          add('https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4418739595252883', true);
+        }
+        if (document.readyState === 'complete') loadThirdParty();
+        else window.addEventListener('load', loadThirdParty, { once: true });
+      })();
     </script>
     <meta charset="UTF-8" />
 
@@ -26,9 +41,6 @@
     <meta property="og:image:alt" content="Vidora AI: make more of every video. A product of a2rlabs.ai" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:image" content="https://vidoraa.com/og-image.png" />
-
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4418739595252883"
-     crossorigin="anonymous"></script>
   </head>
 
   <body>

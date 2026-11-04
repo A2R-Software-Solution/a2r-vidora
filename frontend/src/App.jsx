@@ -1,13 +1,11 @@
 import { lazy, Suspense, useEffect, useLayoutEffect, useState, useSyncExternalStore } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "./firebase";
-import AuthModal from "./components/auth/AuthModal";
 import Navbar from "./components/layout/Navbar";
 import Footer from "./components/layout/Footer";
 import LandingPage from "./pages/LandingPage";
 import ProductHome from "./pages/ProductHome";
 import HowItWorksSection from "./components/landing/HowItWorksSection";
-import WorkspacePage from "./pages/WorkspacePage";
 import PublicPage from "./pages/PublicPage";
 import PricingPage from "./pages/PricingPage";
 import SongMergerPage from "./pages/SongMergerPage";
@@ -17,16 +15,19 @@ import { songMergerMeta } from "./utils/audioMerge";
 import { downloaderMeta } from "./utils/mediaDownload";
 import { refreshCredits } from "./hooks/useCredits";
 import { publicPages } from "./content/publicPages";
-import { getCurrentPath, subscribeToNavigation } from "./utils/siteNavigation";
+import { getCurrentPath, getServerPath, subscribeToNavigation } from "./utils/siteNavigation";
 import SpotlightGlow from "./components/common/SpotlightGlow";
 import BugReportButton from "./components/common/BugReportButton";
 import "./App.css";
 
-// Loaded only on /admin so admin code stays out of the main bundle.
+// Loaded only when needed (admin route, an analysed video, the sign-in dialog) so
+// that code stays out of the main bundle.
 const AdminPage = lazy(() => import("./pages/AdminPage"));
+const WorkspacePage = lazy(() => import("./pages/WorkspacePage"));
+const AuthModal = lazy(() => import("./components/auth/AuthModal"));
 
 function App() {
-  const path = useSyncExternalStore(subscribeToNavigation, getCurrentPath);
+  const path = useSyncExternalStore(subscribeToNavigation, getCurrentPath, getServerPath);
   const isHome = path === "/";
   const isPricing = path === "/pricing";
   const isAdmin = path === "/admin";
@@ -85,7 +86,7 @@ function App() {
         {isHome && <ProductHome />}
         {hasVisitedHome && <div className="home-content" hidden={!isTool} inert={!isTool}>
           <LandingPage onAnalyzed={setVideo} compact={!!video} active={isTool} mode={mode} />
-          {video && <WorkspacePage key={video.id} video={video} active={isTool} mode={mode} onSignIn={() => setAuthOpen(true)} signedIn={!!user} />}
+          {video && <Suspense fallback={null}><WorkspacePage key={video.id} video={video} active={isTool} mode={mode} onSignIn={() => setAuthOpen(true)} signedIn={!!user} /></Suspense>}
           {mode === "analyze" && <HowItWorksSection />}
         </div>}
         {isPricing && <PricingPage signedIn={!!user} onSignIn={() => setAuthOpen(true)} />}
@@ -96,7 +97,7 @@ function App() {
       </main>
       <Footer currentPath={path} />
       <BugReportButton />
-      {authOpen && <AuthModal onClose={() => setAuthOpen(false)} />}
+      {authOpen && <Suspense fallback={null}><AuthModal onClose={() => setAuthOpen(false)} /></Suspense>}
     </div>
   );
 }

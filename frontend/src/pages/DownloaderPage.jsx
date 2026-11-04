@@ -92,6 +92,9 @@ export default function DownloaderPage({ signedIn }) {
 
   // No history until the backend says the feature is on (an older API has no /downloads).
   const enabled = limits?.enabled === true;
+  // While the limits load, the form and history are drawn (inactive) so the page
+  // keeps its final height instead of growing and pushing the footer down.
+  const loading = limits === null;
   useEffect(() => {
     if (!enabled) return undefined;
     const controller = new AbortController();
@@ -117,7 +120,7 @@ export default function DownloaderPage({ signedIn }) {
 
   const check = async (event) => {
     event.preventDefault();
-    if (!url.trim()) return;
+    if (loading || !url.trim()) return;
     setPreviewBusy(true);
     setPreviewError("");
     setSubmitError("");
@@ -165,17 +168,20 @@ export default function DownloaderPage({ signedIn }) {
         <p className="public-intro">
           Paste a YouTube link, pick a quality, and download the file. Each quality has its own credit price.
         </p>
-        {enabled && credits?.available != null && (
+        {enabled && credits?.available != null ? (
           <p className="dl-balance" role="status">
             Credits left: <strong>{credits.available}</strong>
             {credits.purchased_balance > 0 && <> (including {credits.purchased_balance} purchased)</>}
           </p>
+        ) : (loading || enabled) && (
+          // Hold the pill's space until the balance arrives, so the page doesn't jump.
+          <p className="dl-balance balance-pending" aria-hidden="true">&nbsp;</p>
         )}
       </header>
 
       <p className="dl-warning" role="note"><strong>Your content only.</strong> {RIGHTS_WARNING}</p>
 
-      {limits === null ? null : !enabled ? (
+      {!loading && !enabled ? (
         <p className="dl-note" role="status">The Media Downloader is launching soon. Please check back shortly.</p>
       ) : (
         <>
@@ -186,7 +192,7 @@ export default function DownloaderPage({ signedIn }) {
                 placeholder="https://www.youtube.com/watch?v=…" value={url}
                 onChange={(event) => setUrl(event.target.value)} aria-invalid={!!previewError} />
             </div>
-            <button type="submit" className="dl-primary" disabled={previewBusy || !url.trim()}>
+            <button type="submit" className="dl-primary" disabled={loading || previewBusy || !url.trim()}>
               {previewBusy ? "Checking…" : "Check link"}
             </button>
           </form>
@@ -229,9 +235,10 @@ export default function DownloaderPage({ signedIn }) {
         </>
       )}
 
-      {enabled && <section className="dl-history" aria-labelledby={`${uid}-history`}>
+      {(loading || enabled) && <section className="dl-history" aria-labelledby={`${uid}-history`}>
         <h2 id={`${uid}-history`}>Your downloads</h2>
         {historyError && <p className="dl-error" role="alert">{historyError}</p>}
+        {jobs === null && !historyError && <p className="dl-hint">Loading your downloads…</p>}
         {jobs && jobs.length === 0 && !historyError && (
           <p className="dl-hint">Nothing here yet. Finished files stay available for a limited time.</p>
         )}

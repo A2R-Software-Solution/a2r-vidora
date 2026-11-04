@@ -21,7 +21,8 @@ const perks = [
 ];
 
 function YourCredits({ credits }) {
-  if (!credits) return null;
+  // Hold the pill's space until the balance arrives, so the page below doesn't jump.
+  if (!credits) return <p className="pricing-balance balance-pending" aria-hidden="true">&nbsp;</p>;
   return (
     <p className="pricing-balance" role="status">
       You have <strong>{credits.free_left} free credits</strong> left today

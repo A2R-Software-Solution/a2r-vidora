@@ -15,7 +15,8 @@ function build({ title, description, path, body }) {
     .replace(/<title>.*?<\/title>/, `<title>${esc(title)}</title>`)
     .replace(/(<meta name="description" content=")[^"]*(")/, `$1${esc(description)}$2`)
     .replace("</head>", `  <link rel="canonical" href="${url}" />\n    <meta property="og:title" content="${esc(title)}" />\n    <meta property="og:description" content="${esc(description)}" />\n    <meta property="og:url" content="${url}" />\n  </head>`)
-    .replace('<div id="root"></div>', `<div id="root">${body}</div>`);
+    // main.jsx hydrates only when this matches the visited path.
+    .replace('<div id="root"></div>', `<div id="root" data-prerendered="${path}">${body}</div>`);
 }
 
 writeFileSync(resolve(dist, "index.html"), build({

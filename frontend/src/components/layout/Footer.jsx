@@ -89,7 +89,8 @@ export default function Footer({ currentPath }) {
             {siteDetails.supportEmail}
           </a>
         </div>
-        <p className="site-footer-copyright">
+        {/* The prerendered year may be older than the visitor's clock. */}
+        <p className="site-footer-copyright" suppressHydrationWarning>
           &copy; {new Date().getFullYear()} {siteDetails.company}.
         </p>
       </div>

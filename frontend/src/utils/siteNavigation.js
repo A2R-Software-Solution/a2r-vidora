@@ -4,6 +4,17 @@ export function getCurrentPath() {
   return window.location.pathname.replace(/\/+$/, "") || "/";
 }
 
+// Prerendering has no window: it sets the page being rendered. In the browser the
+// "server" snapshot used for hydration is the real path, which the prerender matched.
+let prerenderPath = "/";
+export function setPrerenderPath(path) {
+  prerenderPath = path;
+}
+
+export function getServerPath() {
+  return typeof window === "undefined" ? prerenderPath : getCurrentPath();
+}
+
 export function subscribeToNavigation(callback) {
   window.addEventListener("popstate", callback);
   window.addEventListener(NAVIGATION_EVENT, callback);

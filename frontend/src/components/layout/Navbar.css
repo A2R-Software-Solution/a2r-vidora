@@ -155,6 +155,14 @@
   .page .site-navbar .tool-link { padding: 14px 12px; font-size: 16px; border-radius: 12px; }
 }
 
+/* Very small phones (320px): the "Account" word pushed the menu button off-screen,
+   so the account button becomes icon-only (its aria-label still names it). */
+@media (max-width: 350px) {
+  .page .site-navbar .nav-auth-label { display: none; }
+  .page .site-navbar .nav-auth-button { padding: 4px; }
+  .page .site-navbar .credit-chip { margin-right: 6px; padding: 6px 10px; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .nav-auth-button, .nav-auth-arrow { transition: none; }
   .nav-auth-button:hover, .nav-auth-button:hover .nav-auth-arrow { transform: none; }

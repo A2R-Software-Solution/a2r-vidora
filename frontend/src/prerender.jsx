@@ -1,44 +1,26 @@
 // Build-time entry: renders public pages to static HTML so crawlers see real content.
-import { renderToStaticMarkup } from "react-dom/server";
-import PublicPage from "./pages/PublicPage";
-import Footer from "./components/layout/Footer";
-import ProductHome from "./pages/ProductHome";
-import PricingPage from "./pages/PricingPage";
+// It renders the same <App /> the browser hydrates, so the markup must match exactly.
+import { renderToString } from "react-dom/server";
+import App from "./App";
 import { pricingMeta } from "./utils/pricing";
+import { songMergerMeta } from "./utils/audioMerge";
+import { downloaderMeta } from "./utils/mediaDownload";
 import { publicPages } from "./content/publicPages";
+import { setPrerenderPath } from "./utils/siteNavigation";
 
-export const paths = [...Object.keys(publicPages), "/pricing"];
+const toolPages = { "/pricing": pricingMeta, "/song-merger": songMergerMeta, "/downloader": downloaderMeta };
 
-const pageTitle = (path) => (path === "/pricing" ? "Pricing" : publicPages[path].title);
+export const paths = [...Object.keys(publicPages), ...Object.keys(toolPages)];
 
 export function renderPath(path) {
-  const isPricing = path === "/pricing";
-  const page = isPricing ? pricingMeta : publicPages[path];
+  setPrerenderPath(path);
   return {
-    page,
-    html: renderToStaticMarkup(
-      <div className="page page--reading">
-        <main id="main-content" className="site-main">{isPricing ? <PricingPage /> : <PublicPage page={page} />}</main>
-        <Footer currentPath={path} />
-      </div>,
-    ),
+    page: toolPages[path] || publicPages[path],
+    html: renderToString(<App />),
   };
 }
 
 export function renderHome() {
-  return renderToStaticMarkup(
-    <div className="page">
-      <main id="main-content" className="site-main">
-        <ProductHome />
-        <article className="public-page">
-          <nav aria-label="Site pages">
-            <ul>
-              {paths.map((path) => <li key={path}><a href={path}>{pageTitle(path)}</a></li>)}
-            </ul>
-          </nav>
-        </article>
-      </main>
-      <Footer currentPath="/" />
-    </div>,
-  );
+  setPrerenderPath("/");
+  return renderToString(<App />);
 }

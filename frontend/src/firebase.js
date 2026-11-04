@@ -1,5 +1,7 @@
 import { initializeApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
+import {
+  browserLocalPersistence, browserSessionPersistence, getAuth, indexedDBLocalPersistence, initializeAuth,
+} from "firebase/auth";
 
 const app = initializeApp({
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -8,4 +10,8 @@ const app = initializeApp({
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
 });
 
-export const auth = getAuth(app);
+// Same persistence as getAuth(), minus the popup resolver: that loads Google's sign-in
+// iframe on every page view, so AuthModal brings it along only when sign-in is opened.
+export const auth = typeof window === "undefined" ? getAuth(app) : initializeAuth(app, {
+  persistence: [indexedDBLocalPersistence, browserLocalPersistence, browserSessionPersistence],
+});

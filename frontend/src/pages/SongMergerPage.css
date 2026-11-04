@@ -25,6 +25,9 @@
   min-height: 46px; padding: 10px 12px; border: 1px solid #d9c3b2; border-radius: 12px; background: #fff; color: #28221e; font: inherit; font-size: 15px;
 }
 .merger-field input[type="file"] { padding: 8px 10px; }
+/* Inputs have a built-in minimum width; without this, two side by side widen the card past a phone screen. */
+.merger-field input, .merger-field select { min-width: 0; }
+.merger-track { min-width: 0; }
 .merger-field [aria-invalid="true"] { border-color: #b64032; }
 .merger-field input:focus-visible, .merger-field select:focus-visible { outline: 3px solid #b8522b; outline-offset: 2px; }
 
@@ -64,7 +67,7 @@
   .merger-form section, .merger-history { margin-top: 34px; }
   .merger-track, .merger-result, .merger-summary { padding: 18px; }
   .merger-options-grid { grid-template-columns: 1fr; padding: 18px; }
-  .merger-times { grid-template-columns: 1fr 1fr; }
+  .merger-times { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .merger-length { grid-column: 1 / -1; margin: 0; }
   .merger-track-head { flex-wrap: wrap; }
   .merger-summary dl { grid-template-columns: 1fr; }
