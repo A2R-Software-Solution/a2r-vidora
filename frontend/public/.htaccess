@@ -1,11 +1,27 @@
-# SPA fallback: routes without a prerendered folder (/admin, /reels, /analyze)
-# are handled client-side, so serve index.html instead of a 404.
+# Prerendered pages live at <page>/index.html, but their canonical URL has no trailing
+# slash (/terms, not /terms/). Serve them at that one URL; any other path is a real 404.
 <IfModule mod_rewrite.c>
   RewriteEngine On
-  RewriteCond %{REQUEST_FILENAME} !-f
-  RewriteCond %{REQUEST_FILENAME} !-d
-  RewriteRule ^ /index.html [L]
+
+  # /terms/ -> /terms, so each page has a single URL.
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^(.+)/$ /$1 [R=301,L]
+
+  # /terms -> terms/index.html, served directly (no slash-adding redirect).
+  RewriteCond %{REQUEST_FILENAME}/index.html -f
+  RewriteRule ^(.+)$ /$1/index.html [L]
+
+  # Client-side routes with no prerendered page.
+  RewriteRule ^(admin|reels|analyze)/?$ /index.html [L]
+
+  # Other folders (e.g. /assets) are not pages.
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^.+$ - [R=404,L]
 </IfModule>
+
+# Unknown paths get a 404 status (index.html with 200 is a "soft 404" to Google); the
+# app shows its "Page not found" view for them.
+ErrorDocument 404 /index.html
 
 # Vite gives built JS/CSS a content hash (index-AbC123xy.js), so a changed file gets a new
 # name: cache those for a year. HTML must be rechecked so a deploy shows up straight away.
