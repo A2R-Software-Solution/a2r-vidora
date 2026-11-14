@@ -15,6 +15,7 @@ import { songMergerMeta } from "./utils/audioMerge";
 import { downloaderMeta } from "./utils/mediaDownload";
 import { refreshCredits } from "./hooks/useCredits";
 import { publicPages } from "./content/publicPages";
+import { homeMeta } from "./content/siteDetails";
 import { getCurrentPath, getServerPath, subscribeToNavigation } from "./utils/siteNavigation";
 import SpotlightGlow from "./components/common/SpotlightGlow";
 import BugReportButton from "./components/common/BugReportButton";
@@ -56,9 +57,9 @@ function App() {
   }, []);
 
   useLayoutEffect(() => {
-    document.title = isHome ? "Vidora AI — Understand your videos" : `${isAdmin ? "Admin" : publicPage?.label || "Page not found"} | Vidora AI`;
+    document.title = isHome ? homeMeta.title : `${isAdmin ? "Admin" : publicPage?.label || "Page not found"} | Vidora AI`;
     document.querySelector('meta[name="description"]')?.setAttribute("content",
-      publicPage?.description || "Explore YouTube videos with AI summaries and timestamp-linked questions. A product of A2R Software Solutions.");
+      publicPage?.description || homeMeta.description);
     const frame = window.requestAnimationFrame(() => {
       if (isTool) document.title = `${mode === "reels" ? "Create Reel" : "Analyze Video"} | Vidora AI`;
       const heading = document.querySelector(isHome ? ".product-home h1" : isTool ? ".home-content h1" : ".public-page h1");

@@ -6,4 +6,16 @@ User-agent: Mediapartners-Google
 Allow: /
 Disallow: /admin
 
+# AI search and assistant crawlers: allowed, so Vidora can be cited in AI answers.
+User-agent: Google-Extended
+User-agent: GPTBot
+User-agent: OAI-SearchBot
+User-agent: ChatGPT-User
+User-agent: ClaudeBot
+User-agent: Claude-SearchBot
+User-agent: PerplexityBot
+User-agent: Bingbot
+Allow: /
+Disallow: /admin
+
 Sitemap: https://vidoraa.com/sitemap.xml
