@@ -5,7 +5,8 @@ from fastapi import Depends, HTTPException, Query, Request, Response
 from app.core.rate_limit import limiter
 from app.deps import get_db, require_admin
 from app.models.user_model import User
-from app.schemas.admin_schema import CreditAdjustRequest, CreditAdjustResponse
+from app.schemas.admin_schema import CreditAdjustRequest, CreditAdjustResponse, SettingsUpdateRequest
+from app.services import runtime_settings
 from app.services.admin_service import AdminService
 from app.utils.router_config import create_router
 
@@ -49,6 +50,22 @@ async def adjust_credits(request: Request, response: Response, user_id: uuid.UUI
     if balance is None:
         raise HTTPException(status_code=404, detail="User not found.")
     return CreditAdjustResponse(user_id=user_id, purchased_balance=balance)
+
+
+@router.get("/settings")
+@limiter.limit("60/minute")
+async def get_settings(request: Request, response: Response, db=Depends(get_db)):
+    return await runtime_settings.describe(db)
+
+
+@router.put("/settings")
+@limiter.limit("20/minute")
+async def update_settings(request: Request, response: Response, body: SettingsUpdateRequest,
+                          db=Depends(get_db), admin: User = Depends(require_admin)):
+    try:
+        return await runtime_settings.update(db, body.values, admin.email)
+    except runtime_settings.InvalidSettingError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
 @router.get("/payments")

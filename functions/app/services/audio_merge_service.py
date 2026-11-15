@@ -7,8 +7,10 @@ from app.core.config import settings
 from app.integration import audio_merge_storage
 from app.middleware.logging import logger
 from app.models.audio_merge_model import AudioMerge
+from app.services.audio_source_service import AudioSourceService
 from app.services.credit_service import (
     CreditOwner, CreditService, audio_merge_credit_cost, audio_merge_reservation_key)
+from app.utils.youtube import extract_youtube_id
 
 ALLOWED_UPLOAD_EXTENSIONS = {".mp3", ".wav", ".m4a", ".aac", ".ogg", ".opus", ".flac", ".weba", ".webm", ".mp4"}
 ACTIVE_STATUSES = {"queued", "processing"}
@@ -46,23 +48,30 @@ class AudioMergeService:
         """uploads: (extension, content) in the order the request listed its files.
         Credits are reserved in the same transaction as the job; the caller
         enqueues the work only when this returns."""
-        upload_tracks = [t for t in payload.tracks if t.source == "upload"]
-        if any(t.file_index >= len(uploads) for t in upload_tracks):
+        used_files = {t.file_index for t in payload.tracks if t.source == "upload"}
+        if any(index >= len(uploads) for index in used_files):
             raise HTTPException(422, "A track refers to a file that was not uploaded.")
-        if len(uploads) != len(upload_tracks):
+        if len(used_files) != len(uploads):
             raise HTTPException(422, "Every uploaded file must be used by a track.")
+        # Songs loaded in the Pro editor: reuse their stored audio instead of asking YouTube again.
+        originals = await AudioSourceService(self.db).originals(
+            {t.source_id: extract_youtube_id(t.url) for t in payload.tracks if t.source_id}, owner)
 
         merge_id, attempt_id = uuid.uuid4(), uuid.uuid4()
         now = datetime.now(timezone.utc)
-        tracks, objects = [], []
+        tracks, objects = [], {}
         for track in payload.tracks:
-            entry = {"source": track.source, "start_time": track.start_time, "end_time": track.end_time}
+            entry = {"source": track.source, "start_time": track.start_time, "end_time": track.end_time,
+                     "volume": track.volume, "fade_in": track.fade_in, "fade_out": track.fade_out}
             if track.source == "youtube":
                 entry["url"] = track.url
+                if track.source_id in originals:
+                    entry["source_object"] = originals[track.source_id]
             else:
+                # Several sections may use one uploaded file; it is stored once.
                 extension, content = uploads[track.file_index]
                 entry["object_name"] = f"audiomerge/{merge_id}/in-{track.file_index}{extension}"
-                objects.append((entry["object_name"], content))
+                objects[entry["object_name"]] = content
             tracks.append(entry)
 
         credits = CreditService(self.db, commit=False)
@@ -73,7 +82,7 @@ class AudioMergeService:
             job = AudioMerge(
                 id=merge_id, user_id=owner.user_id, guest_key=owner.guest_key, guest_cap_key=owner.cap_key,
                 tracks=tracks, output_format=payload.output_format, crossfade_seconds=payload.crossfade_seconds,
-                total_seconds=sum(t.seconds for t in payload.tracks), credit_cost=cost, status="queued",
+                total_seconds=max(round(sum(t.seconds for t in payload.tracks)), 1), credit_cost=cost, status="queued",
                 attempt_id=attempt_id, created_at=now, updated_at=now,
                 expires_at=now + timedelta(hours=retention))
             self.db.add(job)
@@ -86,7 +95,7 @@ class AudioMergeService:
             raise
         stored = []
         try:
-            for name, content in objects:
+            for name, content in objects.items():
                 await audio_merge_storage.upload_bytes(name, content)
                 stored.append(name)
             await self.db.commit()

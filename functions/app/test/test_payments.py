@@ -10,7 +10,7 @@ from unittest.mock import AsyncMock, Mock, patch
 
 from app.core.config import settings
 from app.integration import razorpay_client
-from app.services.payment_service import PACKS
+from app.services.payment_service import credit_packs
 
 
 def sign(secret, message: bytes) -> str:
@@ -42,7 +42,7 @@ class SignatureTests(unittest.TestCase):
             self.assertFalse(razorpay_client.webhook_signature_valid(b"{}", sign("", b"{}")))
 
     def test_packs_match_agreed_prices(self):
-        self.assertEqual({code: (p.amount_cents, p.credits, p.currency) for code, p in PACKS.items()},
+        self.assertEqual({code: (p.amount_cents, p.credits, p.currency) for code, p in credit_packs().items()},
                          {"topup": (259, 120, "USD"), "starter": (500, 300, "USD"), "pro": (1000, 800, "USD")})
 
 
@@ -67,6 +67,7 @@ class BillingApiTests(unittest.TestCase):
         self.addCleanup(app.dependency_overrides.clear)
         self.payments = Mock(handle_webhook=AsyncMock(), create_order=AsyncMock())
         for target, name, value in ((billing_routes, "PaymentService", Mock(return_value=self.payments)),
+                                    (billing_routes.runtime_settings, "refresh", AsyncMock()),
                                     (settings, "payments_enabled", True),
                                     (settings, "razorpay_webhook_secret", "hook-secret")):
             patcher = patch.object(target, name, value)

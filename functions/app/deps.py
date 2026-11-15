@@ -11,6 +11,7 @@ from app.core.config import settings
 from app.db.session import AsyncSessionLocal
 from app.models.user_model import User
 from app.repository.user_repository import UserRepository
+from app.services import runtime_settings
 
 
 def _ensure_firebase_initialized() -> None:
@@ -32,6 +33,7 @@ def _ensure_firebase_initialized() -> None:
 
 
 async def get_db():
+    await runtime_settings.refresh()  # admin-panel overrides, at most every 30s
     async with AsyncSessionLocal() as session:
         yield session
 

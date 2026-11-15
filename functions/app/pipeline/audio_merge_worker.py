@@ -54,16 +54,30 @@ async def process_audio_merge(merge_id, attempt_id):
         tracks, output_format, crossfade = job.tracks, job.output_format, job.crossfade_seconds
         await db.commit()
     object_name = f"audiomerge/{merge_id}/{attempt_id}.{output_format}"
-    inputs = [t["object_name"] for t in tracks if t.get("object_name")]
+    inputs = list(dict.fromkeys(t["object_name"] for t in tracks if t.get("object_name")))
     try:
         with tempfile.TemporaryDirectory(prefix="vidora_merge_") as directory:
-            uploads = {}
+            # Stored object -> local file; several sections may share one object.
+            fetched = {}
+            local = {}
             for index, track in enumerate(tracks):
-                if track["source"] == "upload":
-                    path = Path(directory) / f"up{index}{Path(track['object_name']).suffix}"
-                    await audio_merge_storage.download(track["object_name"], path)
-                    uploads[index] = path
-            path = await asyncio.to_thread(merge_audio, tracks, uploads, output_format, crossfade, directory)
+                name = track.get("object_name") if track["source"] == "upload" else track.get("source_object")
+                if not name:
+                    continue
+                if name not in fetched:
+                    path = Path(directory) / f"in{len(fetched)}{Path(name).suffix}"
+                    try:
+                        await audio_merge_storage.download(name, path)
+                    except Exception:
+                        if track["source"] == "upload":
+                            raise
+                        # A loaded song that has expired: fetch that section from YouTube instead.
+                        logger.warning("audio_merge_source_unavailable merge_id=%s", merge_id)
+                        path = None
+                    fetched[name] = path
+                if fetched[name] is not None:
+                    local[index] = fetched[name]
+            path = await asyncio.to_thread(merge_audio, tracks, local, output_format, crossfade, directory)
             await audio_merge_storage.upload(object_name, path, output_format)
         async with AsyncSessionLocal() as db:
             job = (await db.execute(select(AudioMerge).where(AudioMerge.id == merge_id).with_for_update())).scalar_one_or_none()

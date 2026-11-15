@@ -5,6 +5,7 @@ import {
 } from "firebase/auth";
 import { auth } from "../../firebase";
 import { createOrGetUser } from "../../api/userApi";
+import { usePlans } from "../../hooks/usePlans";
 
 async function registerProfile(user) {
   if (!user?.email) throw new Error("Your sign-in provider did not provide an email address.");
@@ -17,6 +18,7 @@ export default function AuthModal({ onClose }) {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const plans = usePlans();
 
   // Warm up Google's sign-in iframe while the modal is open, so the popup opens on the
   // click itself (browsers block popups that open after a slow load).
@@ -49,7 +51,7 @@ export default function AuthModal({ onClose }) {
     <section className="auth-modal" role="dialog" aria-modal="true" aria-label="Account access" onMouseDown={(event) => event.stopPropagation()}>
       <button className="auth-close" type="button" onClick={onClose} aria-label="Close">×</button>
       <h2>{mode === "signup" ? "Create your account" : "Welcome back"}</h2>
-      <p>{mode === "signup" ? "Sign up for 80 free credits a day and videos longer than 35 minutes." : "Sign in to continue your analyses."}</p>
+      <p>{mode === "signup" ? `Sign up for ${plans.user_daily_credits} free credits a day and videos longer than 35 minutes.` : "Sign in to continue your analyses."}</p>
       <button className="google-auth" type="button" disabled={loading} onClick={() => run(async () => {
         const credential = await signInWithPopup(auth, new GoogleAuthProvider(), browserPopupRedirectResolver);
         await registerProfile(credential.user);

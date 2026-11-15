@@ -32,6 +32,18 @@
 .admin-table tr.is-clickable { cursor: pointer; }
 .admin-table tr.is-clickable:hover { background: #fff1e5; }
 
+.admin-settings { border: 1px solid #edd8c6; border-radius: 14px; background: #fffcf8; }
+.admin-setting { display: grid; grid-template-columns: minmax(180px, 1.2fr) minmax(170px, 1fr) minmax(200px, 1.6fr); align-items: center; gap: 8px 16px; padding: 10px 14px; border-bottom: 1px solid #f1e3d6; font-size: 14px; }
+.admin-setting:last-child { border-bottom: 0; }
+.admin-setting label { font-weight: 600; }
+.admin-setting-input { display: flex; align-items: center; gap: 8px; }
+.admin-setting input { width: 110px; min-height: 38px; padding: 6px 10px; border: 1px solid #e1cdbd; border-radius: 10px; background: #fff; font: inherit; font-size: 14px; }
+.admin-setting .admin-link { margin: 0; }
+.admin-savebar { position: sticky; bottom: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 14px; margin-top: 20px; padding: 12px 0; background: #fff8f1; font-size: 14px; }
+.admin-savebar .admin-link { margin: 0; }
+.admin-button:disabled { border-color: #dcc6b6; background: #f2e5da; color: #7c6858; cursor: not-allowed; }
+@media (max-width: 720px) { .admin-setting { grid-template-columns: 1fr; } }
+
 .admin-pager { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 16px; }
 
 .admin button:focus-visible, .admin input:focus-visible, .admin select:focus-visible { outline: 3px solid #b8522b; outline-offset: 2px; }

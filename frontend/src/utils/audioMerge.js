@@ -19,6 +19,10 @@ export const DEFAULT_LIMITS = Object.freeze({
   extra_track_credits: 1,
   max_crossfade_seconds: 10,
   output_formats: ["mp3", "m4a"],
+  // Pro editor; off until the server says it supports it.
+  pro_enabled: false,
+  max_source_seconds: 900,
+  max_fade_seconds: 10,
 });
 
 export const MIN_TRACKS = 2;
@@ -34,9 +38,11 @@ export const FAILURE_MESSAGES = {
 
 export const megabytes = (bytes) => `${Math.round((bytes / (1024 * 1024)) * 10) / 10} MB`;
 
-// "1:30", "1:02:03" or plain seconds -> whole seconds, or null when unreadable.
-export function parseTime(text) {
-  const value = String(text ?? "").trim();
+export const MIN_TRACK_SECONDS = 0.1;
+// Times are exact to a millisecond; this removes float noise such as 0.30000000000000004.
+export const toMillis = (seconds) => Math.round(seconds * 1000) / 1000;
+
+function wholeSeconds(value) {
   if (/^\d{1,5}$/.test(value)) return Number(value);
   let match = value.match(/^(\d{1,3}):([0-5]?\d)$/);
   if (match) return Number(match[1]) * 60 + Number(match[2]);
@@ -45,10 +51,19 @@ export function parseTime(text) {
   return null;
 }
 
+// "1:30", "1:02:03" or plain seconds -> seconds, or null when unreadable.
+// A fraction is optional ("1:30.25", "83.456") and kept to the millisecond.
+export function parseTime(text) {
+  const [, whole, fraction] = String(text ?? "").trim().match(/^([\d:]+)(\.\d{1,6})?$/) ?? [];
+  const seconds = whole ? wholeSeconds(whole) : null;
+  if (seconds == null) return null;
+  return fraction ? toMillis(seconds + Number(fraction)) : seconds;
+}
+
 export function trackSeconds(track) {
   const start = parseTime(track.start);
   const end = parseTime(track.end);
-  return start != null && end != null && end > start ? end - start : 0;
+  return start != null && end != null && end > start ? toMillis(end - start) : 0;
 }
 
 export const fileExtension = (name) => {
@@ -71,6 +86,7 @@ export function validateTrack(track, limits = DEFAULT_LIMITS) {
   if (start == null) return "Enter a start time like 1:00.";
   if (end == null) return "Enter an end time like 2:40.";
   if (end <= start) return "The end time must be after the start time.";
+  if (end - start < MIN_TRACK_SECONDS) return `Each track must be at least ${MIN_TRACK_SECONDS} seconds long.`;
   if (end - start > limits.max_segment_seconds) return `Each track can be at most ${Math.floor(limits.max_segment_seconds / 60)} minutes.`;
   if (track.source === "upload" && track.duration && end > Math.ceil(track.duration) + 1) {
     return `This file is only ${formatTime(Math.floor(track.duration))} long.`;
@@ -103,7 +119,7 @@ export function validateMerge(tracks, options, limits = DEFAULT_LIMITS) {
 export function mergeCost(tracks, limits = DEFAULT_LIMITS) {
   const lengths = tracks.map(trackSeconds);
   if (!lengths.length || lengths.some((seconds) => seconds <= 0)) return null;
-  return Math.ceil(lengths.reduce((sum, seconds) => sum + seconds, 0) / 60) +
+  return Math.ceil(toMillis(lengths.reduce((sum, seconds) => sum + seconds, 0)) / 60) +
     (lengths.length - 1) * limits.extra_track_credits;
 }
 

@@ -36,7 +36,7 @@ const corePages = {
     intro: "Start with a video you have permission to process. Vidora prepares its spoken content so you can explore it through summaries and questions.",
     sections: [
       { id: "add-a-video", title: "01 / Add your YouTube link", content: <>
-        <p>Paste a YouTube URL into the home-page form and select Analyze Video. Each minute of video uses one credit. Guests get 45 free credits a day for videos up to 35 minutes; signed-in users get 80, and can analyze videos up to 3 hours with <SiteLink href="/pricing">credit packs</SiteLink>. Processing may wait when transcription capacity is busy.</p>
+        <p>Paste a YouTube URL into the home-page form and select Analyze Video. Each minute of video uses one credit. Guests get free credits every day for videos up to 35 minutes; signed-in users get more, and can analyze videos up to 3 hours with <SiteLink href="/pricing">credit packs</SiteLink>. Processing may wait when transcription capacity is busy.</p>
         <p>Only submit content you own or have permission to process. Private, unavailable, live, or upcoming videos may not be supported.</p>
       </> },
       { id: "follow-progress", title: "02 / Follow the processing", content: <>
@@ -78,7 +78,7 @@ const corePages = {
       </> },
       { id: "media-downloads", title: "Media downloads", content: <>
         <p>The Media Downloader lets you download audio or video from a YouTube link. You must confirm, before each download, that the content is your own or that you have the right to download it. We record the time of that confirmation with the download. We do not verify ownership.</p>
-        <p>The downloaded file is kept on private storage for a limited time (currently 24 hours, or 7 days for accounts holding purchased credits) and is then deleted. Download links are signed and expire after a short time. Each download is processed with the YouTube session that the service uses, and YouTube’s own terms and privacy practices apply to the content.</p>
+        <p>The downloaded file is kept on private storage for a limited time (longer for accounts holding purchased credits; see <SiteLink href="/pricing">pricing</SiteLink>) and is then deleted. Download links are signed and expire after a short time. Each download is processed with the YouTube session that the service uses, and YouTube’s own terms and privacy practices apply to the content.</p>
       </> },
       { id: "cookies", title: "Cookies, local storage, and advertising", content: <>
         <p>Authentication services use browser storage to maintain sign-in. Vidora stores the recent analysis identifier and submitted URL in local storage to support resuming or retrying an analysis. Signing out does not necessarily clear those saved browser records.</p>

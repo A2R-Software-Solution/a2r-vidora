@@ -16,7 +16,21 @@ test("times parse as mm:ss, h:mm:ss or seconds and reject nonsense", () => {
   assert.equal(parseTime("1:02:03"), 3723);
   assert.equal(parseTime("90"), 90);
   assert.equal(parseTime(" 1:30 "), 90);
-  for (const bad of ["", "abc", "1:75", "-5", "1:2:3:4", "1.5", null, undefined]) assert.equal(parseTime(bad), null, String(bad));
+  for (const bad of ["", "abc", "1:75", "-5", "1:2:3:4", "1.", ".5", "1:30.1234567", "1,5", null, undefined]) assert.equal(parseTime(bad), null, String(bad));
+});
+
+test("fractions of a second are optional and kept to the millisecond", () => {
+  assert.equal(parseTime("1.5"), 1.5);
+  assert.equal(parseTime("1:23.45"), 83.45);
+  assert.equal(parseTime("1:02:03.007"), 3723.007);
+  assert.equal(parseTime("0:00.1"), 0.1);
+  assert.equal(parseTime("83.4567"), 83.457);            // finer than a millisecond is rounded
+  assert.equal(trackSeconds(yt(1, "0:00.1", "0:00.3")), 0.2);   // no float noise
+  assert.equal(mergeCost([yt(1, "0:00", "0:59.999"), yt(2, "0:00", "0:00.001")]), 1 + 1);
+  assert.equal(mergeCost([yt(1, "0:00", "1:00"), yt(2, "0:00", "0:00.001")]), 2 + 1);
+  assert.match(validateTrack(yt(1, "1:00", "1:00.05")), /at least 0.1/);
+  assert.deepEqual(buildMergeRequest([yt(1, "0:10.25", "0:40.75"), yt(2, "1:00", "2:00")], { outputFormat: "mp3", crossfade: 0 }).spec.tracks
+    .map((track) => [track.start_time, track.end_time]), [[10.25, 40.75], [60, 120]]);
 });
 
 test("track length needs a valid, increasing range", () => {

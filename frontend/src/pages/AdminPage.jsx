@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { adjustCredits, getList, getOverview, getUserDetail } from "../api/adminApi";
+import { adjustCredits, getList, getOverview, getSettings, getUserDetail, saveSettings } from "../api/adminApi";
 import "./AdminPage.css";
 
 const PAGE_SIZE = 25;
@@ -12,7 +12,8 @@ const clip = (text, n = 80) => (text && text.length > n ? `${text.slice(0, n)}�
 function errorText(error) {
   if (error?.response?.status === 403) return "This account is not an admin.";
   if (error?.response?.status === 401) return "Sign in to continue.";
-  return error?.response?.data?.detail || "Could not load data. Try again.";
+  const detail = error?.response?.data?.detail;
+  return typeof detail === "string" ? detail : "The request failed. Try again.";
 }
 
 // Each tab: API resource, optional status filter values and table columns.
@@ -237,6 +238,104 @@ function UserDetail({ userId, onBack }) {
   );
 }
 
+const SETTING_NOTES = {
+  "Retention": "Applies to items created after the change. Existing items keep their expiry time.",
+  "Credit packs": "Applies to new purchases. Past payments keep the price and credits they were bought with.",
+  "Free credits per day": "Applies immediately. Credits already used today still count against the new limit.",
+};
+
+function Settings() {
+  const [rows, setRows] = useState(null);
+  const [draft, setDraft] = useState({});
+  const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    getSettings(controller.signal).then((r) => setRows(r.data)).catch((e) => {
+      if (!controller.signal.aborted) setError(errorText(e));
+    });
+    return () => controller.abort();
+  }, []);
+
+  if (error) return <p className="admin-error" role="alert">{error}</p>;
+  if (!rows) return <p className="admin-muted">Loading…</p>;
+
+  const changes = rows.filter((row) => draft[row.key] !== undefined && draft[row.key] !== ""
+    && Number(draft[row.key]) !== row.value);
+  const groups = [...new Set(rows.map((row) => row.group))];
+  const describe = (row, value) => `${row.group} / ${row.label}: ${row.value} → ${value}`;
+
+  async function apply(values, summary) {
+    if (!window.confirm(`Apply these changes for all users?\n\n${summary}`)) return;
+    setSaving(true);
+    setMessage("");
+    try {
+      const { data } = await saveSettings(values);
+      setRows(data);
+      setDraft({});
+      setMessage("Saved. Every server picks the change up within 30 seconds.");
+    } catch (e) {
+      setMessage(errorText(e));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const save = (event) => {
+    event.preventDefault();
+    apply(Object.fromEntries(changes.map((row) => [row.key, Number(draft[row.key])])),
+      changes.map((row) => describe(row, draft[row.key])).join("\n"));
+  };
+
+  return (
+    <form onSubmit={save}>
+      <p className="admin-muted">Limits and prices used across the app. A change applies to everyone, without a deploy.</p>
+      {groups.map((group) => (
+        <section key={group}>
+          <h2>{group}</h2>
+          {SETTING_NOTES[group] && <p className="admin-muted">{SETTING_NOTES[group]}</p>}
+          <div className="admin-settings">
+            {rows.filter((row) => row.group === group).map((row) => {
+              const value = draft[row.key] ?? String(row.value);
+              return (
+                <div className="admin-setting" key={row.key}>
+                  <label htmlFor={`setting-${row.key}`}>{row.label}</label>
+                  <span className="admin-setting-input">
+                    <input id={`setting-${row.key}`} type="number" inputMode="numeric" step="1" required
+                      min={row.minimum} max={row.maximum} value={value}
+                      onChange={(e) => setDraft({ ...draft, [row.key]: e.target.value })} />
+                    <span className="admin-muted">
+                      {row.unit}{row.unit === "US cents" && value !== "" ? ` (${fmtMoney(Number(value))})` : ""}
+                    </span>
+                  </span>
+                  <span className="admin-muted">
+                    {row.overridden
+                      ? <>Default {row.default} · changed by {row.updated_by}, {fmtDate(row.updated_at)} ·{" "}
+                        <button type="button" className="admin-link" disabled={saving}
+                          onClick={() => apply({ [row.key]: null }, describe(row, `${row.default} (default)`))}>
+                          Reset
+                        </button></>
+                      : "Default"}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      ))}
+      <div className="admin-savebar">
+        <button type="submit" className="admin-button" disabled={saving || changes.length === 0}>
+          {saving ? "Saving…" : changes.length ? `Save ${changes.length} change${changes.length > 1 ? "s" : ""}` : "No changes"}
+        </button>
+        {changes.length > 0 && <button type="button" className="admin-link" onClick={() => setDraft({})}>Discard</button>}
+        {message && <span role="status">{message}</span>}
+      </div>
+    </form>
+  );
+}
+
 export default function AdminPage({ user, onSignIn }) {
   const [tab, setTab] = useState("overview");
   const [userId, setUserId] = useState(null);
@@ -256,7 +355,7 @@ export default function AdminPage({ user, onSignIn }) {
     <section className="admin">
       <h1>Admin</h1>
       <div className="admin-tabs" role="tablist">
-        {[["overview", "Overview"], ...Object.entries(TABS).map(([key, t]) => [key, t.label])].map(([key, label]) => (
+        {[["overview", "Overview"], ...Object.entries(TABS).map(([key, t]) => [key, t.label]), ["settings", "Settings"]].map(([key, label]) => (
           <button key={key} type="button" role="tab" aria-selected={tab === key} onClick={() => open(key)}>{label}</button>
         ))}
       </div>
@@ -264,7 +363,8 @@ export default function AdminPage({ user, onSignIn }) {
       {tab === "users" && (userId
         ? <UserDetail userId={userId} onBack={() => setUserId(null)} />
         : <ListTab resource="users" onOpenUser={(row) => setUserId(row.id)} />)}
-      {tab !== "overview" && tab !== "users" && <ListTab key={tab} resource={tab} />}
+      {tab === "settings" && <Settings />}
+      {TABS[tab] && tab !== "users" && <ListTab key={tab} resource={tab} />}
     </section>
   );
 }

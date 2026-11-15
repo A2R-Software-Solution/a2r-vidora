@@ -100,6 +100,16 @@ class Settings(BaseSettings):
     audio_merge_max_request_bytes: int = Field(default=25 * 1024 * 1024, gt=0)
     # Cost = started minutes of selected audio + this per track after the first.
     audio_merge_extra_track_credits: int = Field(default=1, ge=0)
+    # Song Merger Pro editor: a YouTube track is fetched once for its waveform
+    # and preview, then reused by the merge. Loading costs no credits, so it is
+    # bounded by length, by a per-owner hourly count and by a short lifetime.
+    audio_merge_source_max_seconds: int = Field(default=900, gt=0)
+    audio_merge_source_retention_minutes: int = Field(default=180, ge=30)
+    audio_merge_sources_per_hour: int = Field(default=20, gt=0)
+    audio_merge_source_task: str = "prepareaudiosource"
+    audio_merge_source_timeout_seconds: int = Field(default=300, ge=60, le=800)
+    # Local development only: prepare sources inside the API process instead of Cloud Tasks.
+    audio_merge_sources_inline: bool = False
     # Media Downloader: audio/video files from YouTube links, priced by quality.
     # Paid from the same credits as analysis.
     media_download_enabled: bool = False
@@ -146,6 +156,13 @@ class Settings(BaseSettings):
     razorpay_webhook_secret: str | None = None
     razorpay_api_url: str = "https://api.razorpay.com/v1"
     razorpay_timeout_seconds: float = Field(default=10, gt=0)
+    # Credit packs (one-time, USD). Editable from the admin panel.
+    pack_topup_credits: int = Field(default=120, gt=0)
+    pack_topup_amount_cents: int = Field(default=259, gt=0)
+    pack_starter_credits: int = Field(default=300, gt=0)
+    pack_starter_amount_cents: int = Field(default=500, gt=0)
+    pack_pro_credits: int = Field(default=800, gt=0)
+    pack_pro_amount_cents: int = Field(default=1000, gt=0)
 
     @property
     def cors_origins(self) -> list[str]:

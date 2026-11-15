@@ -2,20 +2,24 @@ import { useEffect, useState } from "react";
 import SiteLink from "../components/common/SiteLink";
 import { getPacks } from "../api/billingApi";
 import { useCredits } from "../hooks/useCredits";
+import { usePlans } from "../hooks/usePlans";
 import { siteDetails } from "../content/siteDetails";
 import {
-  FALLBACK_PACKS, PACK_DETAILS, SHORT_CREDIT_COST,
-  displayPacks, formatPrice, packEquivalents, pricePer100Credits,
+  FALLBACK_PACKS, PACK_DETAILS,
+  displayPacks, formatHours, formatPrice, packEquivalents, pricePer100Credits,
 } from "../utils/pricing";
 import "./PricingPage.css";
 
-const freeTiers = [
-  { name: "Guest", credits: 45, note: "No account needed", points: ["Videos up to 35 minutes", "10 questions a day"] },
-  { name: "Free account", credits: 80, note: "Sign up free", points: ["Longer videos, within your credits", "50 questions a day", "Your video history"] },
+const freeTiers = (plans) => [
+  { id: "guest", name: "Guest", credits: plans.guest_daily_credits, note: "No account needed",
+    points: ["Videos up to 35 minutes", `${plans.guest_daily_questions} questions a day`] },
+  { id: "account", name: "Free account", credits: plans.user_daily_credits, note: "Sign up free",
+    points: ["Longer videos, within your credits", `${plans.user_daily_questions} questions a day`, "Your video history"] },
 ];
 
-const perks = [
-  ["Kept for 7 days", "Your analyses and Shorts stay available for a week instead of 24 hours."],
+const perks = (plans) => [
+  [`Kept for ${formatHours(plans.paid_retention_hours)}`,
+    `Your analyses and Shorts stay available for ${formatHours(plans.paid_retention_hours)} instead of ${formatHours(plans.free_retention_hours)}.`],
   ["Priority processing", "Your videos skip the free queue and get reserved transcription capacity."],
   ["Ask freely", "Ask as many questions as you need about your videos."],
 ];
@@ -31,9 +35,9 @@ function YourCredits({ credits }) {
   );
 }
 
-function PackCard({ pack, signedIn, onSignIn }) {
+function PackCard({ pack, shortCost, signedIn, onSignIn }) {
   const details = PACK_DETAILS[pack.code];
-  const { videos, videoMinutes, shorts } = packEquivalents(pack.credits);
+  const { videos, videoMinutes, shorts } = packEquivalents(pack.credits, shortCost);
   return (
     <article className={`pricing-pack${details.featured ? " pricing-pack--featured" : ""}`} aria-labelledby={`pack-${pack.code}`}>
       {details.featured && <p className="pricing-pack-flag">Best value</p>}
@@ -60,6 +64,7 @@ function PackCard({ pack, signedIn, onSignIn }) {
 export default function PricingPage({ signedIn = false, onSignIn }) {
   const [packs, setPacks] = useState(FALLBACK_PACKS);
   const credits = useCredits();
+  const plans = usePlans();
 
   useEffect(() => {
     const controller = new AbortController();
@@ -83,7 +88,7 @@ export default function PricingPage({ signedIn = false, onSignIn }) {
         <h2 id="credits-title">How credits work</h2>
         <ul className="pricing-rules">
           <li><strong>1 credit</strong><span>per minute of video analyzed</span></li>
-          <li><strong>{SHORT_CREDIT_COST} credits</strong><span>per Short you create</span></li>
+          <li><strong>{plans.short_credit_cost} credits</strong><span>per Short you create</span></li>
           <li><strong>0 credits</strong><span>to ask questions about your video</span></li>
           <li><strong>Daily reset</strong><span>free credits renew at midnight IST</span></li>
         </ul>
@@ -92,16 +97,16 @@ export default function PricingPage({ signedIn = false, onSignIn }) {
       <section className="pricing-section" aria-labelledby="free-title">
         <h2 id="free-title">Free every day</h2>
         <div className="pricing-free">
-          {freeTiers.map((tier) => (
-            <article className="pricing-tier" key={tier.name} aria-labelledby={`tier-${tier.credits}`}>
-              <h3 id={`tier-${tier.credits}`}>{tier.name}</h3>
+          {freeTiers(plans).map((tier) => (
+            <article className="pricing-tier" key={tier.id} aria-labelledby={`tier-${tier.id}`}>
+              <h3 id={`tier-${tier.id}`}>{tier.name}</h3>
               <p className="pricing-credits"><span className="pricing-amount">{tier.credits}</span> credits a day</p>
               <ul className="pricing-points">
                 {tier.points.map((point) => <li key={point}>{point}</li>)}
               </ul>
-              {tier.name === "Free account" && !signedIn
+              {tier.id === "account" && !signedIn
                 ? <button type="button" className="pricing-tier-cta" onClick={onSignIn}>{tier.note}</button>
-                : <p className="pricing-tier-note">{tier.name === "Guest" ? tier.note : "You're signed in"}</p>}
+                : <p className="pricing-tier-note">{tier.id === "guest" ? tier.note : "You're signed in"}</p>}
             </article>
           ))}
         </div>
@@ -111,7 +116,7 @@ export default function PricingPage({ signedIn = false, onSignIn }) {
         <h2 id="packs-title">Credit packs</h2>
         <p className="pricing-section-intro">Packs add to your free daily credits. Free credits are always used first.</p>
         <div className="pricing-packs">
-          {packs.map((pack) => <PackCard key={pack.code} pack={pack} signedIn={signedIn} onSignIn={onSignIn} />)}
+          {packs.map((pack) => <PackCard key={pack.code} pack={pack} shortCost={plans.short_credit_cost} signedIn={signedIn} onSignIn={onSignIn} />)}
         </div>
         <p className="pricing-footnote">Prices in US dollars. Online payments are launching soon.</p>
       </section>
@@ -119,7 +124,7 @@ export default function PricingPage({ signedIn = false, onSignIn }) {
       <section className="pricing-section" aria-labelledby="perks-title">
         <h2 id="perks-title">Included while you have purchased credits</h2>
         <ul className="pricing-perks">
-          {perks.map(([title, text]) => <li key={title}><strong>{title}</strong><span>{text}</span></li>)}
+          {perks(plans).map(([title, text]) => <li key={title}><strong>{title}</strong><span>{text}</span></li>)}
         </ul>
       </section>
 

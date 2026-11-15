@@ -1,5 +1,16 @@
-.merger-balance { display: inline-block; margin: 24px 0 0; padding: 10px 16px; border: 1px solid #edd8c6; border-radius: 999px; background: #fff7ef; color: #5d4a3e; font-size: 14px; }
+/* Credits on the left, the editor toggle on the right (it wraps below on narrow screens). */
+/* The header is normally narrower than the page; here it spans it, so the toggle can sit at the right edge, above "Your mix". */
+.merger-page .public-header { max-width: none; }
+/* One line on desktop; it wraps on phones. */
+.merger-page h1 { max-width: none; font-size: clamp(30px, 4.4vw, 54px); }
+.merger-toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 24px; margin-top: 24px; }
+.merger-balance { display: inline-block; margin: 0; padding: 10px 16px; border: 1px solid #edd8c6; border-radius: 999px; background: #fff7ef; color: #5d4a3e; font-size: 14px; }
 .merger-balance strong { color: #a34320; font-weight: 700; }
+
+.merger-modes { display: flex; width: fit-content; padding: 4px; border: 1px solid #edd8c6; border-radius: 999px; background: #f8e9dc; }
+.merger-modes button { min-height: 40px; padding: 0 18px; border: 0; border-radius: 999px; background: transparent; color: #6b574a; font: inherit; font-size: 14px; font-weight: 650; cursor: pointer; }
+.merger-modes button[aria-pressed="true"] { background: #fff; color: #a34320; box-shadow: 0 2px 8px rgba(120, 60, 20, 0.14); }
+.merger-modes button:focus-visible { outline: 3px solid #b8522b; outline-offset: 2px; }
 
 .merger-form section, .merger-history { margin-top: 44px; }
 .merger-form h2, .merger-history h2 { margin: 0 0 18px; color: #27211e; font-size: clamp(22px, 2.6vw, 30px); letter-spacing: -0.03em; }

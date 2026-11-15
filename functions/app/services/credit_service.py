@@ -113,11 +113,12 @@ def short_reservation_key(short_id: uuid.UUID, attempt_id: uuid.UUID) -> str:
     return f"short:{short_id}:{attempt_id}"
 
 
-def audio_merge_credit_cost(segment_seconds: list[int]) -> int:
+def audio_merge_credit_cost(segment_seconds: list[float]) -> int:
     """Started minutes of all selected audio, plus a fixed fee per track after the first."""
     if not segment_seconds or min(segment_seconds) <= 0:
         raise ValueError("Every audio segment must have a positive length.")
-    return (math.ceil(sum(segment_seconds) / 60)
+    # Lengths are exact to a millisecond; rounding the sum keeps float noise from starting a new minute.
+    return (math.ceil(round(sum(segment_seconds), 3) / 60)
             + (len(segment_seconds) - 1) * settings.audio_merge_extra_track_credits)
 
 

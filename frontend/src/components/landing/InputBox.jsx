@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { CREDITS_MESSAGE, isYouTubeVideoUrl, YOUTUBE_LINK_MESSAGE } from "../../utils/videoInput";
 import SiteLink from "../common/SiteLink";
+import { usePlans } from "../../hooks/usePlans";
 
 function AnalysisStatus({ restoring }) {
   const [takingLonger, setTakingLonger] = useState(false);
@@ -30,6 +31,7 @@ export default function InputBox({ onAnalyze, loading, restoring = false, error,
   const [url, setUrl] = useState("");
   const [validationError, setValidationError] = useState(null);
   const inputRef = useRef(null);
+  const plans = usePlans();
   const visibleError = validationError || error;
 
   const handleAnalyze = () => {
@@ -89,7 +91,7 @@ export default function InputBox({ onAnalyze, loading, restoring = false, error,
         <span><span className="provider-icon yt">▶</span> YouTube</span>
       </div>
       <div className="hint reveal-up delay-4">
-        1 credit per minute of video. Free every day: 45 credits as a guest, 80 when signed in.{" "}
+        1 credit per minute of video. Free every day: {plans.guest_daily_credits} credits as a guest, {plans.user_daily_credits} when signed in.{" "}
         <SiteLink href="/pricing">Pricing</SiteLink>
       </div>
     </>

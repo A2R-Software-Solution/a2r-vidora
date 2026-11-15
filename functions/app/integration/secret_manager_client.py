@@ -19,6 +19,9 @@ class _CacheEntry:
 
 
 _cache: dict[str, _CacheEntry] = {}
+# Accounts YouTube just refused, skipped until this time (monotonic seconds).
+_cooling: dict[str, float] = {}
+_COOLDOWN_SECONDS = 600
 _client: secretmanager.SecretManagerServiceClient | None = None
 
 
@@ -49,7 +52,7 @@ def _get_cached_secret(secret_id: str) -> str:
     return content
 
 
-def get_youtube_cookie() -> tuple[str, str]:
+def get_youtube_cookie(exclude: tuple[str, ...] | set[str] = ()) -> tuple[str, str]:
     """
     Returns (secret_id, cookie_content) for one of the configured
     YouTube accounts, chosen at random per call. Content is cached
@@ -60,8 +63,22 @@ def get_youtube_cookie() -> tuple[str, str]:
     secret_id and pass it to update_youtube_cookie() afterwards, so
     any session refresh yt-dlp wrote to the file gets persisted back.
     """
-    secret_id = random.choice(settings.youtube_cookie_secret_ids)
+    now = time.monotonic()
+    ids = [s for s in settings.youtube_cookie_secret_ids if s not in exclude]
+    if not ids:
+        raise LookupError("No YouTube cookie account left to try.")
+    # Prefer accounts YouTube has not refused recently; if all were, try them anyway.
+    ready = [s for s in ids if _cooling.get(s, 0) <= now]
+    secret_id = random.choice(ready or ids)
     return secret_id, _get_cached_secret(secret_id)
+
+
+def report_bad_youtube_cookie(secret_id: str) -> None:
+    """YouTube refused this account's session: skip it for a while and drop the
+    in-memory copy, so a freshly rotated secret is picked up on the next use."""
+    _cooling[secret_id] = time.monotonic() + _COOLDOWN_SECONDS
+    _cache.pop(secret_id, None)
+    logger.warning(f"YouTube refused cookies of {secret_id}; skipping it for {_COOLDOWN_SECONDS}s")
 
 
 def update_youtube_cookie(secret_id: str, new_content: str) -> None:

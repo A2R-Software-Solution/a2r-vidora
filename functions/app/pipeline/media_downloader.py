@@ -18,7 +18,7 @@ from app.pipeline.youtube_downloader import (
     VideoTooLongError,
     YouTubeBotChallengeError,
     _YtDlpLogger,
-    _cookie_file,
+    with_cookie_failover,
     _resolve_js_runtime,
     is_youtube_bot_challenge,
 )
@@ -79,17 +79,19 @@ def _check_media(info: dict | None, max_seconds: int) -> MediaInfo:
 
 def _run_probe(url: str, max_seconds: int) -> MediaInfo:
     with tempfile.TemporaryDirectory(prefix="vidora_probe_") as output_dir:
-        with _cookie_file(output_dir) as cookiefile:
+        def attempt(cookiefile: str):
             try:
                 with yt_dlp.YoutubeDL(_base_options(cookiefile, output_dir)) as ydl:
-                    info = ydl.extract_info(url, download=False)
+                    return ydl.extract_info(url, download=False)
             except yt_dlp.utils.DownloadError as exc:
                 raise _to_download_error(url, exc) from exc
+
+        info = with_cookie_failover(output_dir, attempt)
     return _check_media(info, max_seconds)
 
 
 def _run_download(url: str, output_dir: str, quality: MediaQuality, max_seconds: int) -> MediaFile:
-    with _cookie_file(output_dir) as cookiefile:
+    def attempt(cookiefile: str):
         options = _base_options(cookiefile, output_dir) | {"format": ytdlp_format(quality)}
         if quality.kind == "audio":
             options["postprocessors"] = [{
@@ -104,9 +106,11 @@ def _run_download(url: str, output_dir: str, quality: MediaQuality, max_seconds:
                 # Re-check the length here: the price was set from an earlier probe.
                 media = _check_media(ydl.extract_info(url, download=False), max_seconds)
                 ydl.download([url])
+                return media
         except yt_dlp.utils.DownloadError as exc:
             raise _to_download_error(url, exc) from exc
 
+    media = with_cookie_failover(output_dir, attempt)
     path = Path(output_dir) / f"{media.video_id}.{quality.extension}"
     if not path.exists():
         raise DownloadError(f"Expected media file not found at {path}.")

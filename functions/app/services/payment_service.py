@@ -15,6 +15,7 @@ from datetime import datetime, timezone
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.integration import razorpay_client
 from app.middleware.logging import logger
 from app.models.credit_model import Payment
@@ -29,13 +30,15 @@ class CreditPack:
     currency: str = "USD"
 
 
-# Prices are copied onto each Payment at checkout, so changing them here
-# never alters past purchases.
-PACKS: dict[str, CreditPack] = {pack.code: pack for pack in (
-    CreditPack("topup", credits=120, amount_cents=259),
-    CreditPack("starter", credits=300, amount_cents=500),
-    CreditPack("pro", credits=800, amount_cents=1000),
-)}
+PACK_CODES = ("topup", "starter", "pro")
+
+
+def credit_packs() -> dict[str, CreditPack]:
+    """Current packs. Prices are copied onto each Payment at checkout, so
+    changing them (admin panel) never alters past purchases."""
+    return {code: CreditPack(code, credits=getattr(settings, f"pack_{code}_credits"),
+                             amount_cents=getattr(settings, f"pack_{code}_amount_cents"))
+            for code in PACK_CODES}
 
 
 class UnknownPackError(Exception):
@@ -55,7 +58,7 @@ class PaymentService:
         self.db = db
 
     async def create_order(self, user_id: uuid.UUID, pack_code: str) -> Payment:
-        pack = PACKS.get(pack_code)
+        pack = credit_packs().get(pack_code)
         if pack is None:
             raise UnknownPackError(pack_code)
         payment_id = uuid.uuid4()

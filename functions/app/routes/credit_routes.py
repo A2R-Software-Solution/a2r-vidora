@@ -2,7 +2,8 @@ from fastapi import Depends, Request, Response
 from app.core.config import settings
 from app.core.rate_limit import credit_owner_for, limiter, rate_limit_user
 from app.deps import get_db
-from app.schemas.credit_schema import CreditSummaryResponse
+from app.schemas.credit_schema import CreditSummaryResponse, PlanLimitsResponse
+from app.services import runtime_settings
 from app.services.credit_service import CreditService
 from app.utils.router_config import create_router
 
@@ -19,4 +20,16 @@ async def get_credits(request: Request, response: Response, db=Depends(get_db),
         purchased_balance=summary.purchased_balance, available=summary.available,
         questions_left=summary.questions_left, is_paid=summary.is_paid,
         short_credit_cost=settings.short_credit_cost,
+    )
+
+
+@router.get("/plans", response_model=PlanLimitsResponse)
+@limiter.limit("50/minute")
+async def get_plans(request: Request, response: Response):
+    await runtime_settings.refresh()
+    return PlanLimitsResponse(
+        guest_daily_credits=settings.guest_daily_credits, user_daily_credits=settings.user_daily_credits,
+        guest_daily_questions=settings.guest_daily_questions, user_daily_questions=settings.user_daily_questions,
+        short_credit_cost=settings.short_credit_cost,
+        free_retention_hours=settings.video_retention_hours, paid_retention_hours=settings.paid_retention_hours,
     )

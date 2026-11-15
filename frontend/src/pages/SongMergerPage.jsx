@@ -1,8 +1,9 @@
-import { useEffect, useId, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
 import SiteLink from "../components/common/SiteLink";
 import { createAudioMerge, getMergeDownload, getMergeLimits, listAudioMerges } from "../api/audioMergeApi";
 import { refreshCredits, useCredits } from "../hooks/useCredits";
-import { formatTime } from "../utils/formatTime";
+import { formatPreciseTime, formatTime } from "../utils/formatTime";
+import { readAudioDuration } from "../utils/audioDecode";
 import { CREDITS_MESSAGE } from "../utils/videoInput";
 import {
   CROSSFADE_CHOICES, DEFAULT_LIMITS, MIN_TRACKS, UPLOAD_EXTENSIONS, buildMergeRequest, isMergeExpired,
@@ -10,21 +11,23 @@ import {
 } from "../utils/audioMerge";
 import "./SongMergerPage.css";
 
+// The Pro editor (waveforms, recorder, player) loads only when someone switches to it.
+const ProEditor = lazy(() => import("../components/merger/ProEditor"));
+
+// Which editor the visitor last used, remembered on this device.
+const MODE_KEY = "vidora-merger-mode";
+const modeListeners = new Set();
+const readMode = () => {
+  try { return window.localStorage.getItem(MODE_KEY) === "pro" ? "pro" : "simple"; } catch { return "simple"; }
+};
+const subscribeMode = (listener) => { modeListeners.add(listener); return () => modeListeners.delete(listener); };
+function saveMode(mode) {
+  try { window.localStorage.setItem(MODE_KEY, mode); } catch { /* private browsing: the choice lasts for this visit only */ }
+  modeListeners.forEach((listener) => listener());
+}
+
 let nextTrackId = 1;
 const newTrack = () => ({ id: nextTrackId++, source: "youtube", url: "", file: null, duration: null, start: "0:00", end: "" });
-
-// Browsers can tell us an uploaded file's length, which lets us check the range early.
-function readAudioDuration(file) {
-  return new Promise((resolve) => {
-    const url = URL.createObjectURL(file);
-    const audio = new Audio();
-    const finish = (value) => { URL.revokeObjectURL(url); resolve(value); };
-    audio.preload = "metadata";
-    audio.onloadedmetadata = () => finish(Number.isFinite(audio.duration) ? audio.duration : null);
-    audio.onerror = () => finish(null);
-    audio.src = url;
-  });
-}
 
 function TrackCard({ track, index, count, error, limits, onChange, onRemove, onMove }) {
   const uid = useId();
@@ -87,7 +90,7 @@ function TrackCard({ track, index, count, error, limits, onChange, onRemove, onM
           <input id={`${uid}-end`} type="text" autoComplete="off" placeholder="2:40" value={track.end}
             onChange={(event) => onChange(track.id, { end: event.target.value })} aria-invalid={!!error} />
         </div>
-        <p className="merger-length" aria-live="polite">{seconds ? `Length ${formatTime(seconds)}` : "Use mm:ss"}</p>
+        <p className="merger-length" aria-live="polite">{seconds ? `Length ${formatPreciseTime(seconds)}` : "Use mm:ss"}</p>
       </div>
       {error && <p className="merger-error" role="alert">{error}</p>}
     </li>
@@ -167,6 +170,8 @@ export default function SongMergerPage({ signedIn = false }) {
   const credits = useCredits();
   const rules = limits ?? DEFAULT_LIMITS;
   const enabled = limits ? limits.enabled : true;
+  const savedMode = useSyncExternalStore(subscribeMode, readMode, () => "simple");
+  const mode = rules.pro_enabled ? savedMode : "simple";
 
   useEffect(() => {
     const controller = new AbortController();
@@ -219,6 +224,13 @@ export default function SongMergerPage({ signedIn = false }) {
   const hasErrors = !!formError || Object.keys(trackErrors).length > 0;
   const affordable = cost == null || credits == null || credits.available >= cost;
 
+  const addMerge = (job) => setMerges((previous) => [job, ...(previous || []).filter((item) => item.id !== job.id)]);
+  // After any attempt: the server may have accepted a job whose response was lost.
+  const settle = () => {
+    setRefresh((value) => value + 1);
+    void refreshCredits();
+  };
+
   const submit = async (event) => {
     event.preventDefault();
     if (submitBusy.current) return;
@@ -232,14 +244,12 @@ export default function SongMergerPage({ signedIn = false }) {
     setSubmitError("");
     try {
       const { data: job } = await createAudioMerge(buildMergeRequest(tracks, options));
-      setMerges((previous) => [job, ...(previous || []).filter((item) => item.id !== job.id)]);
+      addMerge(job);
       setNotice("Your merge has started. It appears below when it's ready.");
     } catch (err) {
       setSubmitError(mergeError(err));
     } finally {
-      // Reconcile a lost response: the server may have accepted the job.
-      setRefresh((value) => value + 1);
-      void refreshCredits();
+      settle();
       submitBusy.current = false;
       setSubmitting(false);
     }
@@ -249,18 +259,31 @@ export default function SongMergerPage({ signedIn = false }) {
     <article className="public-page merger-page">
       <header className="public-header">
         <p className="public-eyebrow">Song Merger</p>
-        <h1>Join the best parts of your songs into one.</h1>
+        <h1>Your best parts. One perfect song.</h1>
         <p className="public-intro">
           Pick a section of each YouTube video or audio file, put them in order, and download one merged song.
         </p>
-        {credits
-          ? <p className="merger-balance" role="status">You have <strong>{credits.available} credits</strong> available.</p>
-          // Hold the pill's space until the balance arrives, so the form doesn't jump.
-          : <p className="merger-balance balance-pending" aria-hidden="true">&nbsp;</p>}
+        <div className="merger-toolbar">
+          {credits
+            ? <p className="merger-balance" role="status">You have <strong>{credits.available} credits</strong> available.</p>
+            // Hold the pill's space until the balance arrives, so the form doesn't jump.
+            : <p className="merger-balance balance-pending" aria-hidden="true">&nbsp;</p>}
+          {enabled && rules.pro_enabled && (
+            <div className="merger-modes" role="group" aria-label="Editor">
+              {[["simple", "Simple"], ["pro", "Pro editor"]].map(([value, label]) => (
+                <button key={value} type="button" aria-pressed={mode === value} onClick={() => saveMode(value)}>{label}</button>
+              ))}
+            </div>
+          )}
+        </div>
       </header>
 
       {!enabled ? (
         <p className="merger-note" role="status">Song Merger is launching soon. Please check back shortly.</p>
+      ) : mode === "pro" ? (
+        <Suspense fallback={<p className="merger-hint" role="status">Loading the editor…</p>}>
+          <ProEditor rules={rules} credits={credits} onMerged={addMerge} onSettled={settle} />
+        </Suspense>
       ) : (
         <form className="merger-form" onSubmit={submit} noValidate>
           <section aria-labelledby="merger-tracks-title">
@@ -303,7 +326,7 @@ export default function SongMergerPage({ signedIn = false }) {
             <h2 id="merger-summary-title">Summary</h2>
             <dl>
               <div><dt>Tracks</dt><dd>{tracks.length}</dd></div>
-              <div><dt>Merged length</dt><dd>{total ? formatTime(total) : "—"}</dd></div>
+              <div><dt>Merged length</dt><dd>{total ? formatPreciseTime(total) : "—"}</dd></div>
               <div><dt>Cost</dt><dd>{cost == null ? "—" : `${cost} credits`}</dd></div>
             </dl>
             <p className="merger-hint">1 credit per minute of selected audio, plus {rules.extra_track_credits} per extra track. Credits are returned if the merge fails on our side.</p>

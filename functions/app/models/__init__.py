@@ -5,9 +5,10 @@ from app.models.qa_log_model import QALog
 from app.models.rate_limit_model import RateLimitBucket
 from app.models.short_model import Short
 from app.models.credit_model import CreditAccount, CreditReservation, Payment, CreditLedgerEntry
-from app.models.audio_merge_model import AudioMerge
+from app.models.audio_merge_model import AudioMerge, AudioSource
 from app.models.media_download_model import MediaDownload
+from app.models.app_setting_model import AppSetting
 
 __all__ = ["User", "Video", "TranscriptChunk", "QALog", "RateLimitBucket", "Short",
-           "CreditAccount", "CreditReservation", "Payment", "CreditLedgerEntry", "AudioMerge",
-           "MediaDownload"]
+           "CreditAccount", "CreditReservation", "Payment", "CreditLedgerEntry", "AudioMerge", "AudioSource",
+           "MediaDownload", "AppSetting"]

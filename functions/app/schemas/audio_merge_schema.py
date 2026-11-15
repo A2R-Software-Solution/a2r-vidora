@@ -1,9 +1,12 @@
 import uuid
 from datetime import datetime
 from typing import Literal
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 from app.core.config import settings
 from app.utils.youtube import extract_youtube_id
+
+MAX_FADE_SECONDS = 10
+MIN_TRACK_SECONDS = 0.1
 
 
 class TrackRequest(BaseModel):
@@ -12,8 +15,20 @@ class TrackRequest(BaseModel):
     source: Literal["youtube", "upload"]
     url: str | None = Field(default=None, max_length=500)
     file_index: int | None = Field(default=None, ge=0, strict=True)
-    start_time: int = Field(ge=0, strict=True)
-    end_time: int = Field(gt=0, strict=True)
+    # Seconds; whole numbers or decimals down to a millisecond.
+    start_time: float = Field(ge=0, strict=True, allow_inf_nan=False)
+    end_time: float = Field(gt=0, strict=True, allow_inf_nan=False)
+    # Pro editor: loudness in percent, and fades in seconds at the section's edges.
+    volume: int = Field(default=100, ge=0, le=100, strict=True)
+    fade_in: int = Field(default=0, ge=0, le=MAX_FADE_SECONDS, strict=True)
+    fade_out: int = Field(default=0, ge=0, le=MAX_FADE_SECONDS, strict=True)
+    # A YouTube track already loaded in the Pro editor; its stored audio is used when still available.
+    source_id: uuid.UUID | None = None
+
+    @field_validator("start_time", "end_time")
+    @classmethod
+    def to_milliseconds(cls, value: float) -> float:
+        return round(value, 3)
 
     @model_validator(mode="after")
     def validate_track(self):
@@ -28,16 +43,22 @@ class TrackRequest(BaseModel):
                 raise ValueError("An uploaded track needs a file_index.")
             if self.url is not None:
                 raise ValueError("An uploaded track cannot have a url.")
-        length = self.end_time - self.start_time
+            if self.source_id is not None:
+                raise ValueError("An uploaded track cannot reference a loaded song.")
+        length = self.seconds
         if length <= 0:
             raise ValueError("A track must end after it starts.")
+        if length < MIN_TRACK_SECONDS:
+            raise ValueError(f"A track must be at least {MIN_TRACK_SECONDS} seconds long.")
         if length > settings.audio_merge_max_segment_seconds:
             raise ValueError(f"A track can be at most {settings.audio_merge_max_segment_seconds // 60} minutes long.")
+        if self.fade_in + self.fade_out > length:
+            raise ValueError("A track's fades cannot be longer than the track.")
         return self
 
     @property
-    def seconds(self) -> int:
-        return self.end_time - self.start_time
+    def seconds(self) -> float:
+        return round(self.end_time - self.start_time, 3)
 
 
 class AudioMergeRequest(BaseModel):
@@ -53,17 +74,36 @@ class AudioMergeRequest(BaseModel):
             raise ValueError(f"The merged audio can be at most {settings.audio_merge_max_total_seconds // 60} minutes long.")
         if self.crossfade_seconds and min(track.seconds for track in self.tracks) < self.crossfade_seconds * 2:
             raise ValueError("Every track must be at least twice as long as the crossfade.")
-        uploads = [t.file_index for t in self.tracks if t.source == "upload"]
-        if len(uploads) != len(set(uploads)):
-            raise ValueError("Each uploaded file can be used by one track only.")
         return self
+
+
+class AudioSourceRequest(BaseModel):
+    url: str = Field(max_length=500)
+
+    @model_validator(mode="after")
+    def validate_url(self):
+        extract_youtube_id(self.url)
+        return self
+
+
+class AudioSourceResponse(BaseModel):
+    id: uuid.UUID
+    video_id: str
+    url: str
+    title: str | None
+    status: Literal["queued", "processing", "ready", "failed", "expired"]
+    error_code: str | None
+    duration_seconds: int | None
+    peaks: list[int] | None
+    preview_url: str | None
+    expires_at: datetime
 
 
 class TrackResponse(BaseModel):
     source: Literal["youtube", "upload"]
     url: str | None
-    start_time: int
-    end_time: int
+    start_time: float
+    end_time: float
 
 
 class AudioMergeResponse(BaseModel):

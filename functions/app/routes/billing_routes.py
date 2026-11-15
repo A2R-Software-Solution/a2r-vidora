@@ -7,10 +7,11 @@ from app.deps import get_db
 from app.integration import razorpay_client
 from app.integration.razorpay_client import RazorpayError
 from app.middleware.logging import logger
+from app.services import runtime_settings
 from app.schemas.billing_schema import (OrderRequest, OrderResponse, PackResponse,
                                         VerifyRequest, VerifyResponse)
-from app.services.payment_service import (PACKS, InvalidPaymentSignatureError, PaymentNotFoundError,
-                                          PaymentService)
+from app.services.payment_service import (InvalidPaymentSignatureError, PaymentNotFoundError,
+                                          PaymentService, credit_packs)
 from app.utils.router_config import create_router
 
 router = create_router(prefix="/billing", tags=["Billing"])
@@ -30,8 +31,9 @@ def _require_user(user_id):
 @router.get("/packs", response_model=list[PackResponse])
 @limiter.limit("50/minute")
 async def list_packs(request: Request, response: Response):
+    await runtime_settings.refresh()
     return [PackResponse(code=p.code, credits=p.credits, amount_cents=p.amount_cents, currency=p.currency)
-            for p in PACKS.values()]
+            for p in credit_packs().values()]
 
 
 @router.post("/orders", response_model=OrderResponse, status_code=201)

@@ -8,9 +8,13 @@ from firebase_admin import functions as admin_functions
 from app.core.config import settings
 from app.core.rate_limit import credit_owner_for, limiter, rate_limit_user
 from app.deps import get_db
+from app.middleware.logging import logger
 from app.models.audio_merge_model import AudioMerge
-from app.schemas.audio_merge_schema import AudioMergeRequest, AudioMergeResponse
+from app.pipeline.audio_source_worker import process_audio_source
+from app.schemas.audio_merge_schema import (
+    MAX_FADE_SECONDS, AudioMergeRequest, AudioMergeResponse, AudioSourceRequest, AudioSourceResponse)
 from app.services.audio_merge_service import AudioMergeService, upload_extension
+from app.services.audio_source_service import AudioSourceService
 from app.services.credit_service import CreditService, audio_merge_reservation_key
 from app.utils.router_config import create_router
 
@@ -56,7 +60,55 @@ async def merge_limits(request: Request, response: Response):
         "extra_track_credits": settings.audio_merge_extra_track_credits,
         "max_crossfade_seconds": 10,
         "output_formats": ["mp3", "m4a"],
+        # Pro editor.
+        "pro_enabled": True,
+        "max_source_seconds": settings.audio_merge_source_max_seconds,
+        "max_fade_seconds": MAX_FADE_SECONDS,
     }
+
+
+# Inline (local development) source jobs, held so they are not garbage-collected mid-run.
+_inline_sources = set()
+
+
+async def _start_source(source, service):
+    # Never inline in production: the API function ends with the request, which would kill the job.
+    if settings.audio_merge_sources_inline and not settings.is_production:
+        task = asyncio.get_running_loop().create_task(process_audio_source(source.id))
+        _inline_sources.add(task)
+        task.add_done_callback(_inline_sources.discard)
+        return
+    try:
+        queue = admin_functions.task_queue(settings.audio_merge_source_task)
+        await asyncio.to_thread(queue.enqueue, {"data": {"source_id": str(source.id)}},
+            admin_functions.TaskOptions(dispatch_deadline_seconds=settings.audio_merge_source_timeout_seconds + 60,
+                task_id=f"audiosource-{source.id.hex}"))
+    except Exception as exc:
+        logger.exception("audio_source_enqueue_failed source_id=%s", source.id)
+        await service.mark_failed(source, "QUEUE_UNAVAILABLE")
+        raise HTTPException(503, "Song Merger queue is unavailable. Please retry.") from exc
+
+
+@router.post("/sources", response_model=AudioSourceResponse, status_code=202)
+@limiter.limit("30/minute")
+async def create_source(body: AudioSourceRequest, request: Request, response: Response,
+                        db=Depends(get_db), user_id=Depends(rate_limit_user)):
+    """Loads a YouTube track for the Pro editor (waveform and preview). Free;
+    limited per owner by AUDIO_MERGE_SOURCES_PER_HOUR."""
+    _ensure_enabled()
+    service = AudioSourceService(db)
+    source, created = await service.create(body.url, credit_owner_for(request, user_id))
+    if created:
+        await _start_source(source, service)
+    return await service.describe(source)
+
+
+@router.get("/sources/{source_id}", response_model=AudioSourceResponse)
+@limiter.limit("120/minute")
+async def get_source(source_id: uuid.UUID, request: Request, response: Response,
+                     db=Depends(get_db), user_id=Depends(rate_limit_user)):
+    service = AudioSourceService(db)
+    return await service.describe(await service.get(source_id, credit_owner_for(request, user_id)))
 
 
 @router.post("", response_model=AudioMergeResponse, status_code=202)

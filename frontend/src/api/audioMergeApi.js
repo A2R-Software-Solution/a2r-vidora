@@ -19,3 +19,7 @@ export const listAudioMerges = (signal) => apiClient.get("/audio-merges", { sign
 
 export const getMergeDownload = (mergeId, download = true) =>
   apiClient.get(`/audio-merges/${mergeId}/download`, { params: { download } });
+
+// Pro editor: a YouTube track's preview and waveform, prepared on the server.
+export const createAudioSource = (url) => apiClient.post("/audio-merges/sources", { url });
+export const getAudioSource = (sourceId) => apiClient.get(`/audio-merges/sources/${sourceId}`);

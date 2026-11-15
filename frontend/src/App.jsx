@@ -14,6 +14,7 @@ import { pricingMeta } from "./utils/pricing";
 import { songMergerMeta } from "./utils/audioMerge";
 import { downloaderMeta } from "./utils/mediaDownload";
 import { refreshCredits } from "./hooks/useCredits";
+import { loadPlans } from "./hooks/usePlans";
 import { publicPages } from "./content/publicPages";
 import { homeMeta } from "./content/siteDetails";
 import { getCurrentPath, getServerPath, subscribeToNavigation } from "./utils/siteNavigation";
@@ -46,6 +47,7 @@ function App() {
     : Object.hasOwn(publicPages, path) ? publicPages[path] : null;
 
   useEffect(() => onAuthStateChanged(auth, setUser), []);
+  useEffect(loadPlans, []);
 
   // The wallet changes with the account (guest ↔ signed in).
   useEffect(() => { void refreshCredits(); }, [user]);

@@ -25,6 +25,10 @@ async def upload(name, path, output_format):
                             content_type=CONTENT_TYPES[output_format], timeout=60)
 
 
+async def upload_file(name, path, content_type):
+    await asyncio.to_thread(_blob(name).upload_from_filename, str(path), content_type=content_type, timeout=120)
+
+
 async def download(name, path):
     await asyncio.to_thread(_blob(name).download_to_filename, str(path), timeout=60)
 
@@ -37,6 +41,11 @@ async def delete(name):
 
 
 def _signed_url(name, download, valid_for, output_format):
+    return _sign(name, valid_for, CONTENT_TYPES[output_format],
+                 f'{"attachment" if download else "inline"}; filename="vidora-merged.{output_format}"')
+
+
+def _sign(name, valid_for, content_type, disposition):
     credentials, _ = google.auth.default(scopes=["https://www.googleapis.com/auth/cloud-platform"])
     options = {}
     signer = settings.audio_merge_signer_email or settings.shorts_signer_email
@@ -45,10 +54,13 @@ def _signed_url(name, download, valid_for, output_format):
         options = {"service_account_email": signer, "access_token": credentials.token}
     return _blob(name).generate_signed_url(
         version="v4", expiration=timedelta(seconds=valid_for), method="GET", credentials=credentials,
-        response_type=CONTENT_TYPES[output_format],
-        response_disposition=f'{"attachment" if download else "inline"}; filename="vidora-merged.{output_format}"',
-        **options)
+        response_type=content_type, response_disposition=disposition, **options)
 
 
 async def signed_url(name, output_format, *, download=True, valid_for=600):
     return await asyncio.to_thread(_signed_url, name, download, valid_for, output_format)
+
+
+async def signed_preview_url(name, valid_for):
+    """Listen-only link to a Pro editor source's preview MP3."""
+    return await asyncio.to_thread(_sign, name, valid_for, "audio/mpeg", "inline")

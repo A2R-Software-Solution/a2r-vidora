@@ -97,41 +97,60 @@ class DownloadResult:
 
 
 @contextmanager
-def _cookie_file(output_dir: str) -> Iterator[str]:
-    """Writes the YouTube session cookies to a temp file for one yt-dlp call.
+def _cookie_session(output_dir: str, exclude: set[str] = frozenset()) -> Iterator[tuple[str, str]]:
+    """Writes one account's YouTube cookies to a temp file for one yt-dlp call
+    and yields (secret_id, path).
 
-    yt-dlp may rewrite that file with a refreshed session, so it is saved back
-    to Secret Manager on exit. The file is deleted either way: it holds a live
-    session and must not stay on disk longer than the call needs it.
+    yt-dlp may rewrite that file with a refreshed session, and that is saved
+    back to Secret Manager, but only when the call succeeded: after a refusal
+    the file holds a degraded session, and saving it would overwrite cookies
+    that were just rotated by hand. The file is deleted either way: it holds a
+    live session and must not stay on disk longer than the call needs it.
     """
-    secret_id, cookie_content = secret_manager_client.get_youtube_cookie()
+    secret_id, cookie_content = secret_manager_client.get_youtube_cookie(exclude)
     cookie_file = tempfile.NamedTemporaryFile(
         mode="w", suffix=".txt", delete=False, dir=output_dir
     )
     try:
         cookie_file.write(cookie_content)
         cookie_file.close()
-        try:
-            yield cookie_file.name
-        finally:
-            # yt-dlp rewrites the cookiefile in-place if YouTube handed it
-            # a refreshed session during this call. Persist that back to
-            # Secret Manager so the next call (possibly a different
-            # instance) starts from the newer session instead of the one
-            # we started with — this is what buys extra time before a
-            # full manual re-export is needed.
-            refreshed_content = Path(cookie_file.name).read_text(encoding="utf-8")
-            if refreshed_content != cookie_content:
-                secret_manager_client.update_youtube_cookie(secret_id, refreshed_content)
+        yield secret_id, cookie_file.name
+        refreshed_content = Path(cookie_file.name).read_text(encoding="utf-8")
+        if refreshed_content != cookie_content:
+            secret_manager_client.update_youtube_cookie(secret_id, refreshed_content)
     finally:
         Path(cookie_file.name).unlink(missing_ok=True)
+
+
+@contextmanager
+def _cookie_file(output_dir: str) -> Iterator[str]:
+    with _cookie_session(output_dir) as (_, path):
+        yield path
+
+
+def with_cookie_failover(output_dir: str, body):
+    """Runs `body(cookiefile)`; when YouTube refuses an account's session that
+    account is set aside and the same call is retried with the next one."""
+    tried: set[str] = set()
+    while True:
+        current = None
+        try:
+            with _cookie_session(output_dir, tried) as (current, path):
+                return body(path)
+        except YouTubeBotChallengeError:
+            if current is None:
+                raise
+            tried.add(current)
+            secret_manager_client.report_bad_youtube_cookie(current)
+            if len(tried) >= len(settings.youtube_cookie_secret_ids):
+                raise
 
 
 def _run_download(youtube_url: str, output_dir: str, max_duration_seconds: int) -> DownloadResult:
     """Synchronous yt-dlp call — executed off the event loop by the caller."""
     output_template = str(Path(output_dir) / "%(id)s.%(ext)s")
 
-    with _cookie_file(output_dir) as cookiefile:
+    def attempt(cookiefile: str):
         ydl_opts = {
             "format": "bestaudio/best",
             "outtmpl": output_template,
@@ -174,11 +193,13 @@ def _run_download(youtube_url: str, output_dir: str, max_duration_seconds: int) 
                         f"{max_duration_seconds}s limit."
                     )
 
-                info = ydl.extract_info(youtube_url, download=True)
+                return ydl.extract_info(youtube_url, download=True)
         except yt_dlp.utils.DownloadError as exc:
             if is_youtube_bot_challenge(str(exc)):
                 raise YouTubeBotChallengeError("YouTube session temporarily unavailable.") from exc
             raise DownloadError(f"yt-dlp failed for {youtube_url}: {exc}") from exc
+
+    info = with_cookie_failover(output_dir, attempt)
 
     duration = info.get("duration")
     if duration is None:

@@ -22,6 +22,7 @@ from app.pipeline.pipeline import PipelineError, run_pipeline
 from app.pipeline.youtube_downloader import UnsupportedVideoError, VideoTooLongError
 from app.services.credit_service import InsufficientCreditsError
 from app.db.session import AsyncSessionLocal
+from app.services import runtime_settings
 from app.integration.embedding_client import embed_text
 
 set_global_options(
@@ -134,6 +135,12 @@ def ping(req: https_fn.Request) -> https_fn.Response:
     return https_fn.Response.from_app(_wsgi_app, environ)
 
 
+async def _with_settings(work):
+    """Runs background work with the admin panel's current setting overrides."""
+    await runtime_settings.refresh()
+    return await work
+
+
 async def _process_video(data: dict) -> None:
     video_id = data.get("video_id")
     youtube_url = data.get("youtube_url")
@@ -146,7 +153,7 @@ async def _process_video(data: dict) -> None:
 
 def _run_video_task(request) -> None:
     try:
-        asyncio.run(_process_video(request.data))
+        asyncio.run(_with_settings(_process_video(request.data)))
     except PipelineError as exc:
         # Duration violations, missing credits and speechless videos are
         # permanent; retrying would repeat the same outcome (and could charge
@@ -187,7 +194,7 @@ def processvideopriority(request) -> None:
 )
 def processshort(request) -> None:
     from app.pipeline.short_worker import process_short
-    asyncio.run(process_short(request.data["short_id"], request.data["attempt_id"]))
+    asyncio.run(_with_settings(process_short(request.data["short_id"], request.data["attempt_id"])))
 
 
 @tasks_fn.on_task_dispatched(
@@ -198,7 +205,20 @@ def processshort(request) -> None:
 )
 def processaudiomerge(request) -> None:
     from app.pipeline.audio_merge_worker import process_audio_merge
-    asyncio.run(process_audio_merge(request.data["merge_id"], request.data["attempt_id"]))
+    asyncio.run(_with_settings(process_audio_merge(request.data["merge_id"], request.data["attempt_id"])))
+
+
+# Song Merger Pro editor: fetches a YouTube track's preview and waveform.
+# Name must match AUDIO_MERGE_SOURCE_TASK.
+@tasks_fn.on_task_dispatched(
+    secrets=["DATABASE_URL"],
+    timeout_sec=settings.audio_merge_source_timeout_seconds + 60,
+    retry_config=RetryConfig(max_attempts=2),
+    rate_limits=RateLimits(max_concurrent_dispatches=3),
+)
+def prepareaudiosource(request) -> None:
+    from app.pipeline.audio_source_worker import process_audio_source
+    asyncio.run(_with_settings(process_audio_source(request.data["source_id"])))
 
 
 @tasks_fn.on_task_dispatched(
@@ -209,11 +229,11 @@ def processaudiomerge(request) -> None:
 )
 def processmediadownload(request) -> None:
     from app.pipeline.media_download_worker import process_media_download
-    asyncio.run(process_media_download(request.data["download_id"], request.data["attempt_id"]))
+    asyncio.run(_with_settings(process_media_download(request.data["download_id"], request.data["attempt_id"])))
 
 
 @scheduler_fn.on_schedule(
     schedule=settings.cleanup_schedule, secrets=["GROQ_API_KEY", "DATABASE_URL"]
 )
 def cleanup_expired_videos(event: scheduler_fn.ScheduledEvent) -> None:
-    asyncio.run(run_cleanup())
+    asyncio.run(_with_settings(run_cleanup()))

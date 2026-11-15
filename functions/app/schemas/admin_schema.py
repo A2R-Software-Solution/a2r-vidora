@@ -16,6 +16,11 @@ class CreditAdjustRequest(BaseModel):
         return v
 
 
+class SettingsUpdateRequest(BaseModel):
+    # Setting key -> new value; null resets the setting to its default.
+    values: dict[str, int | None] = Field(..., min_length=1, max_length=50)
+
+
 class CreditAdjustResponse(BaseModel):
     user_id: uuid.UUID
     purchased_balance: int
