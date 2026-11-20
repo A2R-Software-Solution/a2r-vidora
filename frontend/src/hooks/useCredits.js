@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from "react";
 import { getCredits } from "../api/billingApi";
+import { isSignedIn } from "../utils/authGate";
 
 // One shared balance for the navbar, chat, Shorts and pricing page. Call
 // refreshCredits() after anything that may spend or return credits.
@@ -14,6 +15,8 @@ function publish(value) {
 
 export async function refreshCredits() {
   const request = ++latestRequest;
+  // Guests have no wallet: free credits come with an account.
+  if (!isSignedIn()) { publish(null); return; }
   try {
     const { data } = await getCredits();
     if (request === latestRequest) publish(data);

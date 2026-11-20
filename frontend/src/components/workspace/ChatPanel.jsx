@@ -8,6 +8,7 @@ import { useCredits } from "../../hooks/useCredits";
 import { QUESTIONS_MESSAGE, analysisFailure } from "../../utils/videoInput";
 
 import { config } from "../../config";
+import { requireSignIn } from "../../utils/authGate";
 const MAX_CHARS = config.maxQuestionChars;
 
 export default function ChatPanel({ videoId, videoTitle, youtubeUrl, onSeek, ready = true, progress, active = true, onSignIn, signedIn = false }) {
@@ -28,7 +29,7 @@ export default function ChatPanel({ videoId, videoTitle, youtubeUrl, onSeek, rea
 
   const handleAsk = async () => {
     const trimmed = question.trim();
-    if (!trimmed || limitReached) return;
+    if (!trimmed || limitReached || !requireSignIn()) return;
 
     if (trimmed.length > MAX_CHARS) {
       setCharError(`Please keep questions under ${MAX_CHARS} characters.`);

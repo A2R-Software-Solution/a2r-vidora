@@ -1,7 +1,7 @@
 import axios from "axios";
 import { config } from "../config";
 import { auth } from "../firebase";
-import { guestId } from "../utils/guestId";
+import { handleSignInRequired } from "../utils/authGate";
 
 const apiClient = axios.create({
   baseURL: config.apiBaseUrl,
@@ -14,6 +14,8 @@ apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
     console.error("API Error:", error?.response?.data || error.message);
+    // Only an action the user clicked opens the dialog, never a background read.
+    if (error?.config?.method !== "get") handleSignInRequired(error);
     return Promise.reject(error);
   }
 );
@@ -21,9 +23,6 @@ apiClient.interceptors.response.use(
 apiClient.interceptors.request.use(async (request) => {
   const user = auth.currentUser;
   if (user) request.headers.Authorization = `Bearer ${await user.getIdToken()}`;
-  // The warm-up ping stays header-free so it needs no CORS preflight.
-  const id = request.params?.warmup ? null : guestId();
-  if (id) request.headers["X-Guest-Id"] = id;
   return request;
 });
 

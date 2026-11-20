@@ -9,6 +9,7 @@ import {
   CROSSFADE_CHOICES, DEFAULT_LIMITS, MIN_TRACKS, UPLOAD_EXTENSIONS, buildMergeRequest, isMergeExpired,
   isMergePending, megabytes, mergeCost, mergeError, mergeFailureMessage, trackSeconds, validateMerge,
 } from "../utils/audioMerge";
+import { requireSignIn } from "../utils/authGate";
 import "./SongMergerPage.css";
 
 // The Pro editor (waveforms, recorder, player) loads only when someone switches to it.
@@ -153,6 +154,9 @@ function MergeCard({ job }) {
   );
 }
 
+// A guest's (empty) history; one array so effects that depend on it stay stable.
+const NOTHING = [];
+
 export default function SongMergerPage({ signedIn = false }) {
   const [limits, setLimits] = useState(null);
   const [tracks, setTracks] = useState(() => [newTrack(), newTrack()]);
@@ -162,7 +166,8 @@ export default function SongMergerPage({ signedIn = false }) {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [notice, setNotice] = useState("");
-  const [merges, setMerges] = useState(null);
+  const [loadedMerges, setMerges] = useState(null);
+  const merges = signedIn ? loadedMerges : NOTHING;
   const [historyError, setHistoryError] = useState("");
   const [refresh, setRefresh] = useState(0);
   const wasPending = useRef(false);
@@ -181,7 +186,8 @@ export default function SongMergerPage({ signedIn = false }) {
   }, []);
 
   useEffect(() => {
-    if (!enabled) return undefined;
+    // Merges belong to an account; a guest has none to list.
+    if (!enabled || !signedIn) return undefined;
     const controller = new AbortController();
     let timer;
     const poll = async () => {
@@ -238,6 +244,7 @@ export default function SongMergerPage({ signedIn = false }) {
     setNotice("");
     if (hasErrors) { setSubmitError(""); return; }
     if (!consent) { setSubmitError("Please confirm you have the rights to use this audio."); return; }
+    if (!requireSignIn()) return;
     if (!affordable) { setSubmitError(CREDITS_MESSAGE); return; }
     submitBusy.current = true;
     setSubmitting(true);

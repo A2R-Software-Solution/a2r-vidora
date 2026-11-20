@@ -16,7 +16,7 @@ async def get_credits(request: Request, response: Response, db=Depends(get_db),
                       user_id=Depends(rate_limit_user)):
     summary = await CreditService(db).summary(credit_owner_for(request, user_id))
     return CreditSummaryResponse(
-        free_left=summary.free_left, free_daily=summary.free_daily,
+        free_left=summary.free_left, free_monthly=summary.free_monthly,
         purchased_balance=summary.purchased_balance, available=summary.available,
         questions_left=summary.questions_left, is_paid=summary.is_paid,
         short_credit_cost=settings.short_credit_cost,
@@ -28,8 +28,7 @@ async def get_credits(request: Request, response: Response, db=Depends(get_db),
 async def get_plans(request: Request, response: Response):
     await runtime_settings.refresh()
     return PlanLimitsResponse(
-        guest_daily_credits=settings.guest_daily_credits, user_daily_credits=settings.user_daily_credits,
-        guest_daily_questions=settings.guest_daily_questions, user_daily_questions=settings.user_daily_questions,
+        user_monthly_credits=settings.user_monthly_credits, user_daily_questions=settings.user_daily_questions,
         short_credit_cost=settings.short_credit_cost,
         free_retention_hours=settings.video_retention_hours, paid_retention_hours=settings.paid_retention_hours,
     )

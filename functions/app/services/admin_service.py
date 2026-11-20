@@ -96,7 +96,7 @@ class AdminService:
             "id": user.id, "email": user.email, "plan": user.plan, "is_admin": user.is_admin,
             "created_at": user.created_at,
             "account": None if account is None else {
-                "purchased_balance": account.purchased_balance, "daily_free_used": account.daily_free_used,
+                "purchased_balance": account.purchased_balance, "free_used": account.free_used, "free_month": account.free_month,
                 "daily_chat_used": account.daily_chat_used, "daily_date": account.daily_date},
             "ledger": [{"id": e.id, "kind": e.kind, "bucket": e.bucket, "amount": e.amount,
                         "balance_after": e.purchased_balance_after, "note": e.note,

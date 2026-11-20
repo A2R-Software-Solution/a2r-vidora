@@ -29,7 +29,7 @@ class AdminApiTests(unittest.TestCase):
         patcher = patch.object(admin_routes, "AdminService", Mock(return_value=self.admin))
         patcher.start()
         self.addCleanup(patcher.stop)
-        self.settings_rows = [{"key": "user_daily_credits", "value": 30}]
+        self.settings_rows = [{"key": "user_monthly_credits", "value": 30}]
         for name in ("describe", "update"):
             patcher = patch.object(admin_routes.runtime_settings, name, AsyncMock(return_value=self.settings_rows))
             setattr(self, f"settings_{name}", patcher.start())
@@ -57,23 +57,23 @@ class AdminApiTests(unittest.TestCase):
         self.assertEqual(response.status_code, 403)
         self.admin.adjust_credits.assert_not_awaited()
         self.assertEqual(self.client.get("/admin/settings").status_code, 403)
-        response = self.client.put("/admin/settings", json={"values": {"user_daily_credits": 30}})
+        response = self.client.put("/admin/settings", json={"values": {"user_monthly_credits": 30}})
         self.assertEqual(response.status_code, 403)
         self.settings_update.assert_not_awaited()
 
     def test_admin_reads_and_saves_settings(self):
         self.as_user(is_admin=True)
         self.assertEqual(self.client.get("/admin/settings").json(), self.settings_rows)
-        response = self.client.put("/admin/settings", json={"values": {"user_daily_credits": 30, "short_credit_cost": None}})
+        response = self.client.put("/admin/settings", json={"values": {"user_monthly_credits": 30, "short_credit_cost": None}})
         self.assertEqual((response.status_code, response.json()), (200, self.settings_rows))
         values, email = self.settings_update.await_args.args[1:]
-        self.assertEqual((values, email), ({"user_daily_credits": 30, "short_credit_cost": None}, "boss@test.local"))
+        self.assertEqual((values, email), ({"user_monthly_credits": 30, "short_credit_cost": None}, "boss@test.local"))
 
     def test_invalid_settings_are_rejected(self):
         from app.services.runtime_settings import InvalidSettingError
         self.as_user(is_admin=True)
         self.assertEqual(self.client.put("/admin/settings", json={"values": {}}).status_code, 422)
-        self.assertEqual(self.client.put("/admin/settings", json={"values": {"user_daily_credits": "many"}}).status_code, 422)
+        self.assertEqual(self.client.put("/admin/settings", json={"values": {"user_monthly_credits": "many"}}).status_code, 422)
         self.settings_update.side_effect = InvalidSettingError("Unknown setting: database_url")
         response = self.client.put("/admin/settings", json={"values": {"database_url": 1}})
         self.assertEqual((response.status_code, response.json()["detail"]), (422, "Unknown setting: database_url"))
@@ -119,13 +119,13 @@ class RuntimeSettingsTests(unittest.TestCase):
     def test_overrides_apply_and_removing_one_restores_the_default(self):
         from app.core.config import settings
         from app.services.payment_service import credit_packs
-        default = self.rs.DEFAULTS["user_daily_credits"]
-        self.rs.apply({"user_daily_credits": 30, "pack_pro_credits": 900, "pack_pro_amount_cents": 1200})
-        self.assertEqual(settings.user_daily_credits, 30)
+        default = self.rs.DEFAULTS["user_monthly_credits"]
+        self.rs.apply({"user_monthly_credits": 30, "pack_pro_credits": 900, "pack_pro_amount_cents": 1200})
+        self.assertEqual(settings.user_monthly_credits, 30)
         pro = credit_packs()["pro"]
         self.assertEqual((pro.credits, pro.amount_cents), (900, 1200))
         self.rs.apply({})
-        self.assertEqual(settings.user_daily_credits, default)
+        self.assertEqual(settings.user_monthly_credits, default)
         self.assertEqual(credit_packs()["pro"].credits, self.rs.DEFAULTS["pack_pro_credits"])
 
     def test_stored_values_outside_the_range_or_unknown_are_ignored(self):
@@ -136,8 +136,8 @@ class RuntimeSettingsTests(unittest.TestCase):
         self.assertEqual(settings.database_url, database_url)
 
     def test_only_listed_settings_within_their_range_can_be_saved(self):
-        self.rs.validated({"user_daily_credits": 0, "short_credit_cost": None})
-        for values in ({"database_url": 1}, {"short_credit_cost": 0}, {"user_daily_credits": 1001},
+        self.rs.validated({"user_monthly_credits": 0, "short_credit_cost": None})
+        for values in ({"database_url": 1}, {"short_credit_cost": 0}, {"user_monthly_credits": 10_001},
                        {"pack_topup_amount_cents": 49}):
             with self.assertRaises(self.rs.InvalidSettingError, msg=values):
                 self.rs.validated(values)
@@ -157,11 +157,11 @@ class PlansApiTests(unittest.TestCase):
         limiter.reset()
         self.addCleanup(limiter.reset)
         self.addCleanup(runtime_settings.apply, {})
-        runtime_settings.apply({"user_daily_credits": 30})
+        runtime_settings.apply({"user_monthly_credits": 30})
         with patch.object(runtime_settings, "refresh", AsyncMock()), TestClient(app) as client:
             body = client.get("/credits/plans").json()
-        self.assertEqual(body["user_daily_credits"], 30)
-        self.assertEqual(body["guest_daily_credits"], runtime_settings.DEFAULTS["guest_daily_credits"])
+        self.assertEqual(body["user_monthly_credits"], 30)
+        self.assertNotIn("guest_daily_credits", body)
 
 
 if __name__ == "__main__":

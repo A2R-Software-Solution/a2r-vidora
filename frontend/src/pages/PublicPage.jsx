@@ -2,7 +2,7 @@ import SiteLink from "../components/common/SiteLink";
 import { siteDetails } from "../content/siteDetails";
 import "./PublicPage.css";
 
-export default function PublicPage({ page, hasAnalysis }) {
+export default function PublicPage({ page }) {
   if (!page) {
     return (
       <article className="public-page public-not-found">
@@ -16,9 +16,6 @@ export default function PublicPage({ page, hasAnalysis }) {
 
   return (
     <article className="public-page">
-      <SiteLink className="public-back" href={hasAnalysis ? "/analyze" : "/"}>
-        <span aria-hidden="true">←</span> {hasAnalysis ? "Back to your analysis" : "Back to Vidora"}
-      </SiteLink>
       <header className="public-header">
         <p className="public-eyebrow">{page.eyebrow}</p>
         <h1>{page.title}</h1>

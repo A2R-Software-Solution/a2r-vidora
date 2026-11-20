@@ -7,6 +7,7 @@ import {
   OWNERSHIP_TEXT, RIGHTS_WARNING, downloadCost, downloadError, downloadFailureMessage, groupQualities,
   isDownloadActive,
 } from "../utils/mediaDownload";
+import { requireSignIn } from "../utils/authGate";
 import "./DownloaderPage.css";
 
 const POLL_MS = 4000;
@@ -66,6 +67,9 @@ function JobCard({ job }) {
   );
 }
 
+// A guest's (empty) history; one array so effects that depend on it stay stable.
+const NOTHING = [];
+
 export default function DownloaderPage({ signedIn }) {
   const credits = useCredits();
   const [limits, setLimits] = useState(null);
@@ -78,7 +82,8 @@ export default function DownloaderPage({ signedIn }) {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [notice, setNotice] = useState("");
-  const [jobs, setJobs] = useState(null);
+  const [loadedJobs, setJobs] = useState(null);
+  const jobs = signedIn ? loadedJobs : NOTHING;
   const [historyError, setHistoryError] = useState("");
   const [refresh, setRefresh] = useState(0);
   const submitBusy = useRef(false);
@@ -96,7 +101,8 @@ export default function DownloaderPage({ signedIn }) {
   // keeps its final height instead of growing and pushing the footer down.
   const loading = limits === null;
   useEffect(() => {
-    if (!enabled) return undefined;
+    // Downloads belong to an account; a guest has none to list.
+    if (!enabled || !signedIn) return undefined;
     const controller = new AbortController();
     listDownloads(controller.signal)
       .then(({ data }) => { setJobs(data.items); setHistoryError(""); })
@@ -120,7 +126,7 @@ export default function DownloaderPage({ signedIn }) {
 
   const check = async (event) => {
     event.preventDefault();
-    if (loading || !url.trim()) return;
+    if (loading || !url.trim() || !requireSignIn()) return;
     setPreviewBusy(true);
     setPreviewError("");
     setSubmitError("");
@@ -140,7 +146,7 @@ export default function DownloaderPage({ signedIn }) {
 
   const submit = async (event) => {
     event.preventDefault();
-    if (!canSubmit || submitBusy.current) return;
+    if (!canSubmit || submitBusy.current || !requireSignIn()) return;
     submitBusy.current = true;
     setSubmitting(true);
     setSubmitError("");

@@ -14,6 +14,7 @@ import { pricingMeta } from "./utils/pricing";
 import { songMergerMeta } from "./utils/audioMerge";
 import { downloaderMeta } from "./utils/mediaDownload";
 import { refreshCredits } from "./hooks/useCredits";
+import { setSignInOpener } from "./utils/authGate";
 import { loadPlans } from "./hooks/usePlans";
 import { publicPages } from "./content/publicPages";
 import { homeMeta } from "./content/siteDetails";
@@ -47,9 +48,11 @@ function App() {
     : Object.hasOwn(publicPages, path) ? publicPages[path] : null;
 
   useEffect(() => onAuthStateChanged(auth, setUser), []);
+  // Guests are sent to sign in before any feature runs.
+  useEffect(() => { setSignInOpener(() => setAuthOpen(true)); return () => setSignInOpener(null); }, []);
   useEffect(loadPlans, []);
 
-  // The wallet changes with the account (guest ↔ signed in).
+  // The wallet appears on sign-in and goes away on sign-out.
   useEffect(() => { void refreshCredits(); }, [user]);
 
   useEffect(() => {
@@ -96,7 +99,7 @@ function App() {
         {isMerger && <SongMergerPage signedIn={!!user} />}
         {isDownloader && <DownloaderPage signedIn={!!user} />}
         {isAdmin && <Suspense fallback={null}><AdminPage user={user} onSignIn={() => setAuthOpen(true)} /></Suspense>}
-        {!isHome && !isTool && !isPricing && !isMerger && !isDownloader && !isAdmin && <PublicPage page={publicPage} hasAnalysis={!!video} />}
+        {!isHome && !isTool && !isPricing && !isMerger && !isDownloader && !isAdmin && <PublicPage page={publicPage} />}
       </main>
       <Footer currentPath={path} />
       <BugReportButton />

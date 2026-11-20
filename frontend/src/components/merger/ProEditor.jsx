@@ -12,6 +12,7 @@ import {
 import { EditorPlayer } from "./editorPlayer";
 import Recorder from "./Recorder";
 import Waveform from "./Waveform";
+import { requireSignIn } from "../../utils/authGate";
 import "./ProEditor.css";
 
 const MAX_SONGS = 10;
@@ -235,7 +236,7 @@ export default function ProEditor({ rules, credits, onMerged, onSettled }) {
     const url = link.trim();
     const message = validateLink(url);
     if (message) { setAddError(message); return; }
-    if (!roomForSong()) return;
+    if (!roomForSong() || !requireSignIn()) return;
     const id = nextId++;
     setSongs((current) => [...current, { id, kind: "youtube", url, name: "YouTube song", status: "loading", volume: 100, zoom: 1 }]);
     setLink("");
@@ -304,6 +305,7 @@ export default function ProEditor({ rules, credits, onMerged, onSettled }) {
     setNotice("");
     if (hasErrors) { setSubmitError(""); return; }
     if (!consent) { setSubmitError("Please confirm you have the rights to use this audio."); return; }
+    if (!requireSignIn()) return;
     if (!affordable) { setSubmitError(CREDITS_MESSAGE); return; }
     submitBusy.current = true;
     setSubmitting(true);

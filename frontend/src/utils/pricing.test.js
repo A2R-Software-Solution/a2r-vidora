@@ -22,11 +22,11 @@ test("equivalents use 20-minute videos and 5-credit Shorts", () => {
 });
 
 test("plans from the server replace the built-in copy only when complete", () => {
-  const fromServer = { ...FALLBACK_PLANS, user_daily_credits: 30 };
+  const fromServer = { ...FALLBACK_PLANS, user_monthly_credits: 30 };
   assert.equal(displayPlans(fromServer), fromServer);
   assert.equal(displayPlans(null), FALLBACK_PLANS);
-  assert.equal(displayPlans({ user_daily_credits: 30 }), FALLBACK_PLANS);
-  assert.equal(displayPlans({ ...FALLBACK_PLANS, guest_daily_credits: "45" }), FALLBACK_PLANS);
+  assert.equal(displayPlans({ user_monthly_credits: 30 }), FALLBACK_PLANS);
+  assert.equal(displayPlans({ ...FALLBACK_PLANS, user_monthly_credits: "80" }), FALLBACK_PLANS);
 });
 
 test("retention is shown in days once it is longer than a day", () => {

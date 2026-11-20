@@ -7,12 +7,16 @@ import "./Navbar.css";
 
 export default function Navbar({ onHome, user, onAuth, currentPath }) {
   const credits = useCredits();
-  const [menuOpen, setMenuOpen] = useState(false);
-  // Close the phone menu on navigation (path change) or Escape.
-  useEffect(() => { setMenuOpen(false); }, [currentPath]);
+  // The menu is open only for the path it was opened on, so navigating closes it.
+  const [openPath, setOpenPath] = useState(null);
+  const menuOpen = openPath === currentPath;
+  const setMenuOpen = (next) => {
+    const value = typeof next === "function" ? next(menuOpen) : next;
+    setOpenPath(value ? currentPath : null);
+  };
   useEffect(() => {
     if (!menuOpen) return undefined;
-    const onKey = (event) => { if (event.key === "Escape") setMenuOpen(false); };
+    const onKey = (event) => { if (event.key === "Escape") setOpenPath(null); };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [menuOpen]);

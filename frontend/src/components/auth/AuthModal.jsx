@@ -51,7 +51,7 @@ export default function AuthModal({ onClose }) {
     <section className="auth-modal" role="dialog" aria-modal="true" aria-label="Account access" onMouseDown={(event) => event.stopPropagation()}>
       <button className="auth-close" type="button" onClick={onClose} aria-label="Close">×</button>
       <h2>{mode === "signup" ? "Create your account" : "Welcome back"}</h2>
-      <p>{mode === "signup" ? `Sign up for ${plans.user_daily_credits} free credits a day and videos longer than 35 minutes.` : "Sign in to continue your analyses."}</p>
+      <p>{mode === "signup" ? `Sign up free and get ${plans.user_monthly_credits} free credits every month.` : "Sign in to analyze videos and use every Vidora feature."}</p>
       <button className="google-auth" type="button" disabled={loading} onClick={() => run(async () => {
         const credential = await signInWithPopup(auth, new GoogleAuthProvider(), browserPopupRedirectResolver);
         await registerProfile(credential.user);

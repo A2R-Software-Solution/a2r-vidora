@@ -34,15 +34,11 @@ class Editable:
 
 
 FREE, QUESTIONS, COSTS, RETENTION, PACKS = (
-    "Free credits per day", "Questions per day", "Feature costs", "Retention", "Credit packs")
+    "Free credits per month", "Questions per day", "Feature costs", "Retention", "Credit packs")
 
 EDITABLE: dict[str, Editable] = {e.key: e for e in (
-    Editable("guest_daily_credits", FREE, "Guest (per device)", 0, 1000),
-    Editable("user_daily_credits", FREE, "Signed-in user", 0, 1000),
-    Editable("guest_ip_daily_credits", FREE, "All guests on one IP", 0, 5000),
-    Editable("guest_daily_questions", QUESTIONS, "Guest (per device)", 0, 1000, "questions"),
+    Editable("user_monthly_credits", FREE, "Signed-in user", 0, 10_000),
     Editable("user_daily_questions", QUESTIONS, "Signed-in user", 0, 5000, "questions"),
-    Editable("guest_ip_daily_questions", QUESTIONS, "All guests on one IP", 0, 5000, "questions"),
     Editable("paid_daily_questions", QUESTIONS, "User with purchased credits", 0, 100_000, "questions"),
     Editable("short_credit_cost", COSTS, "One Short", 1, 1000),
     Editable("audio_merge_extra_track_credits", COSTS, "Song Merger: each track after the first", 0, 100),

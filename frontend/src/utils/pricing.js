@@ -16,14 +16,13 @@ export const PACK_DETAILS = {
 
 export const pricingMeta = {
   label: "Pricing",
-  description: "Vidora AI pricing: free daily credits for every visitor, and one-time credit packs from $2.59 that never expire.",
+  description: "Vidora AI pricing: free monthly credits with every account, and one-time credit packs from $2.59 that never expire.",
 };
 
 export const SHORT_CREDIT_COST = 5;
 
 export const FALLBACK_PLANS = {
-  guest_daily_credits: 45, user_daily_credits: 80,
-  guest_daily_questions: 10, user_daily_questions: 50,
+  user_monthly_credits: 80, user_daily_questions: 50,
   short_credit_cost: SHORT_CREDIT_COST, free_retention_hours: 24, paid_retention_hours: 168,
 };
 

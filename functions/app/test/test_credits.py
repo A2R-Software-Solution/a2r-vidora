@@ -11,8 +11,8 @@ from app.core.config import settings
 import unittest.mock
 
 from app.services.credit_service import (
-    CreditOwner, InsufficientCreditsError, daily_question_limit, ist_today, refund_on_failure,
-    roll_daily, short_reservation_key, split_charge, video_credit_cost,
+    CreditOwner, InsufficientCreditsError, daily_question_limit, ist_today, month_start,
+    monthly_free_credits, refund_on_failure, roll_daily, short_reservation_key, split_charge, video_credit_cost,
 )
 
 
@@ -42,17 +42,24 @@ class CreditRuleTests(unittest.TestCase):
         self.assertEqual(ist_today(before).day, 17)
         self.assertEqual(ist_today(after).day, 18)
 
-    def test_daily_counters_reset_only_on_a_new_day(self):
-        today = ist_today()
-        account = SimpleNamespace(daily_date=today, daily_free_used=40, daily_chat_used=7)
-        roll_daily(account, today)
-        self.assertEqual((account.daily_free_used, account.daily_chat_used), (40, 7))
-        roll_daily(account, today + timedelta(days=1))
-        self.assertEqual((account.daily_free_used, account.daily_chat_used), (0, 0))
+    def test_questions_reset_daily_and_free_credits_monthly(self):
+        first = datetime(2026, 11, 1).date()
+        account = SimpleNamespace(daily_date=first, daily_chat_used=7,
+                                  free_month=month_start(first), free_used=40)
+        roll_daily(account, first)
+        self.assertEqual((account.free_used, account.daily_chat_used), (40, 7))
+        roll_daily(account, first + timedelta(days=29))  # 30 Nov: same month
+        self.assertEqual((account.free_used, account.daily_chat_used), (40, 0))
+        roll_daily(account, first + timedelta(days=30))  # 1 Dec: new month
+        self.assertEqual((account.free_used, account.free_month), (0, datetime(2026, 12, 1).date()))
+
+    def test_only_signed_in_users_get_free_credits(self):
+        self.assertEqual(monthly_free_credits(CreditOwner(guest_key="g" * 64)), 0)
+        self.assertEqual(monthly_free_credits(CreditOwner(user_id=uuid.uuid4())), settings.user_monthly_credits)
 
     def test_question_limits_by_tier(self):
         guest, user = CreditOwner(guest_key="g" * 64), CreditOwner(user_id=uuid.uuid4())
-        self.assertEqual(daily_question_limit(guest, 0), settings.guest_daily_questions)
+        self.assertEqual(daily_question_limit(guest, 0), 0)
         self.assertEqual(daily_question_limit(user, 0), settings.user_daily_questions)
         self.assertEqual(daily_question_limit(user, 1), settings.paid_daily_questions)
 
@@ -91,16 +98,18 @@ class CreditApiTests(unittest.TestCase):
         limiter.reset()
         self.addCleanup(limiter.reset)
 
-        async def no_user():
-            return None
+        self.user_id = uuid.uuid4()
+
+        async def signed_in():
+            return self.user_id
 
         async def no_db():
             yield Mock(rollback=AsyncMock())
-        app.dependency_overrides[get_current_user_id] = no_user
+        app.dependency_overrides[get_current_user_id] = signed_in
         app.dependency_overrides[get_db] = no_db
         self.addCleanup(app.dependency_overrides.clear)
         self.credits = Mock(
-            summary=AsyncMock(return_value=CreditSummary(free_left=30, free_daily=45, purchased_balance=0,
+            summary=AsyncMock(return_value=CreditSummary(free_left=30, free_monthly=80, purchased_balance=0,
                                                          questions_left=10, is_paid=False)),
             consume_question=AsyncMock(), return_question=AsyncMock())
         self.qa = Mock(ask=AsyncMock())
@@ -122,41 +131,19 @@ class CreditApiTests(unittest.TestCase):
         self.assertEqual((body["available"], body["free_left"], body["short_credit_cost"]),
                          (30, 30, settings.short_credit_cost))
 
-    def test_guests_share_a_wallet_per_ip_and_users_are_separate(self):
-        from fastapi import Request
-        from app.core.rate_limit import credit_owner_for
-        def request(ip):
-            return Request({"type": "http", "client": (ip, 1), "headers": []})
-        with unittest.mock.patch.object(settings, "rate_limit_trusted_proxy_hops", 0):
-            first, again, other = (credit_owner_for(request(ip), None) for ip in ("192.0.2.1", "192.0.2.1", "192.0.2.2"))
-        self.assertEqual(first, again)
-        self.assertNotEqual(first, other)
-        self.assertNotIn("192.0.2.1", first.guest_key)
-        user = uuid.uuid4()
-        self.assertEqual(credit_owner_for(request("192.0.2.1"), user).user_id, user)
+    def test_guest_is_asked_to_sign_in_before_using_anything(self):
+        from app.deps import get_current_user_id
+        from app.main import app
 
-    def test_guest_device_header_picks_wallet_and_ip_picks_shared_allowance(self):
-        from fastapi import Request
-        from app.core.rate_limit import credit_owner_for
-        device_a, device_b = str(uuid.uuid4()), str(uuid.uuid4())
-
-        def owner(ip, device=None):
-            headers = [(b"x-guest-id", device.encode())] if device else []
-            return credit_owner_for(Request({"type": "http", "client": (ip, 1), "headers": headers}), None)
-        with unittest.mock.patch.object(settings, "rate_limit_trusted_proxy_hops", 0):
-            same_wifi = owner("192.0.2.1", device_a), owner("192.0.2.1", device_b)
-            travelling = owner("192.0.2.9", device_a)
-            upper = owner("192.0.2.1", device_a.upper())
-            bad_header = owner("192.0.2.1", "not-a-uuid")
-            no_header = owner("192.0.2.1")
-        self.assertNotEqual(same_wifi[0].guest_key, same_wifi[1].guest_key)
-        self.assertEqual(same_wifi[0].cap_key, same_wifi[1].cap_key)
-        self.assertEqual(travelling.guest_key, same_wifi[0].guest_key)
-        self.assertNotEqual(travelling.cap_key, same_wifi[0].cap_key)
-        self.assertEqual(upper, same_wifi[0])
-        self.assertEqual(bad_header.guest_key, no_header.guest_key)
-        self.assertNotEqual(no_header.guest_key, no_header.cap_key)
-        self.assertNotIn(device_a, same_wifi[0].guest_key)
+        async def guest():
+            return None
+        app.dependency_overrides[get_current_user_id] = guest
+        for response in (self.client.get("/credits"), self.ask(),
+                         self.client.post("/videos/analyze", json={"youtube_url": "https://youtu.be/yYF2Vf1Gc14"})):
+            self.assertEqual((response.status_code, response.json()["detail"]),
+                             (401, "Please sign in to use Vidora."))
+        self.credits.summary.assert_not_awaited()
+        self.credits.consume_question.assert_not_awaited()
 
     def test_old_frontend_can_create_shorts_only_when_affordable(self):
         from unittest.mock import AsyncMock, patch
@@ -168,7 +155,7 @@ class CreditApiTests(unittest.TestCase):
         for available, can_create in ((settings.short_credit_cost * 2 + 1, True),
                                       (settings.short_credit_cost - 1, False)):
             self.credits.summary.return_value = CreditSummary(
-                free_left=available, free_daily=45, purchased_balance=0, questions_left=10, is_paid=False)
+                free_left=available, free_monthly=80, purchased_balance=0, questions_left=10, is_paid=False)
             with patch.object(short_routes, "CreditService", return_value=self.credits), \
                  patch.object(short_routes, "ShortService") as shorts:
                 shorts.return_value.list = AsyncMock(return_value=jobs)
@@ -342,44 +329,44 @@ class CreditDatabaseTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_reserve_then_settle_keeps_the_charge(self):
         await self.add_purchased(100)
-        reservation = await self.reserve(settings.user_daily_credits + 10)
+        reservation = await self.reserve(settings.user_monthly_credits + 10)
         async with self.sessions() as db:
             self.assertTrue(await self.service(db).settle(reservation.id))
             self.assertFalse(await self.service(db).settle(reservation.id))
         summary = await self.summary()
         self.assertEqual((summary.free_left, summary.purchased_balance), (0, 90))
         self.assertEqual(await self.ledger(reservation.id), sorted([
-            ("reserve", "free", -settings.user_daily_credits), ("reserve", "purchased", -10)]))
+            ("reserve", "free", -settings.user_monthly_credits), ("reserve", "purchased", -10)]))
 
     async def test_our_failure_returns_credits_to_their_buckets(self):
         await self.add_purchased(100)
-        reservation = await self.reserve(settings.user_daily_credits + 10)
+        reservation = await self.reserve(settings.user_monthly_credits + 10)
         async with self.sessions() as db:
             self.assertTrue(await self.service(db).finish_failed(reservation.id, reason="RENDER_FAILED"))
             # A second failure report (e.g. pipeline and cleanup racing) refunds nothing more.
             self.assertFalse(await self.service(db).finish_failed(reservation.id, reason="RENDER_FAILED"))
         summary = await self.summary()
-        self.assertEqual((summary.free_left, summary.purchased_balance), (settings.user_daily_credits, 100))
+        self.assertEqual((summary.free_left, summary.purchased_balance), (settings.user_monthly_credits, 100))
 
     async def test_user_caused_failure_keeps_the_charge(self):
         reservation = await self.reserve(10)
         async with self.sessions() as db:
             self.assertFalse(await self.service(db).finish_failed(reservation.id, reason="no_speech"))
-        self.assertEqual((await self.summary()).free_left, settings.user_daily_credits - 10)
+        self.assertEqual((await self.summary()).free_left, settings.user_monthly_credits - 10)
 
     async def test_released_settle_and_settled_release_are_noops(self):
         reservation = await self.reserve(10)
         async with self.sessions() as db:
             await self.service(db).finish_failed(reservation.id, reason=None)
             self.assertFalse(await self.service(db).settle(reservation.id))
-        self.assertEqual((await self.summary()).free_left, settings.user_daily_credits)
+        self.assertEqual((await self.summary()).free_left, settings.user_monthly_credits)
 
     async def test_duplicate_key_charges_once(self):
         from app.services.credit_service import ReservationClosedError
         first = await self.reserve(10, key="dup-key-" + str(uuid.uuid4()))
         again = await self.reserve(10, key=first.idempotency_key)
         self.assertEqual(first.id, again.id)
-        self.assertEqual((await self.summary()).free_left, settings.user_daily_credits - 10)
+        self.assertEqual((await self.summary()).free_left, settings.user_monthly_credits - 10)
         async with self.sessions() as db:
             await self.service(db).finish_failed(first.id, reason=None)
         with self.assertRaises(ReservationClosedError):
@@ -388,28 +375,27 @@ class CreditDatabaseTests(unittest.IsolatedAsyncioTestCase):
     async def test_insufficient_credits_reserve_nothing(self):
         await self.add_purchased(5)
         with self.assertRaises(InsufficientCreditsError):
-            await self.reserve(settings.user_daily_credits + 6)
+            await self.reserve(settings.user_monthly_credits + 6)
         summary = await self.summary()
-        self.assertEqual((summary.free_left, summary.purchased_balance), (settings.user_daily_credits, 5))
+        self.assertEqual((summary.free_left, summary.purchased_balance), (settings.user_monthly_credits, 5))
 
     async def test_concurrent_reservations_never_overspend(self):
         await self.add_purchased(0)
-        cost = settings.user_daily_credits // 2 + 1  # only one of two can fit
+        cost = settings.user_monthly_credits // 2 + 1  # only one of two can fit
         results = await asyncio.gather(self.reserve(cost), self.reserve(cost), return_exceptions=True)
         self.assertEqual(sum(isinstance(r, InsufficientCreditsError) for r in results), 1)
-        self.assertEqual((await self.summary()).free_left, settings.user_daily_credits - cost)
+        self.assertEqual((await self.summary()).free_left, settings.user_monthly_credits - cost)
 
-    async def test_yesterdays_free_credits_are_not_refunded_into_today(self):
+    async def test_last_months_free_credits_are_not_refunded_into_this_month(self):
         from sqlalchemy import update
         from app.models.credit_model import CreditReservation
         reservation = await self.reserve(10)
         async with self.sessions() as db:
             await db.execute(update(CreditReservation).where(CreditReservation.id == reservation.id)
-                             .values(created_at=datetime.now(timezone.utc) - timedelta(days=1)))
+                             .values(created_at=datetime.now(timezone.utc) - timedelta(days=32)))
             await db.commit()
-            # Simulate today's counter already being in use after the reset.
             await self.service(db).finish_failed(reservation.id, reason=None)
-        self.assertEqual((await self.summary()).free_left, settings.user_daily_credits - 10)
+        self.assertEqual((await self.summary()).free_left, settings.user_monthly_credits - 10)
 
     async def test_question_limit(self):
         from app.services.credit_service import ChatLimitError
@@ -498,7 +484,7 @@ class CreditDatabaseTests(unittest.IsolatedAsyncioTestCase):
             self.assertIsNone(await service.video_hold(video_id))
             retry = await service.reserve_video(self.owner, video_id, 10)
         self.assertNotEqual(retry.id, first.id)
-        self.assertEqual((await self.summary()).free_left, settings.user_daily_credits - 10)
+        self.assertEqual((await self.summary()).free_left, settings.user_monthly_credits - 10)
 
     async def test_dead_video_worker_is_refunded_but_quota_wait_is_not(self):
         from sqlalchemy import update
@@ -531,7 +517,7 @@ class CreditDatabaseTests(unittest.IsolatedAsyncioTestCase):
         from app.services.short_service import ShortService
         video = await self.completed_video()
         await self.add_purchased(0)
-        await self.reserve(settings.user_daily_credits - settings.short_credit_cost + 1)
+        await self.reserve(settings.user_monthly_credits - settings.short_credit_cost + 1)
         with patch("app.services.short_service.TranscriptChunkRepository") as chunks:
             chunks.return_value.find_in_time_range = AsyncMock(return_value=[SimpleNamespace(chunk_text="hi")])
             async with self.sessions() as db:
@@ -551,55 +537,6 @@ class CreditDatabaseTests(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(created)
         self.assertEqual((hold.status, hold.free_amount + hold.purchased_amount),
                          ("held", settings.short_credit_cost))
-
-    def guests_on_one_ip(self, count):
-        cap = uuid.uuid4().hex
-        return [CreditOwner(guest_key=uuid.uuid4().hex, cap_key=cap) for _ in range(count)]
-
-    async def guest_reserve(self, owner, amount):
-        async with self.sessions() as db:
-            return await self.service(db).reserve(
-                owner, source_type="video", source_id=uuid.uuid4(),
-                idempotency_key=f"test:{uuid.uuid4()}", amount=amount)
-
-    async def guest_summary(self, owner):
-        async with self.sessions() as db:
-            return await self.service(db).summary(owner)
-
-    async def test_new_device_ids_on_one_ip_share_its_daily_allowance(self):
-        per_device, per_ip = settings.guest_daily_credits, settings.guest_ip_daily_credits
-        devices = self.guests_on_one_ip(per_ip // per_device + 1)
-        holds = [await self.guest_reserve(device, per_device) for device in devices[:-1]]
-        last = devices[-1]
-        self.assertEqual((await self.guest_summary(last)).free_left, per_ip % per_device)
-        with self.assertRaises(InsufficientCreditsError):
-            await self.guest_reserve(last, per_device)
-        # Refunding one device's failed job frees room on the shared allowance too.
-        async with self.sessions() as db:
-            await self.service(db).finish_failed(holds[0].id, reason=None)
-        self.assertEqual((await self.guest_summary(last)).free_left, per_device)
-        self.assertEqual((await self.guest_summary(devices[0])).free_left, per_device)
-
-    async def test_another_ip_has_its_own_allowance(self):
-        crowded = self.guests_on_one_ip(settings.guest_ip_daily_credits // settings.guest_daily_credits)
-        for device in crowded:
-            await self.guest_reserve(device, settings.guest_daily_credits)
-        elsewhere = CreditOwner(guest_key=crowded[0].guest_key, cap_key=uuid.uuid4().hex)
-        fresh = CreditOwner(guest_key=uuid.uuid4().hex, cap_key=elsewhere.cap_key)
-        self.assertEqual((await self.guest_summary(fresh)).free_left, settings.guest_daily_credits)
-
-    async def test_guest_questions_are_capped_per_ip(self):
-        from app.services.credit_service import ChatLimitError
-        devices = self.guests_on_one_ip(settings.guest_ip_daily_questions // settings.guest_daily_questions + 1)
-        async with self.sessions() as db:
-            service = self.service(db)
-            for device in devices[:-1]:
-                for _ in range(settings.guest_daily_questions):
-                    await service.consume_question(device)
-            with self.assertRaises(ChatLimitError):
-                await service.consume_question(devices[-1])
-            await service.return_question(devices[0])
-            await service.consume_question(devices[-1])
 
     async def test_database_rejects_a_second_release_entry(self):
         from sqlalchemy.exc import IntegrityError

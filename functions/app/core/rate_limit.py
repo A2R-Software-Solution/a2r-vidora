@@ -1,9 +1,8 @@
 """Shared SlowAPI instance; limits are applied explicitly in route modules."""
-import hashlib
 import uuid
 from ipaddress import ip_address
 
-from fastapi import Depends, Request
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.responses import JSONResponse
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
@@ -35,30 +34,16 @@ def client_key(request: Request) -> str:
     return f"ip:{client_ip(request)}"
 
 
-def _hashed(kind: str, value: str) -> str:
-    return hashlib.sha256(f"{kind}:{value}".encode()).hexdigest()
-
-
-def guest_device_id(request: Request) -> str | None:
-    """The browser's random X-Guest-Id, if it is a well-formed UUID."""
-    headers = request.headers if "headers" in request.scope else {}
-    try:
-        return str(uuid.UUID(headers.get("x-guest-id", "")))
-    except ValueError:
-        return None
+SIGN_IN_REQUIRED = "Please sign in to use Vidora."
 
 
 def credit_owner_for(request: Request, user_id: uuid.UUID | None) -> CreditOwner:
-    """Signed-in users own their wallet. A guest gets one wallet per browser
-    (X-Guest-Id), or per IP when the header is missing, and every guest also
-    draws on a daily allowance shared by their IP. Identifiers are stored
-    only as hashes."""
-    if user_id is not None:
-        return CreditOwner(user_id=user_id)
-    ip = client_ip(request)
-    device = guest_device_id(request)
-    wallet = _hashed("guest-device", device) if device else _hashed("guest-ip", ip)
-    return CreditOwner(guest_key=wallet, cap_key=_hashed("guest-ip-cap", ip))
+    """The signed-in user's wallet. Every feature that goes through a wallet
+    (analysis, questions, Shorts, Song Merger, downloads) needs an account,
+    so a guest is refused here with 401."""
+    if user_id is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=SIGN_IN_REQUIRED)
+    return CreditOwner(user_id=user_id)
 
 
 async def rate_limit_user(

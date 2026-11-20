@@ -130,15 +130,11 @@ class Settings(BaseSettings):
     retrieval_candidate_multiplier: int = Field(gt=0)
     retrieval_min_candidates: int = Field(gt=0)
     retrieval_rrf_k: int = Field(gt=0)
-    # Credits: 1 credit = 1 started minute of analysed video. Free allowances
-    # reset at midnight IST and never roll over.
-    guest_daily_credits: int = Field(default=45, ge=0)
-    user_daily_credits: int = Field(default=80, ge=0)
+    # Credits: 1 credit = 1 started minute of analysed video. Only signed-in
+    # users get free credits; they reset on the 1st of each IST calendar month
+    # and never roll over. Question limits reset at midnight IST.
+    user_monthly_credits: int = Field(default=80, ge=0)
     short_credit_cost: int = Field(default=5, gt=0)
-    guest_daily_questions: int = Field(default=10, ge=0)
-    # Shared by all guest devices on one IP; bounds new-device-id abuse.
-    guest_ip_daily_credits: int = Field(default=135, ge=0)
-    guest_ip_daily_questions: int = Field(default=30, ge=0)
     user_daily_questions: int = Field(default=50, ge=0)
     # "Unlimited" chat for accounts holding purchased credits, with an abuse cap.
     paid_daily_questions: int = Field(default=500, ge=0)

@@ -36,7 +36,7 @@ const corePages = {
     intro: "Start with a video you have permission to process. Vidora prepares its spoken content so you can explore it through summaries and questions.",
     sections: [
       { id: "add-a-video", title: "01 / Add your YouTube link", content: <>
-        <p>Paste a YouTube URL into the home-page form and select Analyze Video. Each minute of video uses one credit. Guests get free credits every day for videos up to 35 minutes; signed-in users get more, and can analyze videos up to 3 hours with <SiteLink href="/pricing">credit packs</SiteLink>. Processing may wait when transcription capacity is busy.</p>
+        <p>Paste a YouTube URL into the home-page form and select Analyze Video. Each minute of video uses one credit. You need a free account, which comes with free credits every month; videos can be up to 3 hours, and <SiteLink href="/pricing">credit packs</SiteLink> add more credits. Processing may wait when transcription capacity is busy.</p>
         <p>Only submit content you own or have permission to process. Private, unavailable, live, or upcoming videos may not be supported.</p>
       </> },
       { id: "follow-progress", title: "02 / Follow the processing", content: <>
@@ -92,7 +92,7 @@ const corePages = {
         <p>Guest analyses can be accessed by someone who has their analysis identifier. Avoid submitting sensitive information and keep analysis identifiers private. Third-party services may process information in countries other than your own.</p>
       </> },
       { id: "choices", title: "Your choices and requests", content: <>
-        <p>You can use the guest flow within its limits, sign out of your account, or clear cookies and site data in your browser. Clearing browser data can remove your saved session and the ability to resume an analysis; it does not itself delete server records.</p>
+        <p>You can sign out of your account, or clear cookies and site data in your browser. Clearing browser data can remove your saved session and the ability to resume an analysis; it does not itself delete server records.</p>
         <p>For questions about your information, or to request access, correction, or deletion, email {emailLink}. Tell us which account or analysis your request concerns. We may need to verify ownership before acting. Available rights depend on the law that applies to you.</p>
       </> },
       { id: "updates", title: "Policy updates and contact", content: <>

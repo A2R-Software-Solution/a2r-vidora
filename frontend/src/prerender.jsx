@@ -69,7 +69,7 @@ const application = {
   operatingSystem: "Web",
   publisher: { "@id": organization["@id"] },
   offers: [
-    { "@type": "Offer", name: "Free daily credits", price: "0", priceCurrency: "USD" },
+    { "@type": "Offer", name: "Free monthly credits", price: "0", priceCurrency: "USD" },
     ...FALLBACK_PACKS.map((pack) => ({
       "@type": "Offer",
       name: `${pack.credits} credits`,

@@ -11,10 +11,8 @@ import {
 import "./PricingPage.css";
 
 const freeTiers = (plans) => [
-  { id: "guest", name: "Guest", credits: plans.guest_daily_credits, note: "No account needed",
-    points: ["Videos up to 35 minutes", `${plans.guest_daily_questions} questions a day`] },
-  { id: "account", name: "Free account", credits: plans.user_daily_credits, note: "Sign up free",
-    points: ["Longer videos, within your credits", `${plans.user_daily_questions} questions a day`, "Your video history"] },
+  { id: "account", name: "Free account", credits: plans.user_monthly_credits, note: "Sign up free",
+    points: ["Videos up to 3 hours, within your credits", `${plans.user_daily_questions} questions a day`, "Your video history"] },
 ];
 
 const perks = (plans) => [
@@ -29,7 +27,7 @@ function YourCredits({ credits }) {
   if (!credits) return <p className="pricing-balance balance-pending" aria-hidden="true">&nbsp;</p>;
   return (
     <p className="pricing-balance" role="status">
-      You have <strong>{credits.free_left} free credits</strong> left today
+      You have <strong>{credits.free_left} free credits</strong> left this month
       {credits.purchased_balance > 0 && <> and <strong>{credits.purchased_balance} purchased</strong></>}.
     </p>
   );
@@ -78,7 +76,7 @@ export default function PricingPage({ signedIn = false, onSignIn }) {
         <p className="public-eyebrow">Pricing</p>
         <h1>Start free. Top up when you need more.</h1>
         <p className="public-intro">
-          Everyone gets free credits every day. When you need more, buy a pack once.
+          Sign up free and get {plans.user_monthly_credits} credits every month. When you need more, buy a pack once.
           No subscription, and purchased credits never expire.
         </p>
         <YourCredits credits={credits} />
@@ -90,23 +88,23 @@ export default function PricingPage({ signedIn = false, onSignIn }) {
           <li><strong>1 credit</strong><span>per minute of video analyzed</span></li>
           <li><strong>{plans.short_credit_cost} credits</strong><span>per Short you create</span></li>
           <li><strong>0 credits</strong><span>to ask questions about your video</span></li>
-          <li><strong>Daily reset</strong><span>free credits renew at midnight IST</span></li>
+          <li><strong>Monthly reset</strong><span>free credits renew on the 1st of each month (IST)</span></li>
         </ul>
       </section>
 
       <section className="pricing-section" aria-labelledby="free-title">
-        <h2 id="free-title">Free every day</h2>
+        <h2 id="free-title">Free every month</h2>
         <div className="pricing-free">
           {freeTiers(plans).map((tier) => (
             <article className="pricing-tier" key={tier.id} aria-labelledby={`tier-${tier.id}`}>
               <h3 id={`tier-${tier.id}`}>{tier.name}</h3>
-              <p className="pricing-credits"><span className="pricing-amount">{tier.credits}</span> credits a day</p>
+              <p className="pricing-credits"><span className="pricing-amount">{tier.credits}</span> credits a month</p>
               <ul className="pricing-points">
                 {tier.points.map((point) => <li key={point}>{point}</li>)}
               </ul>
-              {tier.id === "account" && !signedIn
-                ? <button type="button" className="pricing-tier-cta" onClick={onSignIn}>{tier.note}</button>
-                : <p className="pricing-tier-note">{tier.id === "guest" ? tier.note : "You're signed in"}</p>}
+              {signedIn
+                ? <p className="pricing-tier-note">You're signed in</p>
+                : <button type="button" className="pricing-tier-cta" onClick={onSignIn}>{tier.note}</button>}
             </article>
           ))}
         </div>
@@ -114,7 +112,7 @@ export default function PricingPage({ signedIn = false, onSignIn }) {
 
       <section className="pricing-section" aria-labelledby="packs-title">
         <h2 id="packs-title">Credit packs</h2>
-        <p className="pricing-section-intro">Packs add to your free daily credits. Free credits are always used first.</p>
+        <p className="pricing-section-intro">Packs add to your free monthly credits. Free credits are always used first.</p>
         <div className="pricing-packs">
           {packs.map((pack) => <PackCard key={pack.code} pack={pack} shortCost={plans.short_credit_cost} signedIn={signedIn} onSignIn={onSignIn} />)}
         </div>
@@ -133,11 +131,11 @@ export default function PricingPage({ signedIn = false, onSignIn }) {
         <h3>What if a video fails?</h3>
         <p>If processing fails because of a problem on our side, your credits are returned automatically. Videos with no speech to transcribe still use their credits.</p>
         <h3>Do credits expire?</h3>
-        <p>Purchased credits never expire. Free daily credits reset at midnight IST and don't carry over.</p>
+        <p>Purchased credits never expire. Free monthly credits reset on the 1st of each month (IST) and don't carry over.</p>
         <h3>Can I get a refund?</h3>
         <p>Within 7 days of purchase, if you've used less than 10% of a pack, email <a href={`mailto:${siteDetails.supportEmail}`}>{siteDetails.supportEmail}</a>.</p>
-        <h3>Why are guest credits shared?</h3>
-        <p>Guests on the same network share a daily limit to keep the service fair. <SiteLink href="/faq">See more answers</SiteLink>.</p>
+        <h3>Do I need an account?</h3>
+        <p>Yes. Analyzing videos, asking questions, Shorts, Song Merger and downloads all need a free account. <SiteLink href="/faq">See more answers</SiteLink>.</p>
       </section>
     </article>
   );

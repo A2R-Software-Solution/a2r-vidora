@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import { CREDITS_MESSAGE, isYouTubeVideoUrl, YOUTUBE_LINK_MESSAGE } from "../../utils/videoInput";
 import SiteLink from "../common/SiteLink";
 import { usePlans } from "../../hooks/usePlans";
+import { requireSignIn } from "../../utils/authGate";
 
 function AnalysisStatus({ restoring }) {
   const [takingLonger, setTakingLonger] = useState(false);
@@ -43,6 +44,7 @@ export default function InputBox({ onAnalyze, loading, restoring = false, error,
       return;
     }
     setValidationError(null);
+    if (!requireSignIn()) return;
     onAnalyze(trimmed);
   };
 
@@ -91,7 +93,7 @@ export default function InputBox({ onAnalyze, loading, restoring = false, error,
         <span><span className="provider-icon yt">▶</span> YouTube</span>
       </div>
       <div className="hint reveal-up delay-4">
-        1 credit per minute of video. Free every day: {plans.guest_daily_credits} credits as a guest, {plans.user_daily_credits} when signed in.{" "}
+        1 credit per minute of video. Sign in to get {plans.user_monthly_credits} free credits every month.{" "}
         <SiteLink href="/pricing">Pricing</SiteLink>
       </div>
     </>

@@ -207,8 +207,8 @@ function UserDetail({ userId, onBack }) {
           <div className="admin-tiles">
             <div className="admin-tile"><span className="admin-tile-label">Purchased credits</span>
               <strong>{detail.account?.purchased_balance ?? 0}</strong></div>
-            <div className="admin-tile"><span className="admin-tile-label">Free used today</span>
-              <strong>{detail.account?.daily_free_used ?? 0}</strong></div>
+            <div className="admin-tile"><span className="admin-tile-label">Free used this month</span>
+              <strong>{detail.account?.free_used ?? 0}</strong></div>
             <div className="admin-tile"><span className="admin-tile-label">Questions today</span>
               <strong>{detail.account?.daily_chat_used ?? 0}</strong></div>
           </div>
@@ -241,7 +241,7 @@ function UserDetail({ userId, onBack }) {
 const SETTING_NOTES = {
   "Retention": "Applies to items created after the change. Existing items keep their expiry time.",
   "Credit packs": "Applies to new purchases. Past payments keep the price and credits they were bought with.",
-  "Free credits per day": "Applies immediately. Credits already used today still count against the new limit.",
+  "Free credits per month": "Applies immediately. Credits already used this month still count against the new limit.",
 };
 
 function Settings() {

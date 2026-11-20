@@ -5,6 +5,7 @@ import { clipKey, isShortExpired, isShortPending, shortCards, shortError } from 
 import { SHORT_CREDIT_COST } from "../../utils/pricing";
 import { refreshCredits, useCredits } from "../../hooks/useCredits";
 import SiteLink from "../common/SiteLink";
+import { requireSignIn } from "../../utils/authGate";
 
 function ShortCard({ clip, videoId, active, onSeek, onCreate, creating, canCreate }) {
   const job = clip.job;
@@ -120,7 +121,7 @@ export default function ShortSuggestions({ videoId, onSeek, active = true }) {
   }, [videoId, active, refresh]);
 
   const generate = async () => {
-    if (suggestionBusy.current) return;
+    if (suggestionBusy.current || !requireSignIn()) return;
     suggestionBusy.current = true;
     setLoading(true);
     setError("");
@@ -136,7 +137,7 @@ export default function ShortSuggestions({ videoId, onSeek, active = true }) {
   };
 
   const create = async (clip) => {
-    if (createBusy.current) return;
+    if (createBusy.current || !requireSignIn()) return;
     createBusy.current = true;
     setCreating(clipKey(clip));
     setError("");

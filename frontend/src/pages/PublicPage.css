@@ -5,18 +5,6 @@
   color: #51473f;
 }
 
-.public-back {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  min-height: 44px;
-  margin-bottom: 34px;
-  color: #76523d;
-  font-size: 14px;
-  font-weight: 600;
-  text-decoration: none;
-}
-
 .public-header { max-width: 780px; margin-bottom: 48px; }
 .public-eyebrow { margin: 0 0 16px; color: #aa4822; font-size: 12px; font-weight: 750; letter-spacing: 0.13em; text-transform: uppercase; }
 .public-page h1 { max-width: 760px; color: #27211e; font-size: clamp(32px, 4.7vw, 58px); line-height: 1.12; letter-spacing: -0.045em; text-wrap: balance; }
@@ -40,7 +28,7 @@
 .public-body ul { padding-left: 20px; }
 .public-body li + li { margin-top: 12px; }
 .public-body strong { color: #3d3028; font-weight: 650; }
-.public-page a:not(.public-back):not(.public-action) { color: #a34320; text-underline-offset: 3px; overflow-wrap: anywhere; }
+.public-page a:not(.public-action) { color: #a34320; text-underline-offset: 3px; overflow-wrap: anywhere; }
 .public-page a:hover { color: #702d15; text-decoration: underline; }
 .public-page a:focus-visible { outline: 3px solid #b8522b; outline-offset: 4px; border-radius: 3px; }
 .public-body .public-contact-email { font-size: clamp(16px, 2vw, 20px); font-weight: 650; }
@@ -59,7 +47,6 @@
 
 @media (max-width: 480px) {
   .public-page { width: calc(100% - 32px); padding: 24px 0 48px; }
-  .public-back { margin-bottom: 24px; }
   .public-header { margin-bottom: 28px; }
   .public-intro { font-size: 16px; }
   .public-body { padding: 0 20px 24px; border-radius: 16px; }

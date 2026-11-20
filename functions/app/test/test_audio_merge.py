@@ -433,12 +433,12 @@ class SourceApiTests(unittest.TestCase):
         limiter.reset()
         self.addCleanup(limiter.reset)
 
-        async def nobody():
-            return None
+        async def signed_in():
+            return uuid.UUID(int=1)
 
         async def db():
             yield Mock()
-        app.dependency_overrides[get_current_user_id] = nobody
+        app.dependency_overrides[get_current_user_id] = signed_in
         app.dependency_overrides[get_db] = db
         self.addCleanup(app.dependency_overrides.clear)
         now = datetime.now(timezone.utc)

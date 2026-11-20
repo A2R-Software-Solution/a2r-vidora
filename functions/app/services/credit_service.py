@@ -1,5 +1,7 @@
-"""Credit wallets: daily free allowances, purchased balances and reservations.
+"""Credit wallets: monthly free allowances, purchased balances and reservations.
 
+Only signed-in users get free credits (reset on the 1st of each IST month);
+guests are refused by the API before reaching this service.
 A reservation deducts credits immediately (free allowance first, then the
 purchased balance). It is later settled when the work succeeds, or released
 back to the buckets it came from when the work fails on our side. Every
@@ -73,7 +75,7 @@ class CreditOwner:
 @dataclass(frozen=True)
 class CreditSummary:
     free_left: int
-    free_daily: int
+    free_monthly: int
     purchased_balance: int
     questions_left: int
     is_paid: bool
@@ -85,6 +87,10 @@ class CreditSummary:
 
 def ist_today(now: datetime | None = None) -> date:
     return (now or datetime.now(timezone.utc)).astimezone(IST).date()
+
+
+def month_start(day: date) -> date:
+    return day.replace(day=1)
 
 
 def video_credit_cost(duration_seconds: int) -> int:
@@ -136,13 +142,13 @@ def owner_for_merge(merge) -> CreditOwner:
     return CreditOwner(guest_key=merge.guest_key, cap_key=merge.guest_cap_key)
 
 
-def daily_free_credits(owner: CreditOwner) -> int:
-    return settings.guest_daily_credits if owner.is_guest else settings.user_daily_credits
+def monthly_free_credits(owner: CreditOwner) -> int:
+    return 0 if owner.is_guest else settings.user_monthly_credits
 
 
 def daily_question_limit(owner: CreditOwner, purchased_balance: int) -> int:
     if owner.is_guest:
-        return settings.guest_daily_questions
+        return 0
     if purchased_balance > 0:
         return settings.paid_daily_questions
     return settings.user_daily_questions
@@ -163,10 +169,13 @@ def refund_on_failure(reason: str | None) -> bool:
 
 
 def roll_daily(account: CreditAccount, today: date) -> None:
+    """Resets the question counter each day and the free credits each month."""
     if account.daily_date != today:
         account.daily_date = today
-        account.daily_free_used = 0
         account.daily_chat_used = 0
+    if account.free_month != month_start(today):
+        account.free_month = month_start(today)
+        account.free_used = 0
 
 
 class CreditService:
@@ -187,6 +196,7 @@ class CreditService:
         today = ist_today()
         await self.db.execute(insert(CreditAccount).values(
             id=uuid.uuid4(), user_id=user_id, guest_key=guest_key, daily_date=today,
+            free_month=month_start(today),
         ).on_conflict_do_nothing())
         column = CreditAccount.user_id if user_id else CreditAccount.guest_key
         account = (await self.db.execute(
@@ -208,15 +218,12 @@ class CreditService:
 
     def _summary(self, owner: CreditOwner, account: CreditAccount,
                  cap: CreditAccount | None = None) -> CreditSummary:
-        free_daily = daily_free_credits(owner)
-        free_left = free_daily - account.daily_free_used
+        free_monthly = monthly_free_credits(owner)
+        free_left = free_monthly - account.free_used
         questions_left = daily_question_limit(owner, account.purchased_balance) - account.daily_chat_used
-        if cap is not None:
-            free_left = min(free_left, settings.guest_ip_daily_credits - cap.daily_free_used)
-            questions_left = min(questions_left, settings.guest_ip_daily_questions - cap.daily_chat_used)
         return CreditSummary(
             free_left=max(free_left, 0),
-            free_daily=free_daily,
+            free_monthly=free_monthly,
             purchased_balance=account.purchased_balance,
             questions_left=max(questions_left, 0),
             is_paid=account.purchased_balance > 0,
@@ -259,10 +266,10 @@ class CreditService:
 
         summary = self._summary(owner, account, cap)
         from_free, from_purchased = split_charge(summary.free_left, account.purchased_balance, amount)
-        account.daily_free_used += from_free
+        account.free_used += from_free
         account.purchased_balance -= from_purchased
         if cap is not None:
-            cap.daily_free_used += from_free
+            cap.free_used += from_free
         reservation = CreditReservation(
             id=uuid.uuid4(), account_id=account.id, source_type=source_type, source_id=source_id,
             idempotency_key=idempotency_key, free_amount=from_free,
@@ -346,10 +353,10 @@ class CreditService:
         note = f"failure:{reason or 'unknown'}"
         reservation.status = "released"
         roll_daily(account, ist_today())
-        # Free credits only return to the allowance of the day they came from;
-        # yesterday's allowance has already expired.
-        if reservation.free_amount and ist_today(reservation.created_at) == account.daily_date:
-            account.daily_free_used = max(account.daily_free_used - reservation.free_amount, 0)
+        # Free credits only return to the allowance of the month they came
+        # from; last month's allowance has already expired.
+        if reservation.free_amount and month_start(ist_today(reservation.created_at)) == account.free_month:
+            account.free_used = max(account.free_used - reservation.free_amount, 0)
             self._ledger(account, kind="release", bucket="free", amount=reservation.free_amount,
                          reservation_id=reservation.id, note=note)
             if reservation.cap_account_id is not None:
@@ -358,7 +365,7 @@ class CreditService:
                     .with_for_update().execution_options(populate_existing=True)
                 )).scalar_one()
                 roll_daily(cap, account.daily_date)
-                cap.daily_free_used = max(cap.daily_free_used - reservation.free_amount, 0)
+                cap.free_used = max(cap.free_used - reservation.free_amount, 0)
         if reservation.purchased_amount:
             account.purchased_balance += reservation.purchased_amount
             self._ledger(account, kind="release", bucket="purchased",
@@ -406,8 +413,6 @@ class CreditService:
         if self._summary(owner, account, cap).questions_left <= 0:
             await self._done()
             limit = daily_question_limit(owner, account.purchased_balance)
-            if cap is not None:
-                limit = min(limit, settings.guest_ip_daily_questions)
             raise ChatLimitError(limit)
         account.daily_chat_used += 1
         if cap is not None:

@@ -17,6 +17,11 @@ from app.deps import get_current_user_id, get_db
 from app.controller import video_controller, qa_log_controller, user_controller
 
 
+# Guests must sign in before analysing or asking; the refusal still counts
+# against their IP's budget.
+SIGN_IN = 401
+
+
 class RateLimitTests(unittest.TestCase):
     def setUp(self):
         limiter.reset()
@@ -36,7 +41,8 @@ class RateLimitTests(unittest.TestCase):
         now = datetime.now(timezone.utc)
         video = SimpleNamespace(id=uuid.uuid4(), user_id=None, youtube_id="yYF2Vf1Gc14",
             youtube_url="https://youtu.be/yYF2Vf1Gc14", title="Example", duration=60,
-            status="completed", summary="Summary", created_at=now, expires_at=now + timedelta(days=1))
+            status="completed", summary="Summary", processing_stage="completed",
+            processing_total_chunks=0, processing_completed_chunks=0, created_at=now, expires_at=now + timedelta(days=1))
         log = SimpleNamespace(id=uuid.uuid4(), video_id=video.id, user_id=None,
             question="Why?", answer="Answer", created_at=now)
         account = SimpleNamespace(id=uuid.uuid4(), firebase_uid="a" * 24,
@@ -73,21 +79,21 @@ class RateLimitTests(unittest.TestCase):
     def test_every_route_enforces_its_budget(self):
         identifier = uuid.uuid4()
         cases = [
-            ("POST", "/videos/analyze", {"youtube_url": "https://youtu.be/yYF2Vf1Gc14"}, settings.submit_limit),
-            ("GET", f"/videos?video_id={identifier}", None, 50),
-            ("POST", f"/videos/{identifier}/qa/ask", {"question": "Why?"}, settings.question_limit),
-            ("GET", f"/videos/{identifier}/qa", None, 50),
-            ("POST", "/users", {"firebase_uid": "a" * 24, "email": "test@example.com"}, 10),
-            ("GET", f"/users/{identifier}", None, 50),
-            ("GET", "/health", None, 50),
-            ("GET", "/ping", None, 50),
+            ("POST", "/videos/analyze", {"youtube_url": "https://youtu.be/yYF2Vf1Gc14"}, settings.submit_limit, SIGN_IN),
+            ("GET", f"/videos?video_id={identifier}", None, 50, 200),
+            ("POST", f"/videos/{identifier}/qa/ask", {"question": "Why?"}, settings.question_limit, SIGN_IN),
+            ("GET", f"/videos/{identifier}/qa", None, 50, 200),
+            ("POST", "/users", {"firebase_uid": "a" * 24, "email": "test@example.com"}, 10, 200),
+            ("GET", f"/users/{identifier}", None, 50, 200),
+            ("GET", "/health", None, 50, 200),
+            ("GET", "/ping", None, 50, 200),
         ]
-        for method, path, body, budget in cases:
+        for method, path, body, budget, expected in cases:
             with self.subTest(path=path):
                 limiter.reset()
                 for _ in range(budget):
                     response = self.send(method, path, body)
-                    self.assertEqual(response.status_code, 200, response.text)
+                    self.assertEqual(response.status_code, expected, response.text)
                 response = self.send(method, path, body)
                 self.assertEqual(response.status_code, 429, response.text)
                 self.assertIn("detail", response.json())
@@ -98,12 +104,12 @@ class RateLimitTests(unittest.TestCase):
     def test_different_ips_are_independent_and_spoofed_prefix_does_not_reset(self):
         body = {"youtube_url": "https://youtu.be/yYF2Vf1Gc14"}
         for _ in range(settings.submit_limit):
-            self.assertEqual(self.send("POST", "/videos/analyze", body).status_code, 200)
+            self.assertEqual(self.send("POST", "/videos/analyze", body).status_code, SIGN_IN)
         self.assertEqual(self.send("POST", "/videos/analyze", body,
             ip="203.0.113.9, 198.51.100.1").status_code, 429)
         self.assertEqual(self.send("POST", "/videos/analyze", body,
-            ip="198.51.100.2").status_code, 200)
-        self.assertEqual(self.mocks["submit_video"].await_count, settings.submit_limit + 1)
+            ip="198.51.100.2").status_code, SIGN_IN)
+        self.mocks["submit_video"].assert_not_awaited()
 
     def test_question_budget_spans_videos_and_accounts_are_independent(self):
         self.user = uuid.uuid4()
@@ -120,10 +126,10 @@ class RateLimitTests(unittest.TestCase):
         body = {"youtube_url": "https://youtu.be/yYF2Vf1Gc14"}
         with patch("limits.storage.memory.time.time", return_value=1000):
             for _ in range(settings.submit_limit):
-                self.assertEqual(self.send("POST", "/videos/analyze", body).status_code, 200)
+                self.assertEqual(self.send("POST", "/videos/analyze", body).status_code, SIGN_IN)
             self.assertEqual(self.send("POST", "/videos/analyze", body).status_code, 429)
         with patch("limits.storage.memory.time.time", return_value=1001 + settings.submit_window_seconds):
-            self.assertEqual(self.send("POST", "/videos/analyze", body).status_code, 200)
+            self.assertEqual(self.send("POST", "/videos/analyze", body).status_code, SIGN_IN)
 
     def test_direct_requests_ignore_untrusted_forwarding(self):
         request = Request({"type": "http", "client": ("192.0.2.1", 123),
@@ -154,4 +160,4 @@ class RateLimitTests(unittest.TestCase):
         response.from_app.assert_not_called()
         body = {"youtube_url": "https://youtu.be/yYF2Vf1Gc14"}
         for _ in range(settings.submit_limit):
-            self.assertEqual(self.send("POST", "/videos/analyze", body).status_code, 200)
+            self.assertEqual(self.send("POST", "/videos/analyze", body).status_code, SIGN_IN)
