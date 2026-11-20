@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import TypeVar
 
 from groq import AsyncGroq
-from groq import APIConnectionError, APITimeoutError, GroqError, InternalServerError, RateLimitError
+from groq import APIConnectionError, APITimeoutError, BadRequestError, GroqError, InternalServerError, RateLimitError
 
 from app.core.config import settings
 from app.middleware.logging import logger
@@ -256,6 +256,10 @@ _SHORTS_SYSTEM_PROMPT = (
 )
 
 
+_SHORTS_MAX_TOKENS = 3000
+_SHORTS_STRICT_OPTIONS = {"response_format": {"type": "json_object"}, "reasoning_effort": "low"}
+
+
 def _parse_suggestions(raw: str) -> list[dict] | None:
     """Tolerantly extract a suggestion list from model output; None if unusable."""
     text = re.sub(r"^```(?:json)?\s*|\s*```$", "", raw.strip(), flags=re.IGNORECASE)
@@ -276,6 +280,7 @@ async def generate_short_suggestions(timestamped_transcript: str) -> list[dict]:
     if not timestamped_transcript.strip():
         raise ValueError("transcript must not be empty.")
     transcript = timestamped_transcript[:_SUMMARY_MAX_INPUT_CHARS]
+    strict = True
     for attempt in range(2):
         try:
             response = await _with_groq_client(
@@ -285,11 +290,21 @@ async def generate_short_suggestions(timestamped_transcript: str) -> list[dict]:
                         {"role": "system", "content": _SHORTS_SYSTEM_PROMPT},
                         {"role": "user", "content": f"<transcript_context>\n{escape(transcript)}\n</transcript_context>"},
                     ],
-                    max_tokens=700,
+                    # Reasoning tokens count toward this budget; a small one cuts the JSON off.
+                    max_tokens=_SHORTS_MAX_TOKENS,
                     temperature=_ANSWER_TEMPERATURE,
-                    response_format={"type": "json_object"},
+                    **(_SHORTS_STRICT_OPTIONS if strict else {}),
                 )
             )
+        except BadRequestError as exc:
+            # e.g. json_validate_failed, or a model that rejects these options. Log the
+            # error code only, never the prompt or completion.
+            logger.error("Groq short suggestions rejected (code=%s, attempt %d)",
+                         getattr(exc, "code", None), attempt + 1)
+            if attempt == 0:
+                strict = False  # retry once without JSON mode; _parse_suggestions is tolerant
+                continue
+            raise GroqRequestError("AI short suggestions provider unavailable.") from None
         except GroqError as exc:
             logger.error("Groq short suggestions failed: %s", type(exc).__name__)
             raise GroqRequestError("AI short suggestions provider unavailable.") from None
