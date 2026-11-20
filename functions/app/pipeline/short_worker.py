@@ -44,12 +44,12 @@ async def process_short(short_id, attempt_id):
         job.status, job.updated_at = "rendering", datetime.now(timezone.utc)
         video = await db.get(Video, job.video_id)
         chunks = await TranscriptChunkRepository(db).find_in_time_range(job.video_id, job.start_time, job.end_time)
-        url, start, end = video.youtube_url, job.start_time, job.end_time
+        url, start, end, options = video.youtube_url, job.start_time, job.end_time, job.options
         await db.commit()
     object_name = f"shorts/{short_id}/{attempt_id}.mp4"
     try:
         with tempfile.TemporaryDirectory(prefix="vidora_short_") as directory:
-            path = await asyncio.to_thread(render_short, url, start, end, chunks, directory)
+            path = await asyncio.to_thread(render_short, url, start, end, chunks, directory, options)
             await short_storage.upload(object_name, path)
         async with AsyncSessionLocal() as db:
             job = (await db.execute(select(Short).where(Short.id == short_id).with_for_update())).scalar_one_or_none()

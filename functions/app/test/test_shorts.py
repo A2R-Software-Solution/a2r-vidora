@@ -11,9 +11,9 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock, patch
 from fastapi import HTTPException
 from pydantic import ValidationError
-from app.schemas.short_schema import ShortRequest
+from app.schemas.short_schema import ShortOptions, ShortRequest
 from app.services.short_service import ShortService
-from app.pipeline.short_renderer import caption_text, render_local
+from app.pipeline.short_renderer import caption_text, prepare_captions, render_local
 
 
 class ShortsTests(unittest.IsolatedAsyncioTestCase):
@@ -115,8 +115,9 @@ class ShortsTests(unittest.IsolatedAsyncioTestCase):
             source = Path(directory) / "test.mp4"
             subprocess.run(["ffmpeg", "-y", "-v", "error", "-f", "lavfi", "-i", "testsrc2=size=320x180:rate=15",
                             "-f", "lavfi", "-i", "sine=frequency=440", "-t", "2", "-c:v", "libx264", "-c:a", "aac", str(source)], check=True)
-            (Path(directory) / "captions.srt").write_text("1\n00:00:00,000 --> 00:00:02,000\nCaption test\n", encoding="utf-8")
-            output = render_local(source, 2, directory)
+            options = ShortOptions().model_dump()
+            prepare_captions(directory, options, [{"start": 0, "end": 2, "text": "Caption test"}])
+            output = render_local(source, 2, directory, None, options)
             result = subprocess.run(["ffprobe", "-v", "error", "-show_streams", "-show_format", "-of", "json", str(output)], capture_output=True, text=True, check=True)
             info = json.loads(result.stdout)
             video = next(s for s in info["streams"] if s["codec_type"] == "video")

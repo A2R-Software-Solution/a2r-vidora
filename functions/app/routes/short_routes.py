@@ -8,7 +8,8 @@ from app.core.rate_limit import credit_owner_for, limiter, rate_limit_user
 from app.services.credit_service import CreditService, short_reservation_key
 from app.deps import get_db
 from app.models.short_model import Short
-from app.schemas.short_schema import ShortRequest, ShortResponse
+from pydantic import ValidationError
+from app.schemas.short_schema import ShortRange, ShortRequest, ShortResponse
 from app.services.short_service import ShortService
 from app.services.video_service import VideoAccessDeniedError, VideoExpiredError, VideoNotFoundError
 from app.utils.router_config import create_router
@@ -72,6 +73,21 @@ async def list_shorts(video_id: uuid.UUID, request: Request, response: Response,
             "free_limit": used + available // settings.short_credit_cost}
 
 
+@router.get("/draft")
+@limiter.limit("60/hour")
+async def draft_captions(video_id: uuid.UUID, request: Request, response: Response,
+                         start_time: int = Query(ge=0), end_time: int = Query(gt=0),
+                         db=Depends(get_db), user_id=Depends(rate_limit_user)):
+    """The transcript captions for a clip, to edit before rendering. Free."""
+    try:
+        clip = ShortRange(start_time=start_time, end_time=end_time)
+    except ValidationError:
+        raise HTTPException(422, "A Short must be 20 to 60 seconds long.") from None
+    cues = await _handle(ShortService(db).draft(video_id, clip, user_id))
+    return {"start_time": clip.start_time, "end_time": clip.end_time, "captions": cues}
+
+
+# Declared after /draft: a literal path must win over the {short_id} parameter.
 @router.get("/{short_id}", response_model=ShortResponse)
 @limiter.limit("50/minute")
 async def get_short(video_id: uuid.UUID, short_id: uuid.UUID, request: Request, response: Response,
