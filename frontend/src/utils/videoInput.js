@@ -15,7 +15,7 @@ export function isYouTubeVideoUrl(value) {
   }
 }
 
-export const CREDITS_MESSAGE = "You don't have enough credits for this. Free credits renew at midnight IST, or you can get more.";
+export const CREDITS_MESSAGE = "You don't have enough credits for this. Your free signup credits are used up, so you can get more credits.";
 export const QUESTIONS_MESSAGE = "You've used today's questions. They renew at midnight IST.";
 
 // "credits" (402: balance too low), "questions" (daily question limit), or null.
@@ -52,7 +52,7 @@ export function friendlyApiError(error, context = "analyze") {
 // pricing: offer the pricing page; signIn: offer signing in.
 export function analysisFailure(stage, signedIn) {
   if (stage === "insufficient_credits") return {
-    text: "This video needs more credits than you have left (1 credit per minute). Free credits renew on the 1st of each month (IST).",
+    text: "This video needs more credits than you have left (1 credit per minute). Your free signup credits do not renew; buy a pack to continue.",
     pricing: true, signIn: !signedIn,
   };
   if (stage === "no_speech") return {

@@ -36,7 +36,7 @@ const corePages = {
     intro: "Start with a video you have permission to process. Vidora prepares its spoken content so you can explore it through summaries and questions.",
     sections: [
       { id: "add-a-video", title: "01 / Add your YouTube link", content: <>
-        <p>Paste a YouTube URL into the home-page form and select Analyze Video. Each minute of video uses one credit. You need a free account, which comes with free credits every month; videos can be up to 3 hours, and <SiteLink href="/pricing">credit packs</SiteLink> add more credits. Processing may wait when transcription capacity is busy.</p>
+        <p>Paste a YouTube URL into the home-page form and select Analyze Video. Each minute of video uses one credit. You need a free account, which comes with free signup credits; videos can be up to 3 hours, and <SiteLink href="/pricing">credit packs</SiteLink> add more credits. Processing may wait when transcription capacity is busy.</p>
         <p>Only submit content you own or have permission to process. Private, unavailable, live, or upcoming videos may not be supported.</p>
       </> },
       { id: "follow-progress", title: "02 / Follow the processing", content: <>

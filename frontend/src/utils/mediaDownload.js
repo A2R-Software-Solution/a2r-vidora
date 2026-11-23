@@ -41,7 +41,7 @@ export function downloadError(err) {
   const status = err?.response?.status;
   const data = err?.response?.data;
   if (status === 402) {
-    return "You don't have enough download credits for this quality. Download credits renew at midnight IST, or you can get more credits.";
+    return "You don't have enough download credits for this quality. You can get more credits.";
   }
   if (status === 429) return "Too many requests. Please wait a few minutes and try again.";
   if (status === 503 || status === 422) {

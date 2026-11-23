@@ -42,7 +42,7 @@ class CreditRuleTests(unittest.TestCase):
         self.assertEqual(ist_today(before).day, 17)
         self.assertEqual(ist_today(after).day, 18)
 
-    def test_questions_reset_daily_and_free_credits_monthly(self):
+    def test_questions_reset_daily_and_free_credits_never_renew(self):
         first = datetime(2026, 11, 1).date()
         account = SimpleNamespace(daily_date=first, daily_chat_used=7,
                                   free_month=month_start(first), free_used=40)
@@ -50,8 +50,8 @@ class CreditRuleTests(unittest.TestCase):
         self.assertEqual((account.free_used, account.daily_chat_used), (40, 7))
         roll_daily(account, first + timedelta(days=29))  # 30 Nov: same month
         self.assertEqual((account.free_used, account.daily_chat_used), (40, 0))
-        roll_daily(account, first + timedelta(days=30))  # 1 Dec: new month
-        self.assertEqual((account.free_used, account.free_month), (0, datetime(2026, 12, 1).date()))
+        roll_daily(account, first + timedelta(days=30))  # 1 Dec: the free bonus is not renewed
+        self.assertEqual((account.free_used, account.free_month), (40, first))
 
     def test_only_signed_in_users_get_free_credits(self):
         self.assertEqual(monthly_free_credits(CreditOwner(guest_key="g" * 64)), 0)

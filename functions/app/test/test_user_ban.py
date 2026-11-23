@@ -66,13 +66,12 @@ class AdminServiceTests(unittest.IsolatedAsyncioTestCase):
         user = SimpleNamespace(id=uuid.uuid4(), email="a@b.c", plan="free", is_admin=False,
                                banned_at=None, ban_reason=None, created_at=datetime.now(timezone.utc))
         with patch("app.services.admin_service.settings", SimpleNamespace(user_monthly_credits=80)), \
-             patch("app.services.admin_service.month_start", return_value=date(2026, 11, 1)), \
              patch("app.services.admin_service.ist_today"):
             row = AdminService._user_row(user, 30, 25, date(2026, 11, 1))
             self.assertEqual((row["purchased_balance"], row["free_left"], row["available"]), (30, 55, 85))
-            # A new month: the free allowance is whole again, whatever was used last month.
+            # The free bonus is one-time: what was used earlier is not given back later.
             row = AdminService._user_row(user, None, 70, date(2026, 10, 1))
-            self.assertEqual((row["purchased_balance"], row["free_left"], row["available"]), (0, 80, 80))
+            self.assertEqual((row["purchased_balance"], row["free_left"], row["available"]), (0, 10, 10))
             self.assertFalse(row["banned"])
 
 

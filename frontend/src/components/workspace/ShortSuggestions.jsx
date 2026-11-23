@@ -221,7 +221,7 @@ export default function ShortSuggestions({ videoId, youtubeUrl, onSeek, active =
       Each reel uses {creditCost} credits{credits ? ` · You have ${credits.available}` : ""}
     </p>
     {!affordable && <p className="shorts-note">
-      You need {creditCost} credits to create a reel. Free credits renew at midnight IST.{" "}
+      You need {creditCost} credits to create a reel.{" "}
       <SiteLink href="/pricing">See pricing</SiteLink>
     </p>}
     {historyError && <div className="shorts-error" role="alert">{historyError} <button type="button" className="short-refresh" onClick={() => setRefresh((value) => value + 1)}>Refresh status</button></div>}

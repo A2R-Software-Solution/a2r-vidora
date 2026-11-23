@@ -49,7 +49,7 @@ const loadActivity = (signal) => getActivity(8, signal);
 const loadCredits = (signal) => getCreditsSummary(signal);
 
 const CREDIT_ROWS = [
-  ["Free credits given", "free_given", "Monthly allowance x users (estimate for earlier months)"],
+  ["Free credits given", "free_given", "Signups x current bonus (estimate if the bonus changed)"],
   ["Purchased credits given", "purchased_given", "From paid packs"],
   ["Added by admin", "admin_added", "Manual grants"],
   ["Total given", "total_given", null, true],
@@ -63,7 +63,7 @@ function CreditsCard({ credits }) {
   const percent = (value) => (value == null ? NA : `${value}%`);
   return <section className="ad-card ad-credits" aria-labelledby="ad-credits">
     <div className="ad-card-head"><h2 id="ad-credits"><Icon name="bolt" size={20} /> Credits Given vs Used</h2>
-      {c && <span className="ad-muted">{c.free_allowance_per_user} free credits per user per month · signed-in users only</span>}</div>
+      {c && <span className="ad-muted">{c.free_bonus_per_user} free signup credits per user (one time) · signed-in users only</span>}</div>
     {credits.error ? <p className="admin-error" role="alert">{credits.error}</p> : !c ? <p className="ad-muted">Loading…</p> : (
       <div className="admin-table-wrap"><table className="admin-table">
         <thead><tr><th>Credits</th><th>This month</th><th>All time</th></tr></thead>

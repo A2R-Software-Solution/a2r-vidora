@@ -28,7 +28,7 @@ function YourCredits({ credits }) {
   if (!credits) return <p className="pricing-balance balance-pending" aria-hidden="true">&nbsp;</p>;
   return (
     <p className="pricing-balance" role="status">
-      You have <strong>{credits.free_left} free credits</strong> left this month
+      You have <strong>{credits.free_left} free credits</strong> left
       {credits.purchased_balance > 0 && <> and <strong>{credits.purchased_balance} purchased</strong></>}.
     </p>
   );
@@ -115,7 +115,7 @@ export default function PricingPage({ signedIn = false, onSignIn }) {
         <p className="public-eyebrow">Pricing</p>
         <h1>Start free. Top up when you need more.</h1>
         <p className="public-intro">
-          Sign up free and get {plans.user_monthly_credits} credits every month. When you need more, buy a pack once.
+          Sign up free and get {plans.user_monthly_credits} free credits as a one-time bonus. When you need more, buy a pack once.
           No subscription, and purchased credits never expire.
         </p>
         <YourCredits credits={credits} />
@@ -127,17 +127,17 @@ export default function PricingPage({ signedIn = false, onSignIn }) {
           <li><strong>1 credit</strong><span>per minute of video analyzed</span></li>
           <li><strong>{plans.short_credit_cost} credits</strong><span>per Short you create</span></li>
           <li><strong>0 credits</strong><span>to ask questions about your video</span></li>
-          <li><strong>Monthly reset</strong><span>free credits renew on the 1st of each month (IST)</span></li>
+          <li><strong>One-time bonus</strong><span>free credits are given once when you sign up and do not renew</span></li>
         </ul>
       </section>
 
       <section className="pricing-section" aria-labelledby="free-title">
-        <h2 id="free-title">Free every month</h2>
+        <h2 id="free-title">Free when you sign up</h2>
         <div className="pricing-free">
           {freeTiers(plans).map((tier) => (
             <article className="pricing-tier" key={tier.id} aria-labelledby={`tier-${tier.id}`}>
               <h3 id={`tier-${tier.id}`}>{tier.name}</h3>
-              <p className="pricing-credits"><span className="pricing-amount">{tier.credits}</span> credits a month</p>
+              <p className="pricing-credits"><span className="pricing-amount">{tier.credits}</span> free credits, one time</p>
               <ul className="pricing-points">
                 {tier.points.map((point) => <li key={point}>{point}</li>)}
               </ul>
@@ -151,7 +151,7 @@ export default function PricingPage({ signedIn = false, onSignIn }) {
 
       <section className="pricing-section" aria-labelledby="packs-title">
         <h2 id="packs-title">Credit packs</h2>
-        <p className="pricing-section-intro">Packs add to your free monthly credits. Free credits are always used first.</p>
+        <p className="pricing-section-intro">Packs add to your free signup credits. Free credits are always used first.</p>
         {result && <p className={`pricing-result pricing-result--${result.ok ? "ok" : "error"}`} role={result.ok ? "status" : "alert"}>{result.text}</p>}
         <div className="pricing-packs">
           {packs.map((pack) => <PackCard key={pack.code} pack={pack} shortCost={plans.short_credit_cost} signedIn={signedIn} onSignIn={onSignIn}
@@ -172,7 +172,7 @@ export default function PricingPage({ signedIn = false, onSignIn }) {
         <h3>What if a video fails?</h3>
         <p>If processing fails because of a problem on our side, your credits are returned automatically. Videos with no speech to transcribe still use their credits.</p>
         <h3>Do credits expire?</h3>
-        <p>Purchased credits never expire. Free monthly credits reset on the 1st of each month (IST) and don't carry over.</p>
+        <p>Purchased credits never expire. Your free signup credits are a one-time bonus; they are given once and do not renew.</p>
         <h3>Can I get a refund?</h3>
         <p>Within 7 days of purchase, if you've used less than 10% of a pack, email <a href={`mailto:${siteDetails.supportEmail}`}>{siteDetails.supportEmail}</a>.</p>
         <h3>Do I need an account?</h3>

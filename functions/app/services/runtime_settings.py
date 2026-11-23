@@ -34,10 +34,10 @@ class Editable:
 
 
 FREE, QUESTIONS, COSTS, RETENTION, PACKS = (
-    "Free credits per month", "Questions per day", "Feature costs", "Retention", "Credit packs")
+    "Free signup credits", "Questions per day", "Feature costs", "Retention", "Credit packs")
 
 EDITABLE: dict[str, Editable] = {e.key: e for e in (
-    Editable("user_monthly_credits", FREE, "Signed-in user", 0, 10_000),
+    Editable("user_monthly_credits", FREE, "One-time bonus per signed-in user", 0, 10_000),
     Editable("user_daily_questions", QUESTIONS, "Signed-in user", 0, 5000, "questions"),
     Editable("paid_daily_questions", QUESTIONS, "User with purchased credits", 0, 100_000, "questions"),
     Editable("short_credit_cost", COSTS, "One Short", 1, 1000),

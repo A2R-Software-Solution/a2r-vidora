@@ -93,7 +93,7 @@ export default function InputBox({ onAnalyze, loading, restoring = false, error,
         <span><span className="provider-icon yt">▶</span> YouTube</span>
       </div>
       <div className="hint reveal-up delay-4">
-        1 credit per minute of video. Sign in to get {plans.user_monthly_credits} free credits every month.{" "}
+        1 credit per minute of video. Sign in to get {plans.user_monthly_credits} free credits when you sign up.{" "}
         <SiteLink href="/pricing">Pricing</SiteLink>
       </div>
     </>

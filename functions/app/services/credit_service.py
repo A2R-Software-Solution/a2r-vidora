@@ -1,7 +1,7 @@
-"""Credit wallets: monthly free allowances, purchased balances and reservations.
+"""Credit wallets: one-time free signup credits, purchased balances and reservations.
 
-Only signed-in users get free credits (reset on the 1st of each IST month);
-guests are refused by the API before reaching this service.
+Only signed-in users get free credits, once (they never renew; free_used is a
+lifetime counter); guests are refused by the API before reaching this service.
 A reservation deducts credits immediately (free allowance first, then the
 purchased balance). It is later settled when the work succeeds, or released
 back to the buckets it came from when the work fails on our side. Every
@@ -169,13 +169,11 @@ def refund_on_failure(reason: str | None) -> bool:
 
 
 def roll_daily(account: CreditAccount, today: date) -> None:
-    """Resets the question counter each day and the free credits each month."""
+    """Resets the question counter each day. Free credits are a one-time bonus
+    and are never reset (free_month is kept only because the column exists)."""
     if account.daily_date != today:
         account.daily_date = today
         account.daily_chat_used = 0
-    if account.free_month != month_start(today):
-        account.free_month = month_start(today)
-        account.free_used = 0
 
 
 class CreditService:
@@ -353,9 +351,7 @@ class CreditService:
         note = f"failure:{reason or 'unknown'}"
         reservation.status = "released"
         roll_daily(account, ist_today())
-        # Free credits only return to the allowance of the month they came
-        # from; last month's allowance has already expired.
-        if reservation.free_amount and month_start(ist_today(reservation.created_at)) == account.free_month:
+        if reservation.free_amount:
             account.free_used = max(account.free_used - reservation.free_amount, 0)
             self._ledger(account, kind="release", bucket="free", amount=reservation.free_amount,
                          reservation_id=reservation.id, note=note)

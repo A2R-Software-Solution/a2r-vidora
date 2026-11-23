@@ -273,7 +273,7 @@ ${reason}`)) return;
 const SETTING_NOTES = {
   "Retention": "Applies to items created after the change. Existing items keep their expiry time.",
   "Credit packs": "Applies to new purchases. Past payments keep the price and credits they were bought with.",
-  "Free credits per month": "Applies immediately. Credits already used this month still count against the new limit.",
+  "Free signup credits": "A one-time bonus for every signed-in user; it never renews. Applies immediately, and credits a user already used still count against the new amount.",
 };
 
 function Settings() {

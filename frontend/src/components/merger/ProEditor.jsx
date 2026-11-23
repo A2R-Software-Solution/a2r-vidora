@@ -422,7 +422,7 @@ export default function ProEditor({ rules, credits, onMerged, onSettled }) {
               Same price as Simple mode: 1 credit per minute of selected audio, plus {rules.extra_track_credits} per extra part.
               Volume and fades play in the preview; the blend is added in the merged file.
             </p>
-            {!affordable && <p className="merger-note">You need {cost} credits. Free credits renew at midnight IST. <SiteLink href="/pricing">See pricing</SiteLink></p>}
+            {!affordable && <p className="merger-note">You need {cost} credits. <SiteLink href="/pricing">See pricing</SiteLink></p>}
             {attempted && formError && <p className="merger-error" role="alert">{formError}</p>}
             <label className="merger-consent">
               <input type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} />

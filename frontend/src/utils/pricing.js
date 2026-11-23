@@ -16,7 +16,7 @@ export const PACK_DETAILS = {
 
 export const pricingMeta = {
   label: "Pricing",
-  description: "Vidora AI pricing: free monthly credits with every account, and one-time credit packs from $2.59 that never expire.",
+  description: "Vidora AI pricing: free credits when you sign up, and one-time credit packs from $2.59 that never expire.",
 };
 
 export const SHORT_CREDIT_COST = 5;

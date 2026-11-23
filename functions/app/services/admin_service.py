@@ -4,7 +4,7 @@ from __future__ import annotations
 import uuid
 from datetime import date, datetime, time, timedelta, timezone
 
-from sqlalchemy import String, cast, extract, func, or_, select, text
+from sqlalchemy import String, cast, func, or_, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
@@ -73,18 +73,16 @@ class AdminService:
     async def credits_summary(self) -> dict:
         """Credits given to and used by signed-in users, this IST month and all time.
 
-        Free credits are a lazily reset monthly allowance with no ledger row, so
-        "free given" is users x the current allowance (an estimate for past
-        months if the allowance changed). Everything else comes from the ledger.
+        Free credits are a one-time signup bonus with no ledger row, so "free
+        given" is the signups in the window x the current bonus (an estimate if
+        the bonus changed since). Everything else comes from the ledger.
         """
         now = datetime.now(timezone.utc)
         month_begin = datetime.combine(month_start(ist_today(now)), time.min, tzinfo=IST)
-        allowance = settings.user_monthly_credits
-        ist_created = func.timezone("Asia/Kolkata", User.created_at)
-        month_index = extract("year", ist_created) * 12 + extract("month", ist_created)
-        user_months = await self._scalar(select(func.coalesce(
-            func.sum((now.astimezone(IST).year * 12 + now.astimezone(IST).month) - month_index + 1), 0)))
-        users_this_month = await self._scalar(select(func.count()).select_from(User).where(User.created_at <= now))
+        bonus = settings.user_monthly_credits
+        users_all = await self._scalar(select(func.count()).select_from(User))
+        users_this_month = await self._scalar(
+            select(func.count()).select_from(User).where(User.created_at >= month_begin))
 
         async def window(since: datetime | None, free_given: int) -> dict:
             stmt = (select(CreditLedgerEntry.kind, CreditLedgerEntry.bucket,
@@ -126,10 +124,10 @@ class AdminService:
         return {
             "sales_by_month": [{"month": m.date().isoformat(), "payments": int(n), "credits_sold": int(c or 0),
                                 "revenue_cents": int(r or 0)} for m, n, c, r in sales],
-            "free_allowance_per_user": allowance,
+            "free_bonus_per_user": bonus,
             "month_start": month_begin.date().isoformat(),
-            "this_month": await window(month_begin, users_this_month * allowance),
-            "all_time": await window(None, user_months * allowance),
+            "this_month": await window(month_begin, users_this_month * bonus),
+            "all_time": await window(None, users_all * bonus),
             "purchased_outstanding": await self._scalar(
                 select(func.coalesce(func.sum(CreditAccount.purchased_balance), 0))
                 .where(CreditAccount.user_id.is_not(None))),
@@ -198,11 +196,9 @@ class AdminService:
 
     @staticmethod
     def _user_row(u: User, balance, free_used, free_month) -> dict:
-        """Purchased credits plus what is left of this month's free allowance."""
+        """Purchased credits plus what is left of the one-time free bonus."""
         purchased = balance or 0
-        monthly = settings.user_monthly_credits
-        used = free_used if free_month == month_start(ist_today()) and free_used else 0
-        free_left = max(monthly - used, 0)
+        free_left = max(settings.user_monthly_credits - (free_used or 0), 0)
         return {"id": u.id, "email": u.email, "plan": u.plan, "is_admin": u.is_admin,
                 "purchased_balance": purchased, "free_left": free_left, "available": purchased + free_left,
                 "banned": u.banned_at is not None, "ban_reason": u.ban_reason, "created_at": u.created_at}

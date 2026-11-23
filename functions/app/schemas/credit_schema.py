@@ -2,8 +2,8 @@ from pydantic import BaseModel
 
 
 class CreditSummaryResponse(BaseModel):
-    """What the signed-in user can spend right now. Free credits reset on the
-    1st of each IST month; questions reset at midnight IST."""
+    """What the signed-in user can spend right now. Free credits are a one-time
+    signup bonus and never renew; questions reset at midnight IST."""
     free_left: int
     free_monthly: int
     purchased_balance: int

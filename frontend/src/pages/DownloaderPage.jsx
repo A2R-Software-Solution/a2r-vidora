@@ -221,7 +221,7 @@ export default function DownloaderPage({ signedIn }) {
 
               {quality && !affordable && (
                 <p className="dl-note" role="status">
-                  This needs {cost} credits and you have {available}. Free credits renew at midnight IST.{" "}
+                  This needs {cost} credits and you have {available}.{" "}
                   <SiteLink href="/pricing">See pricing</SiteLink>
                 </p>
               )}

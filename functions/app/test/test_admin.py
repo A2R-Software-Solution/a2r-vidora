@@ -90,9 +90,9 @@ class AdminApiTests(unittest.TestCase):
 
     def test_admin_can_read_credits_summary(self):
         self.as_user(is_admin=True)
-        self.admin.credits_summary = AsyncMock(return_value={"free_allowance_per_user": 40})
+        self.admin.credits_summary = AsyncMock(return_value={"free_bonus_per_user": 40})
         response = self.client.get("/admin/credits-summary")
-        self.assertEqual((response.status_code, response.json()), (200, {"free_allowance_per_user": 40}))
+        self.assertEqual((response.status_code, response.json()), (200, {"free_bonus_per_user": 40}))
 
     def test_adjust_records_admin_email_and_returns_balance(self):
         self.as_user(is_admin=True)
@@ -199,4 +199,4 @@ class CreditsSummaryTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual((this_month["total_given"], this_month["total_used"]), (430, 45))
         self.assertEqual(result["all_time"]["free_given"], 240)
         self.assertEqual(result["sales_by_month"], [{"month": "2026-11-01", "payments": 2, "credits_sold": 420, "revenue_cents": 1000}])
-        self.assertEqual((result["free_allowance_per_user"], result["purchased_outstanding"]), (40, 250))
+        self.assertEqual((result["free_bonus_per_user"], result["purchased_outstanding"]), (40, 250))

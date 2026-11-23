@@ -486,7 +486,7 @@ export default function SongMergerPage({ signedIn = false }) {
                   <span>1 credit per minute, plus {rules.extra_track_credits} per extra track. Credits come back if the merge fails on our side.</span>
                 </p>
               </div>
-              {!affordable && <p className="merger-note">You need {cost} credits. Free credits renew at midnight IST. <SiteLink href="/pricing">See pricing</SiteLink></p>}
+              {!affordable && <p className="merger-note">You need {cost} credits. <SiteLink href="/pricing">See pricing</SiteLink></p>}
               {attempted && formError && <p className="merger-error" role="alert">{formError}</p>}
               <label className="merger-consent">
                 <input type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} />

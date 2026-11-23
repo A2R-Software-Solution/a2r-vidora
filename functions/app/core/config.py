@@ -133,8 +133,9 @@ class Settings(BaseSettings):
     retrieval_min_candidates: int = Field(gt=0)
     retrieval_rrf_k: int = Field(gt=0)
     # Credits: 1 credit = 1 started minute of analysed video. Only signed-in
-    # users get free credits; they reset on the 1st of each IST calendar month
-    # and never roll over. Question limits reset at midnight IST.
+    # users get free credits, once: a signup bonus that never renews (the name
+    # user_monthly_credits is kept so stored settings and .env keep working).
+    # Question limits reset at midnight IST.
     user_monthly_credits: int = Field(default=80, ge=0)
     short_credit_cost: int = Field(default=5, gt=0)
     user_daily_questions: int = Field(default=50, ge=0)
