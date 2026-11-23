@@ -47,10 +47,23 @@ export const getQaHistory = (videoId) => {
 
 export const suggestShorts = (videoId) => apiClient.post(`/videos/${videoId}/shorts/suggestions`);
 
-export const createShort = (videoId, clip) => apiClient.post(`/videos/${videoId}/shorts`, {
+export const createShort = (videoId, clip, options = {}) => apiClient.post(`/videos/${videoId}/shorts`, {
   start_time: clip.start_time,
   end_time: clip.end_time,
+  ...options,
 });
+// The transcript captions of a clip, to edit before rendering (free).
+export const getShortDraft = (videoId, clip, signal) => apiClient.get(`/videos/${videoId}/shorts/draft`, {
+  params: { start_time: clip.start_time, end_time: clip.end_time }, signal,
+});
+// Fonts, ratios, presets and limits the editor offers; the server validates against the same lists.
+export const getShortOptions = (signal) => apiClient.get("/shorts/options", { signal });
+export const listShortPresets = () => apiClient.get("/shorts/presets");
+export const createShortPreset = (name, style) => apiClient.post("/shorts/presets", { name, style });
+export const deleteShortPreset = (presetId) => apiClient.delete(`/shorts/presets/${presetId}`);
+export const getShort = (videoId, shortId, signal) => apiClient.get(`/videos/${videoId}/shorts/${shortId}`, { signal });
+// Hindi (Devanagari) caption lines as Hinglish.
+export const transliterateCaptions = (texts) => apiClient.post("/shorts/transliterate", { texts });
 export const listShorts = (videoId, signal) => apiClient.get(`/videos/${videoId}/shorts`, { signal });
 export const getShortDownload = (videoId, shortId, download = true) =>
   apiClient.get(`/videos/${videoId}/shorts/${shortId}/download`, { params: { download } });

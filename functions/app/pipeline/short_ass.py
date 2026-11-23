@@ -4,9 +4,12 @@ Pure functions, no I/O, so the output is easy to test. Sizes are scaled by
 min(width, height) / 1080, the same rule the browser preview uses.
 """
 import re
-from app.pipeline.short_catalog import FONTS, POSITIONS, RATIOS, SIZE_REFERENCE
+from app.pipeline.short_catalog import DEVANAGARI_FONT, FONTS, POSITIONS, RATIOS, SIZE_REFERENCE
 
 _UNSAFE = re.compile(r"[\x00-\x1f\x7f{}\\]")
+
+
+_DEVANAGARI = re.compile("[ऀ-ॿ]")
 
 
 def output_size(ratio: str) -> tuple[int, int]:
@@ -89,5 +92,8 @@ def build_ass(cues: list[dict], style: dict, ratio: str) -> str:
         if not text or cue["end"] <= cue["start"]:
             continue
         body = _karaoke(text, cue["end"] - cue["start"]) if highlight else text
+        if _DEVANAGARI.search(text):
+            # The Latin fonts have no Devanagari glyphs; use the bundled one for this line.
+            body = "{\\fn" + DEVANAGARI_FONT["family"] + "\\b1}" + body
         lines.append(f"Dialogue: 0,{_timestamp(cue['start'])},{_timestamp(cue['end'])},Default,,0,0,0,,{body}")
     return "\n".join(lines) + "\n"

@@ -388,6 +388,28 @@ class RouteTests(unittest.TestCase):
             self.assertEqual(self.send("POST", "/shorts/presets", {"name": "x", "style": {}}).status_code, 429)
             self.assertEqual(self.send("DELETE", f"/shorts/presets/{uuid.uuid4()}").status_code, 204)
 
+    def test_transliterate_needs_an_account_and_is_rate_limited(self):
+        body = {"texts": ["मुझे नहीं चाहिए"]}
+        self.assertEqual(self.send("POST", "/shorts/transliterate", body).status_code, 401)
+        self.user = uuid.uuid4()
+        convert = AsyncMock(side_effect=lambda lines: ["mujhe {x} nahi\\chahiye"] * len(lines))
+        with patch.object(short_preset_routes, "transliterate_to_hinglish", convert):
+            for _ in range(20):
+                response = self.send("POST", "/shorts/transliterate", body)
+                self.assertEqual(response.status_code, 200)
+            # Subtitle markup in the model's output is stripped.
+            self.assertEqual(response.json(), {"texts": ["mujhe x nahi chahiye"]})
+            self.assertEqual(self.send("POST", "/shorts/transliterate", body).status_code, 429)
+
+    def test_transliterate_validates_input_and_survives_provider_errors(self):
+        self.user = uuid.uuid4()
+        self.assertEqual(self.send("POST", "/shorts/transliterate", {"texts": []}).status_code, 422)
+        self.assertEqual(self.send("POST", "/shorts/transliterate", {"texts": ["x"] * 61}).status_code, 422)
+        self.assertEqual(self.send("POST", "/shorts/transliterate", {"texts": ["x" * 121]}).status_code, 422)
+        failing = AsyncMock(side_effect=short_preset_routes.GroqRequestError("down"))
+        with patch.object(short_preset_routes, "transliterate_to_hinglish", failing):
+            self.assertEqual(self.send("POST", "/shorts/transliterate", {"texts": ["a"]}).status_code, 503)
+
     def test_invalid_preset_style_is_a_422(self):
         self.user = uuid.uuid4()
         self.assertEqual(self.send("POST", "/shorts/presets", {"name": "x", "style": {"size": 9999}}).status_code, 422)
@@ -416,3 +438,15 @@ class RouteTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class DevanagariTests(unittest.TestCase):
+    def test_hindi_lines_use_the_devanagari_font_and_english_ones_do_not(self):
+        style = ShortStyle().model_dump()
+        ass = build_ass([{"start": 0, "end": 2, "text": "मुझे नहीं चाहिए"}, {"start": 2, "end": 4, "text": "plain english"}], style, "9:16")
+        hindi, english = [line for line in ass.splitlines() if line.startswith("Dialogue")]
+        self.assertIn("{\\fnNoto Sans Devanagari\\b1}मुझे नहीं चाहिए", hindi)
+        self.assertNotIn("Noto", english)
+
+    def test_the_font_is_bundled(self):
+        self.assertTrue(short_catalog.devanagari_font_file().is_file())

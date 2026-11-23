@@ -90,7 +90,7 @@ export default function WorkspacePage({ video, active = true, onSignIn, signedIn
               <ChatPanel videoId={currentVideo?.id} videoTitle={currentVideo?.title} youtubeUrl={currentVideo?.youtube_url} onSeek={handleSeek} ready={currentVideo?.status === "completed"} progress={currentVideo} active={active && !reels} onSignIn={onSignIn} signedIn={signedIn} />
             </div>}
             {hasOpenedReels && <div hidden={!reels} inert={!reels}>
-              {currentVideo?.status === "completed" ? <ShortSuggestions key={currentVideo.id} videoId={currentVideo.id} onSeek={handleSeek} active={active && reels} /> :
+              {currentVideo?.status === "completed" ? <ShortSuggestions key={currentVideo.id} videoId={currentVideo.id} youtubeUrl={currentVideo.youtube_url} onSeek={handleSeek} active={active && reels} /> :
                 <div className="reel-preparation" role="status">
                   <h2>{currentVideo?.status === "failed" ? "Couldn't prepare this video" : "Preparing your video"}</h2>
                   <p>{failure ? failure.text : "We're processing the video's audio to find moments for your reel. Clip suggestions will unlock here when it's ready."}</p>

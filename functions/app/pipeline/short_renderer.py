@@ -8,7 +8,7 @@ from pathlib import Path
 from app.core.config import settings
 from app.middleware.logging import logger
 from app.pipeline.short_ass import build_ass, output_size
-from app.pipeline.short_catalog import FONTS, font_file
+from app.pipeline.short_catalog import FONTS, devanagari_font_file, font_file
 from app.pipeline.youtube_downloader import (YouTubeBotChallengeError, is_youtube_bot_challenge, pot_cli_args,
                                              with_cookie_failover)
 from app.schemas.short_schema import ShortOptions
@@ -102,6 +102,8 @@ def _log_environment(ffmpeg):
         def listing(flag):
             return subprocess.run([ffmpeg, "-hide_banner", flag], capture_output=True, text=True, timeout=20).stdout
         missing_fonts = [key for key in FONTS if not font_file(key).is_file()]
+        if not devanagari_font_file().is_file():
+            missing_fonts.append("devanagari")
         logger.info("short_render_environment libx264=%s ass_filter=%s missing_fonts=%s",
                     " libx264 " in listing("-encoders"), " ass " in listing("-filters"), missing_fonts or "none")
     except Exception:
@@ -116,6 +118,8 @@ def prepare_captions(directory, options, cues):
     fonts = directory / "fonts"
     fonts.mkdir(exist_ok=True)
     shutil.copyfile(font_file(style["font"]), fonts / FONTS[style["font"]]["file"])
+    # Hindi captions: the Latin fonts have no Devanagari glyphs.
+    shutil.copyfile(devanagari_font_file(), fonts / devanagari_font_file().name)
 
 
 def render_short(url, start, end, chunks, directory, options=None):

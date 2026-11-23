@@ -26,6 +26,9 @@ RATIOS = {
     "16:9": (1280, 720),
 }
 
+# Captions in Devanagari (Hindi) use this font: none of the Latin fonts above has the glyphs.
+DEVANAGARI_FONT = {"file": "NotoSansDevanagari-Bold.ttf", "family": "Noto Sans Devanagari"}
+
 BACKGROUNDS = ("blur", "solid", "fill")
 POSITIONS = ("top", "middle", "bottom")
 
@@ -50,6 +53,10 @@ PRESETS = {
             "outline": True, "outline_color": "#000000", "outline_width": 5, "box": False,
             "position": "middle", "uppercase": True, "highlight": False}},
 }
+
+
+def devanagari_font_file() -> Path:
+    return FONT_DIR / DEVANAGARI_FONT["file"]
 
 
 def font_file(key: str) -> Path:

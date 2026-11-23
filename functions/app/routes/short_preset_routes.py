@@ -1,7 +1,9 @@
 import uuid
 from fastapi import Depends, HTTPException, Request, Response
+from pydantic import BaseModel, ConfigDict, Field
 from app.core.rate_limit import SIGN_IN_REQUIRED, limiter, rate_limit_user
 from app.deps import get_db
+from app.integration.groq_client import GroqRequestError, transliterate_to_hinglish
 from app.pipeline.short_catalog import BACKGROUNDS, FONTS, POSITIONS, PRESETS, RATIOS, SIZE_REFERENCE
 from app.schemas.short_schema import (MAX_CAPTIONS, MAX_CAPTION_CHARS, ShortPresetRequest, ShortPresetResponse,
                                       ShortStyle)
@@ -55,3 +57,29 @@ async def delete_preset(preset_id: uuid.UUID, request: Request, response: Respon
                         db=Depends(get_db), user_id=Depends(rate_limit_user)):
     await ShortPresetService(db).delete(_signed_in(user_id), preset_id)
     return Response(status_code=204)
+
+
+class TransliterateRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    texts: list[str] = Field(min_length=1, max_length=MAX_CAPTIONS)
+
+
+def _plain(text: str) -> str:
+    # Same cleaning as captions: no subtitle markup or control characters.
+    unsafe = set("{}\\<>")
+    return " ".join("".join(" " if ord(c) < 32 or c in unsafe else c for c in text).split())[:MAX_CAPTION_CHARS]
+
+
+@router.post("/transliterate")
+@limiter.limit("20/hour")
+async def transliterate(payload: TransliterateRequest, request: Request, response: Response,
+                        user_id=Depends(rate_limit_user)):
+    """Hindi caption lines as Hinglish, for the editor. Free; needs an account."""
+    _signed_in(user_id)
+    if any(len(text) > MAX_CAPTION_CHARS for text in payload.texts):
+        raise HTTPException(422, "A caption line is too long.")
+    try:
+        lines = await transliterate_to_hinglish(payload.texts)
+    except GroqRequestError:
+        raise HTTPException(503, "Hinglish conversion is temporarily unavailable.") from None
+    return {"texts": [_plain(line) or original for line, original in zip(lines, payload.texts)]}
