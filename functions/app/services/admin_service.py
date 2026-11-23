@@ -4,7 +4,7 @@ from __future__ import annotations
 import uuid
 from datetime import date, datetime, time, timedelta, timezone
 
-from sqlalchemy import String, cast, func, or_, select, text
+from sqlalchemy import String, cast, extract, func, or_, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
@@ -14,7 +14,7 @@ from app.models.qa_log_model import QALog
 from app.models.short_model import Short
 from app.models.user_model import User
 from app.models.video_model import Video, VideoStatus
-from app.services.credit_service import CreditService, ist_today, month_start
+from app.services.credit_service import IST, CreditService, ist_today, month_start
 
 
 def _like(term: str) -> str:
@@ -68,6 +68,71 @@ class AdminService:
             "stt_seconds_24h": stt_seconds,
             "stt_seconds_limit_day": settings.stt_audio_seconds_per_day,
             "shorts_24h": await self._scalar(select(func.count()).select_from(Short).where(Short.created_at >= since)),
+        }
+
+    async def credits_summary(self) -> dict:
+        """Credits given to and used by signed-in users, this IST month and all time.
+
+        Free credits are a lazily reset monthly allowance with no ledger row, so
+        "free given" is users x the current allowance (an estimate for past
+        months if the allowance changed). Everything else comes from the ledger.
+        """
+        now = datetime.now(timezone.utc)
+        month_begin = datetime.combine(month_start(ist_today(now)), time.min, tzinfo=IST)
+        allowance = settings.user_monthly_credits
+        ist_created = func.timezone("Asia/Kolkata", User.created_at)
+        month_index = extract("year", ist_created) * 12 + extract("month", ist_created)
+        user_months = await self._scalar(select(func.coalesce(
+            func.sum((now.astimezone(IST).year * 12 + now.astimezone(IST).month) - month_index + 1), 0)))
+        users_this_month = await self._scalar(select(func.count()).select_from(User).where(User.created_at <= now))
+
+        async def window(since: datetime | None, free_given: int) -> dict:
+            stmt = (select(CreditLedgerEntry.kind, CreditLedgerEntry.bucket,
+                           func.sign(CreditLedgerEntry.amount), func.sum(CreditLedgerEntry.amount))
+                    .join(CreditAccount, CreditAccount.id == CreditLedgerEntry.account_id)
+                    .where(CreditAccount.user_id.is_not(None))
+                    .group_by(CreditLedgerEntry.kind, CreditLedgerEntry.bucket, func.sign(CreditLedgerEntry.amount)))
+            if since is not None:
+                stmt = stmt.where(CreditLedgerEntry.created_at >= since)
+            totals: dict[tuple, int] = {}
+            for kind, bucket, sign, amount in (await self.db.execute(stmt)).all():
+                totals[(kind, bucket, int(sign))] = totals.get((kind, bucket, int(sign)), 0) + int(amount or 0)
+
+            def total(kind: str, bucket: str | None = None, sign: int | None = None) -> int:
+                return sum(v for (k, b, s), v in totals.items()
+                           if k == kind and bucket in (None, b) and sign in (None, s))
+
+            # Reserve rows are negative and release (refund of a failed job) rows positive.
+            free_used = -(total("reserve", "free") + total("release", "free"))
+            purchased_used = -(total("reserve", "purchased") + total("release", "purchased"))
+            purchased_given = total("purchase")
+            admin_added = total("adjust", sign=1)
+            given = free_given + purchased_given + admin_added
+            used = free_used + purchased_used
+            return {
+                "free_given": free_given, "purchased_given": purchased_given, "admin_added": admin_added,
+                "total_given": given, "free_used": free_used, "purchased_used": purchased_used,
+                "total_used": used, "taken_back": -(total("adjust", sign=-1) + total("refund")),
+                "used_percent": round(used * 100 / given, 1) if given else None,
+            }
+
+        # Paid packs per IST month, newest first; a refunded or disputed payment is no longer a sale.
+        paid_month = func.date_trunc("month", func.timezone("Asia/Kolkata", Payment.paid_at))
+        sales = (await self.db.execute(
+            select(paid_month, func.count(), func.sum(Payment.credits), func.sum(Payment.amount_cents))
+            .where(Payment.status == "paid", Payment.paid_at.is_not(None))
+            .group_by(paid_month).order_by(paid_month.desc()).limit(12))).all()
+
+        return {
+            "sales_by_month": [{"month": m.date().isoformat(), "payments": int(n), "credits_sold": int(c or 0),
+                                "revenue_cents": int(r or 0)} for m, n, c, r in sales],
+            "free_allowance_per_user": allowance,
+            "month_start": month_begin.date().isoformat(),
+            "this_month": await window(month_begin, users_this_month * allowance),
+            "all_time": await window(None, user_months * allowance),
+            "purchased_outstanding": await self._scalar(
+                select(func.coalesce(func.sum(CreditAccount.purchased_balance), 0))
+                .where(CreditAccount.user_id.is_not(None))),
         }
 
     async def users(self, q: str | None, limit: int, offset: int) -> list[dict]:

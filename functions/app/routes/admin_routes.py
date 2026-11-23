@@ -25,6 +25,12 @@ async def overview(request: Request, response: Response, db=Depends(get_db)):
     return await AdminService(db).overview()
 
 
+@router.get("/credits-summary")
+@limiter.limit("30/minute")
+async def credits_summary(request: Request, response: Response, db=Depends(get_db)):
+    return await AdminService(db).credits_summary()
+
+
 @router.get("/timeseries")
 @limiter.limit("60/minute")
 async def timeseries(request: Request, response: Response, days: int = Query(7, ge=7, le=90), db=Depends(get_db)):

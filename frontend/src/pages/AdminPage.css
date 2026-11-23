@@ -141,3 +141,8 @@
 .page.page--admin { padding-top: 0; }
 .ad-topbar { margin-bottom: 4px; }
 .ad-na { display: grid; place-items: center; min-height: 160px; margin: 0; color: #8a7a6e; font-size: 15px; font-weight: 600; }
+
+.ad-credits { margin-bottom: 20px; }
+.ad-credits-note { display: block; font-size: 12px; font-weight: 400; }
+.ad-credits-total td { font-weight: 700; color: #1f1612; background: rgba(255, 107, 53, .06); }
+.ad-credits-sub { margin: 22px 0 10px; font-size: 16px; color: #1f1612; }

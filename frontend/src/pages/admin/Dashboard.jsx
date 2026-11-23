@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import { getActivity, getOverview, getTimeseries } from "../../api/adminApi";
+import { getActivity, getCreditsSummary, getOverview, getTimeseries } from "../../api/adminApi";
 import SiteLink from "../../components/common/SiteLink";
 import { config } from "../../config";
 import Icon from "./Icon";
+import SalesTable from "./SalesTable";
 import { LineChart, Sparkline } from "./charts";
 
 const RANGES = [[7, "Last 7 Days"], [30, "Last 30 Days"], [90, "Last 90 Days"]];
@@ -45,6 +46,41 @@ function useLoad(load, key) {
 
 const loadOverview = (signal) => getOverview(signal);
 const loadActivity = (signal) => getActivity(8, signal);
+const loadCredits = (signal) => getCreditsSummary(signal);
+
+const CREDIT_ROWS = [
+  ["Free credits given", "free_given", "Monthly allowance x users (estimate for earlier months)"],
+  ["Purchased credits given", "purchased_given", "From paid packs"],
+  ["Added by admin", "admin_added", "Manual grants"],
+  ["Total given", "total_given", null, true],
+  ["Free credits used", "free_used", "Net of refunds for failed jobs"],
+  ["Purchased credits used", "purchased_used", "Net of refunds for failed jobs"],
+  ["Total used", "total_used", null, true],
+];
+
+function CreditsCard({ credits }) {
+  const c = credits.data;
+  const percent = (value) => (value == null ? NA : `${value}%`);
+  return <section className="ad-card ad-credits" aria-labelledby="ad-credits">
+    <div className="ad-card-head"><h2 id="ad-credits"><Icon name="bolt" size={20} /> Credits Given vs Used</h2>
+      {c && <span className="ad-muted">{c.free_allowance_per_user} free credits per user per month · signed-in users only</span>}</div>
+    {credits.error ? <p className="admin-error" role="alert">{credits.error}</p> : !c ? <p className="ad-muted">Loading…</p> : (
+      <div className="admin-table-wrap"><table className="admin-table">
+        <thead><tr><th>Credits</th><th>This month</th><th>All time</th></tr></thead>
+        <tbody>
+          {CREDIT_ROWS.map(([label, key, note, bold]) => (
+            <tr key={key} className={bold ? "ad-credits-total" : undefined}>
+              <td>{label}{note && <span className="ad-muted ad-credits-note">{note}</span>}</td>
+              <td>{c.this_month[key]}</td><td>{c.all_time[key]}</td>
+            </tr>))}
+          <tr><td>Used of given</td><td>{percent(c.this_month.used_percent)}</td><td>{percent(c.all_time.used_percent)}</td></tr>
+          <tr><td>Purchased credits still unspent<span className="ad-muted ad-credits-note">Users&apos; remaining balance</span></td>
+            <td colSpan={2}>{c.purchased_outstanding}</td></tr>
+        </tbody>
+      </table></div>)}
+    {c && <><h3 className="ad-credits-sub">Credits sold per month</h3><SalesTable rows={c.sales_by_month} /></>}
+  </section>;
+}
 
 function Stat({ icon, tint, color, label, value, chip, chipTone = "up", action, spark }) {
   return <div className="ad-stat">
@@ -65,6 +101,7 @@ export default function Dashboard({ user, go }) {
   const loadSeries = (signal) => getTimeseries(days, signal);
   const series = useLoad(loadSeries, days);
   const activity = useLoad(loadActivity, "activity");
+  const credits = useLoad(loadCredits, "credits");
   const name = (user?.displayName || "Admin").split(" ")[0];
   const o = overview.data;
   const s = series.data;
@@ -128,6 +165,8 @@ export default function Dashboard({ user, go }) {
           </ul>)}
       </section>
     </div>
+
+    <CreditsCard credits={credits} />
 
     <div className="ad-row ad-row--bottom">
       <section className="ad-card" aria-labelledby="ad-quick">

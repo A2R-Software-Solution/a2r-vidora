@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
-import { adjustCredits, banUser, getList, getSettings, getUserDetail, saveSettings, unbanUser } from "../api/adminApi";
+import { adjustCredits, banUser, getCreditsSummary, getList, getSettings, getUserDetail, saveSettings, unbanUser } from "../api/adminApi";
 import { signOut } from "firebase/auth";
 import { auth } from "../firebase";
 import SiteLink from "../components/common/SiteLink";
 import { config } from "../config";
 import Dashboard from "./admin/Dashboard";
 import Icon from "./admin/Icon";
+import SalesTable from "./admin/SalesTable";
 import "./AdminPage.css";
 
 const PAGE_SIZE = 25;
@@ -73,6 +74,18 @@ function Table({ columns, rows, onRowClick }) {
       </table>
     </div>
   );
+}
+
+function PaymentsSummary() {
+  const [rows, setRows] = useState(null);
+  useEffect(() => {
+    const controller = new AbortController();
+    getCreditsSummary(controller.signal).then((r) => setRows(r.data.sales_by_month)).catch(() => {
+      if (!controller.signal.aborted) setRows([]);
+    });
+    return () => controller.abort();
+  }, []);
+  return <><h2>Credits sold per month</h2><SalesTable rows={rows} /><h2>All payments</h2></>;
 }
 
 function ListTab({ resource, onOpenUser }) {
@@ -409,6 +422,7 @@ export default function AdminPage({ user, onSignIn }) {
           ? <UserDetail userId={userId} onBack={() => setUserId(null)} />
           : <ListTab resource="users" onOpenUser={(row) => setUserId(row.id)} />)}
         {tab === "settings" && <Settings />}
+        {tab === "payments" && <PaymentsSummary />}
         {TABS[tab] && tab !== "users" && <ListTab key={tab} resource={tab} />}
       </main>
     </div>

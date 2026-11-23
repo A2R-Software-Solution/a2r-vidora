@@ -84,6 +84,16 @@ class AdminApiTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json(), {"users_total": 1})
 
+    def test_non_admins_cannot_read_credits_summary(self):
+        self.as_user(is_admin=False)
+        self.assertEqual(self.client.get("/admin/credits-summary").status_code, 403)
+
+    def test_admin_can_read_credits_summary(self):
+        self.as_user(is_admin=True)
+        self.admin.credits_summary = AsyncMock(return_value={"free_allowance_per_user": 40})
+        response = self.client.get("/admin/credits-summary")
+        self.assertEqual((response.status_code, response.json()), (200, {"free_allowance_per_user": 40}))
+
     def test_adjust_records_admin_email_and_returns_balance(self):
         self.as_user(is_admin=True)
         target = uuid.uuid4()
@@ -166,3 +176,27 @@ class PlansApiTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class CreditsSummaryTests(unittest.IsolatedAsyncioTestCase):
+    async def test_given_and_used_are_split_by_bucket_and_net_of_refunds(self):
+        from datetime import datetime
+        from app.services.admin_service import AdminService
+
+        def scalar(value):
+            return Mock(scalar_one=Mock(return_value=value))
+
+        def rows(*items):
+            return Mock(all=Mock(return_value=list(items)))
+        month = rows(("reserve", "free", -1, -30), ("release", "free", 1, 5), ("reserve", "purchased", -1, -20),
+                     ("purchase", "purchased", 1, 300), ("adjust", "purchased", 1, 10), ("adjust", "purchased", -1, -4))
+        db = Mock(execute=AsyncMock(side_effect=[scalar(6), scalar(3), rows((datetime(2026, 11, 1), 2, 420, 1000)), month, month, scalar(250)]))
+        with patch("app.services.admin_service.settings", Mock(user_monthly_credits=40)):
+            result = await AdminService(db).credits_summary()
+        this_month = result["this_month"]
+        self.assertEqual((this_month["free_given"], this_month["free_used"], this_month["purchased_used"]), (120, 25, 20))
+        self.assertEqual((this_month["purchased_given"], this_month["admin_added"], this_month["taken_back"]), (300, 10, 4))
+        self.assertEqual((this_month["total_given"], this_month["total_used"]), (430, 45))
+        self.assertEqual(result["all_time"]["free_given"], 240)
+        self.assertEqual(result["sales_by_month"], [{"month": "2026-11-01", "payments": 2, "credits_sold": 420, "revenue_cents": 1000}])
+        self.assertEqual((result["free_allowance_per_user"], result["purchased_outstanding"]), (40, 250))
