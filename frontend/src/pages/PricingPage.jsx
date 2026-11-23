@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import SiteLink from "../components/common/SiteLink";
-import { getPacks } from "../api/billingApi";
-import { useCredits } from "../hooks/useCredits";
+import { createOrder, getPacks, verifyPayment } from "../api/billingApi";
+import { refreshCredits, useCredits } from "../hooks/useCredits";
+import { checkoutError, openCheckout } from "../utils/checkout";
 import { usePlans } from "../hooks/usePlans";
 import { siteDetails } from "../content/siteDetails";
 import {
@@ -33,7 +34,7 @@ function YourCredits({ credits }) {
   );
 }
 
-function PackCard({ pack, shortCost, signedIn, onSignIn }) {
+function PackCard({ pack, shortCost, signedIn, onSignIn, onBuy, busy, buying }) {
   const details = PACK_DETAILS[pack.code];
   const { videos, videoMinutes, shorts } = packEquivalents(pack.credits, shortCost);
   return (
@@ -53,7 +54,8 @@ function PackCard({ pack, shortCost, signedIn, onSignIn }) {
         <li>Credits never expire</li>
       </ul>
       {signedIn
-        ? <button type="button" className="pricing-buy" disabled>Coming soon</button>
+        ? <button type="button" className="pricing-buy" onClick={() => onBuy(pack)} disabled={busy}>
+            {buying ? "Opening payment…" : `Buy ${pack.credits} credits`}</button>
         : <button type="button" className="pricing-buy" onClick={onSignIn}>Sign in to buy</button>}
     </article>
   );
@@ -61,8 +63,45 @@ function PackCard({ pack, shortCost, signedIn, onSignIn }) {
 
 export default function PricingPage({ signedIn = false, onSignIn }) {
   const [packs, setPacks] = useState(FALLBACK_PACKS);
+  const [buying, setBuying] = useState("");
+  const [result, setResult] = useState(null);
+  const busy = useRef(false);
   const credits = useCredits();
   const plans = usePlans();
+
+  // Razorpay credits a captured payment at once; a slower one is credited by its webhook, so re-check a few times.
+  const waitForCredits = async () => {
+    for (const delay of [0, 3000, 6000, 12000]) {
+      if (delay) await new Promise((resolve) => setTimeout(resolve, delay));
+      await refreshCredits();
+    }
+  };
+
+  const buy = async (pack) => {
+    if (busy.current) return;
+    busy.current = true;
+    setBuying(pack.code);
+    setResult(null);
+    try {
+      const { data: order } = await createOrder(pack.code);
+      const paid = await openCheckout(order, { description: `${order.credits} Vidora AI credits` });
+      setBuying("");
+      const { data } = await verifyPayment(paid);
+      if (data.status === "paid") {
+        setResult({ ok: true, text: `Payment received. ${data.credits} credits were added to your account.` });
+        void refreshCredits();
+      } else {
+        setResult({ ok: true, text: "Payment received. Your credits will show up in a moment." });
+        void waitForCredits();
+      }
+    } catch (error) {
+      const text = checkoutError(error);
+      if (text) setResult({ ok: false, text });
+    } finally {
+      busy.current = false;
+      setBuying("");
+    }
+  };
 
   useEffect(() => {
     const controller = new AbortController();
@@ -113,10 +152,12 @@ export default function PricingPage({ signedIn = false, onSignIn }) {
       <section className="pricing-section" aria-labelledby="packs-title">
         <h2 id="packs-title">Credit packs</h2>
         <p className="pricing-section-intro">Packs add to your free monthly credits. Free credits are always used first.</p>
+        {result && <p className={`pricing-result pricing-result--${result.ok ? "ok" : "error"}`} role={result.ok ? "status" : "alert"}>{result.text}</p>}
         <div className="pricing-packs">
-          {packs.map((pack) => <PackCard key={pack.code} pack={pack} shortCost={plans.short_credit_cost} signedIn={signedIn} onSignIn={onSignIn} />)}
+          {packs.map((pack) => <PackCard key={pack.code} pack={pack} shortCost={plans.short_credit_cost} signedIn={signedIn} onSignIn={onSignIn}
+            onBuy={buy} busy={!!buying} buying={buying === pack.code} />)}
         </div>
-        <p className="pricing-footnote">Prices in US dollars. Online payments are launching soon.</p>
+        <p className="pricing-footnote">Prices in US dollars. Payments are handled securely by Razorpay.</p>
       </section>
 
       <section className="pricing-section" aria-labelledby="perks-title">

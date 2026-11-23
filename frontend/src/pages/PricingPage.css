@@ -40,6 +40,9 @@
 .pricing-pack:not(.pricing-pack--featured) .pricing-buy:not(:disabled):hover { background: #fff1e5; }
 .pricing-tier-note { margin: 0; padding: 12px 0 2px; color: #786457; font-size: 14px; }
 
+.pricing-result { margin: 0 0 18px; padding: 14px 16px; border-radius: 12px; font-size: 15px; line-height: 1.5; }
+.pricing-result--ok { background: #e8f6ec; color: #22663a; }
+.pricing-result--error { background: #fdecea; color: #a8342a; }
 .pricing-footnote { margin: 18px 0 0; color: #786457; font-size: 13px; }
 
 .pricing-perks { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin: 0; padding: 0; list-style: none; }
