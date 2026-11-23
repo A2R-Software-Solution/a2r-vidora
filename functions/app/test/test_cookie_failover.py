@@ -71,3 +71,17 @@ class CookieFailoverTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class PotProviderArgsTests(unittest.TestCase):
+    def test_disabled_without_url(self):
+        with patch.object(downloader.settings, "pot_provider_url", None):
+            self.assertEqual(downloader.pot_extractor_args(), {})
+            self.assertEqual(downloader.pot_cli_args(), [])
+
+    def test_url_is_passed_to_yt_dlp_in_both_forms(self):
+        with patch.object(downloader.settings, "pot_provider_url", " https://pot.example.run.app "):
+            self.assertEqual(downloader.pot_extractor_args(),
+                             {"youtubepot-bgutilhttp": {"base_url": ["https://pot.example.run.app"]}})
+            self.assertEqual(downloader.pot_cli_args(),
+                             ["--extractor-args", "youtubepot-bgutilhttp:base_url=https://pot.example.run.app"])

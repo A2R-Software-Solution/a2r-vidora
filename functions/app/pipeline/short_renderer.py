@@ -9,7 +9,8 @@ from app.core.config import settings
 from app.middleware.logging import logger
 from app.pipeline.short_ass import build_ass, output_size
 from app.pipeline.short_catalog import FONTS, font_file
-from app.pipeline.youtube_downloader import YouTubeBotChallengeError, is_youtube_bot_challenge, with_cookie_failover
+from app.pipeline.youtube_downloader import (YouTubeBotChallengeError, is_youtube_bot_challenge, pot_cli_args,
+                                             with_cookie_failover)
 from app.schemas.short_schema import ShortOptions
 
 
@@ -132,7 +133,7 @@ def render_short(url, start, end, chunks, directory, options=None):
     def download(cookie_path):
         # Fetch only the requested section, not a multi-hour source video.
         _run([sys.executable, "-m", "yt_dlp", "--no-playlist", "--no-warnings",
-              "--cookies", cookie_path, "--js-runtimes", "deno",
+              "--cookies", cookie_path, "--js-runtimes", "deno", *pot_cli_args(),
               "--socket-timeout", str(settings.download_timeout_seconds),
               "--retries", str(settings.download_retries),
               "--download-sections", f"*{start}-{end}", "--force-keyframes-at-cuts",

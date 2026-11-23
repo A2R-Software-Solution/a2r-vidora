@@ -21,6 +21,7 @@ from app.pipeline.youtube_downloader import (
     with_cookie_failover,
     _resolve_js_runtime,
     is_youtube_bot_challenge,
+    pot_extractor_args,
 )
 
 
@@ -46,6 +47,7 @@ def _base_options(cookiefile: str, output_dir: str) -> dict:
         "no_warnings": True,
         "logger": _YtDlpLogger(),
         "cookiefile": cookiefile,
+        "extractor_args": pot_extractor_args(),
         "js_runtimes": _resolve_js_runtime(),
         "socket_timeout": settings.download_timeout_seconds,
         "retries": settings.download_retries,

@@ -15,6 +15,7 @@ from app.integration import secret_manager_client
 from app.middleware.logging import logger
 # Bounded subprocess helper shared with the Shorts renderer (media tooling only).
 from app.pipeline.short_renderer import _run
+from app.pipeline.youtube_downloader import pot_cli_args
 
 # Sources may fall a little short of the requested end (keyframe cuts, rounding).
 END_TOLERANCE_SECONDS = 1.5
@@ -68,7 +69,7 @@ def fetch_youtube_section(url, start, end, directory, index, cookie_path, timeou
     """Downloads only [start, end] (whole seconds) of the video's best audio."""
     prefix = f"yt{index}"
     _run([sys.executable, "-m", "yt_dlp", "--no-playlist", "--no-warnings",
-          "--cookies", str(cookie_path), "--js-runtimes", "deno",
+          "--cookies", str(cookie_path), "--js-runtimes", "deno", *pot_cli_args(),
           "--socket-timeout", str(settings.download_timeout_seconds),
           "--retries", str(settings.download_retries),
           "--download-sections", f"*{start}-{end}", "--force-keyframes-at-cuts",

@@ -23,12 +23,45 @@ All routes use the existing video ownership and expiry rules. Guest videos
 remain accessible to anyone with their video UUID, consistent with existing
 Vidora guest access. Authentication is required for owned videos.
 
-- `POST /videos/{video_id}/shorts`: JSON `{"start_time": 30, "end_time": 60}`.
-  Returns 202 and a job. Rate limit: 10 requests/hour per user or guest IP.
+- `POST /videos/{video_id}/shorts`: JSON `{"start_time": 30, "end_time": 60}`
+  plus the optional look below. Returns 202 and a job. Rate limit: 10 requests/hour
+  per user or guest IP. Each render reserves the Short's credits.
+- `GET /videos/{video_id}/shorts/draft?start_time=&end_time=`: the transcript
+  captions for a clip (`captions: [{start, end, text}]`, seconds from the clip start),
+  for the editor to start from. Free. Rate limit: 60/hour.
+- `GET /shorts/options`: fonts, ratios, backgrounds, positions, built-in presets and
+  limits, so the editor and the server validate against the same lists. 60/minute.
+- `GET/POST /shorts/presets`, `DELETE /shorts/presets/{id}`: a signed-in user's saved
+  caption styles (at most 10, unique names). 30/minute, 20/hour, 30/hour.
 - `GET /videos/{video_id}/shorts`: `items`, `free_limit`, `used`.
 - `GET /videos/{video_id}/shorts/{short_id}`: job status and expiry.
 - `GET /videos/{video_id}/shorts/{short_id}/download`: `url` and
   `valid_for_seconds`. Add `?download=false` for inline preview.
+
+### Choosing the look
+
+`POST` accepts, all optional (omitted = the original blurred 9:16 look):
+
+- `ratio`: `9:16` (720x1280), `1:1` (720x720), `4:5` (720x900), `16:9` (1280x720).
+- `background`: `blur`, `fill` (crop to fill) or `solid` with `background_color`.
+- `style`: `font`, `size`, `color`, `outline`/`outline_color`/`outline_width`,
+  `box`/`box_color`/`box_opacity`, `position` (top/middle/bottom), `uppercase`,
+  `highlight`/`highlight_color` (karaoke). Every field is range-checked.
+- `captions`: edited `[{start, end, text}]` (at most 60 lines, 120 characters each,
+  in order, inside the clip); omitted = the transcript's own captions.
+
+Sizes are px of a 1080-wide frame, scaled by `min(width, height) / 1080` in both the
+renderer and the browser preview. Captions are written as an ASS file
+(`pipeline/short_ass.py`) and burned in by libass using the fonts bundled in
+`functions/assets/fonts` (SIL OFL, licences beside them; the renderer never downloads
+a font). Karaoke word timing is an estimate (each word gets a share of its line
+proportional to its length) until real word timings are kept.
+
+One range may have several renders, one per look: they are told apart by
+`options_hash` (empty for the default look and for rows from before styles).
+`processshort` logs `short_render_environment libx264=... ass_filter=...
+missing_fonts=...` once per instance, so a runtime without the encoder, the `ass`
+filter or a font is visible in Cloud Logging.
 
 Status values: queued, rendering, completed, failed, expired. Safe error codes:
 QUEUE_UNAVAILABLE, JOB_TIMED_OUT, RENDER_FAILED. Download before completion

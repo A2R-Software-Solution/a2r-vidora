@@ -24,6 +24,18 @@ class YouTubeBotChallengeError(DownloadError):
     """YouTube temporarily refused the server's download session."""
 
 
+def pot_extractor_args() -> dict:
+    """yt-dlp (Python API) extractor args pointing at the PO-token service, if configured."""
+    url = (settings.pot_provider_url or "").strip()
+    return {"youtubepot-bgutilhttp": {"base_url": [url]}} if url else {}
+
+
+def pot_cli_args() -> list[str]:
+    """The same setting as yt-dlp command-line arguments."""
+    url = (settings.pot_provider_url or "").strip()
+    return ["--extractor-args", f"youtubepot-bgutilhttp:base_url={url}"] if url else []
+
+
 def is_youtube_bot_challenge(message: str) -> bool:
     normalized = message.casefold().translate({
         ord("\u2018"): "'",
@@ -167,6 +179,7 @@ def _run_download(youtube_url: str, output_dir: str, max_duration_seconds: int) 
             "nocheckcertificate": False,
             "logger": _YtDlpLogger(),
             "cookiefile": cookiefile,
+            "extractor_args": pot_extractor_args(),
             "js_runtimes": _resolve_js_runtime(),
             "socket_timeout": settings.download_timeout_seconds,
             "retries": settings.download_retries,

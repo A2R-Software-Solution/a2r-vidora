@@ -34,6 +34,8 @@ class Settings(BaseSettings):
     
     gcp_project_id: str | None = None
     youtube_cookie_secret_ids: list[str]
+    # Base URL of the bgutil PO-token service (Cloud Run); empty disables it.
+    pot_provider_url: str | None = None
 
     # Required operational settings: values are supplied by environment files.
     cors_origins_csv: str

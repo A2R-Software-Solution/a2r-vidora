@@ -24,3 +24,5 @@ asgiref
 email-validator
 httpx
 python-multipart
+
+bgutil-ytdlp-pot-provider
