@@ -373,7 +373,13 @@ export default function AdminPage({ user, onSignIn }) {
     );
   }
 
-  const open = (name) => { setUserId(null); setTab(name); setMenuOpen(false); };
+  const open = (name) => {
+    setUserId(null);
+    setTab(name);
+    setMenuOpen(false);
+    // A new section starts at the top, not wherever the last one was scrolled to.
+    window.scrollTo({ top: 0 });
+  };
   const title = NAV.find(([key]) => key === tab)?.[1];
   const name = user.displayName || user.email || "Admin";
   return (

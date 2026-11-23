@@ -1,85 +1,161 @@
-/* Credits on the left, the editor toggle on the right (it wraps below on narrow screens). */
-/* The header is normally narrower than the page; here it spans it, so the toggle can sit at the right edge, above "Your mix". */
-.merger-page .public-header { max-width: none; }
-/* One line on desktop; it wraps on phones. */
-.merger-page h1 { max-width: none; font-size: clamp(30px, 4.4vw, 54px); }
-.merger-toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 24px; margin-top: 24px; }
-.merger-balance { display: inline-block; margin: 0; padding: 10px 16px; border: 1px solid #edd8c6; border-radius: 999px; background: #fff7ef; color: #5d4a3e; font-size: 14px; }
-.merger-balance strong { color: #a34320; font-weight: 700; }
+/* Song Merger: centred header, one big card (illustration left, editor right), merges below. */
+.merger-page { width: min(100% - 48px, 1220px); padding-top: 48px; }
 
-.merger-modes { display: flex; width: fit-content; padding: 4px; border: 1px solid #edd8c6; border-radius: 999px; background: #f8e9dc; }
+.mg-header { margin-bottom: 30px; text-align: center; }
+.mg-eyebrow { display: inline-block; margin: 0 0 14px; padding: 5px 12px; border-radius: 999px; background: #fff; box-shadow: 0 1px 4px rgba(120, 60, 20, .1); color: #5d4a3e; font-size: 11px; font-weight: 750; letter-spacing: .06em; text-transform: uppercase; }
+.merger-page .mg-header h1 { max-width: none; margin: 0; font-size: clamp(30px, 4vw, 46px); }
+.mg-header h1 span { color: #f26522; }
+.mg-intro { margin: 12px auto 0; color: #5d4a3e; font-size: 17px; line-height: 1.6; }
+
+.merger-modes { display: flex; width: fit-content; margin: 20px auto 0; padding: 4px; border: 1px solid #edd8c6; border-radius: 999px; background: #f8e9dc; }
 .merger-modes button { min-height: 40px; padding: 0 18px; border: 0; border-radius: 999px; background: transparent; color: #6b574a; font: inherit; font-size: 14px; font-weight: 650; cursor: pointer; }
-.merger-modes button[aria-pressed="true"] { background: #fff; color: #a34320; box-shadow: 0 2px 8px rgba(120, 60, 20, 0.14); }
+.merger-modes button[aria-pressed="true"] { background: #fff; color: #a34320; box-shadow: 0 2px 8px rgba(120, 60, 20, .14); }
 .merger-modes button:focus-visible { outline: 3px solid #b8522b; outline-offset: 2px; }
 
-.merger-form section, .merger-history { margin-top: 44px; }
-.merger-form h2, .merger-history h2 { margin: 0 0 18px; color: #27211e; font-size: clamp(22px, 2.6vw, 30px); letter-spacing: -0.03em; }
+/* The card */
+.mg-shell { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 14px; padding: 14px; border: 1px solid #f1e0d3; border-radius: 26px; background: rgba(255, 255, 255, .6); box-shadow: 0 18px 50px rgba(160, 80, 30, .08); backdrop-filter: blur(6px); }
+/* Stays in view while the tracks scroll, instead of stretching into an empty column. */
+.mg-art { display: flex; flex-direction: column; align-items: center; justify-content: center; align-self: start; position: sticky; top: 88px; padding: 32px 24px; border-radius: 20px; background: linear-gradient(170deg, #fff3ea, #fde6d6); text-align: center; }
+.mg-art-svg { width: 100%; max-width: 240px; height: auto; margin-bottom: 26px; filter: drop-shadow(0 14px 18px rgba(220, 100, 40, .18)); }
+.mg-art h2 { margin: 0; color: #27211e; font-size: 21px; letter-spacing: -.02em; }
+.mg-art p { max-width: 220px; margin: 10px 0 0; color: #786457; font-size: 15px; line-height: 1.6; }
+.mg-main { min-width: 0; padding: 18px 22px 22px; border-radius: 20px; background: #fffaf6; }
 
-.merger-tracks, .merger-results { display: grid; gap: 16px; margin: 0; padding: 0; list-style: none; }
-.merger-track, .merger-result, .merger-summary, .merger-options-grid { border: 1px solid #e1cdbd; border-radius: 20px; background: #fffaf5; color: #28221e; }
-.merger-track, .merger-result, .merger-summary { padding: 22px; }
-.merger-options-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; padding: 22px; }
+/* Tracks */
+.mg-tracks { display: grid; gap: 0; margin: 0; padding: 0; list-style: none; }
+.mg-track { min-width: 0; padding: 18px 0 20px; border-bottom: 1px solid #f0e1d5; }
+.mg-track:first-child { padding-top: 4px; }
+.mg-track-head { display: flex; align-items: center; gap: 12px; }
+.mg-track-head h3 { margin: 0; color: #27211e; font-size: 19px; letter-spacing: -.02em; }
+.mg-track-icon { display: grid; flex: none; place-items: center; width: 30px; height: 30px; border-radius: 9px; background: linear-gradient(135deg, #ff9a5c, #f26522); color: #fff; }
+.mg-track-tools { display: flex; align-items: center; gap: 8px; margin-left: auto; }
 
-.merger-track-head, .merger-result-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.merger-track-head h3, .merger-result-head h3 { margin: 0; color: #27211e; font-size: 18px; letter-spacing: -0.02em; }
-.merger-result-head span { color: #a34320; font-size: 14px; font-weight: 700; white-space: nowrap; }
-.merger-track-tools { display: flex; gap: 8px; }
+.mg-btn, .mg-icon-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 42px; border: 1px solid #ecd9cb; border-radius: 12px; background: #fff; color: #27211e; font: inherit; font-size: 14px; font-weight: 600; text-decoration: none; cursor: pointer; transition: background .15s, border-color .15s; }
+.merger-page a.mg-btn { color: #27211e; }
+.mg-btn { padding: 0 16px; }
+.mg-icon-btn { width: 42px; color: #f26522; }
+.mg-btn-play { display: inline-flex; color: #f26522; }
+.mg-btn:hover:not(:disabled):not(.is-disabled), .mg-icon-btn:hover:not(:disabled) { border-color: #f5b48f; background: #fff4ec; text-decoration: none; }
+.mg-btn:disabled, .mg-icon-btn:disabled, .mg-btn.is-disabled { opacity: .45; cursor: not-allowed; }
+.mg-btn--solid { border-color: #f26522; background: #f26522; color: #fff; }
+.mg-btn.mg-btn--solid:hover:not(:disabled) { border-color: #d9541a; background: #d9541a; }
 
-.merger-source { display: flex; flex-wrap: wrap; gap: 8px 22px; margin: 16px 0 0; padding: 0; border: 0; }
-.merger-source legend { margin-bottom: 8px; padding: 0; color: #786457; font-size: 13px; font-weight: 650; }
-.merger-source label { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; font-size: 15px; cursor: pointer; }
-.merger-source input { width: 18px; height: 18px; accent-color: #b74d23; }
+.mg-source { display: inline-flex; gap: 4px; margin-left: 6px; padding: 3px; border-radius: 12px; background: #f6ebe2; }
+.mg-source button { display: inline-flex; align-items: center; gap: 7px; min-height: 34px; padding: 0 12px; border: 0; border-radius: 9px; background: transparent; color: #6b574a; font: inherit; font-size: 13px; font-weight: 650; cursor: pointer; }
+.mg-source button[aria-pressed="true"] { background: #fff; color: #d9541a; box-shadow: 0 1px 5px rgba(120, 60, 20, .12); }
 
-.merger-field { display: flex; flex-direction: column; gap: 6px; margin-top: 14px; }
-.merger-field label { color: #51473f; font-size: 14px; font-weight: 650; }
-.merger-field input[type="text"], .merger-field input[type="url"], .merger-field select, .merger-field input[type="file"] {
-  min-height: 46px; padding: 10px 12px; border: 1px solid #d9c3b2; border-radius: 12px; background: #fff; color: #28221e; font: inherit; font-size: 15px;
-}
-.merger-field input[type="file"] { padding: 8px 10px; }
-/* Inputs have a built-in minimum width; without this, two side by side widen the card past a phone screen. */
-.merger-field input, .merger-field select { min-width: 0; }
-.merger-track { min-width: 0; }
-.merger-field [aria-invalid="true"] { border-color: #b64032; }
-.merger-field input:focus-visible, .merger-field select:focus-visible { outline: 3px solid #b8522b; outline-offset: 2px; }
+.mg-row { display: flex; align-items: center; gap: 12px; min-height: 52px; margin-top: 12px; padding: 6px 14px; border: 1px solid #efe1d6; border-radius: 14px; background: #f9f3ee; }
+.mg-row-icon { display: inline-flex; flex: none; color: #8a7a6e; }
+.mg-row--input { cursor: text; }
+.mg-row--input input { flex: 1; min-width: 0; min-height: 38px; border: 0; background: transparent; color: #27211e; font: inherit; font-size: 15px; }
+.mg-row--input input:focus { outline: none; }
+.mg-row--input:focus-within { border-color: #f5a87c; box-shadow: 0 0 0 3px rgba(242, 101, 34, .15); }
+.mg-row--input:has([aria-invalid="true"]) { border-color: #d0604f; }
+.mg-file { flex: 0 1 auto; min-width: 0; overflow: hidden; color: #27211e; font-size: 15px; text-overflow: ellipsis; white-space: nowrap; }
+.mg-file span { color: #786457; font-size: 13px; }
+.mg-play { display: grid; flex: none; place-items: center; width: 38px; height: 38px; margin-left: auto; border: 1px solid #ecd9cb; border-radius: 50%; background: #fff; color: #27211e; cursor: pointer; }
+.mg-play:hover { border-color: #f5b48f; color: #f26522; }
+.mg-progress { flex: 1 1 120px; height: 5px; overflow: hidden; border-radius: 99px; background: #eadbd0; }
+.mg-progress i { display: block; height: 100%; border-radius: inherit; background: #f26522; transition: width .2s linear; }
+.mg-time { flex: none; color: #786457; font-size: 13px; font-variant-numeric: tabular-nums; }
+.mg-change { flex: none; color: #d9541a; font-size: 13px; font-weight: 650; cursor: pointer; }
+.mg-change:hover { text-decoration: underline; }
+.mg-change:focus-within { outline: 3px solid #b8522b; outline-offset: 2px; border-radius: 4px; }
 
-.merger-times { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; align-items: end; gap: 14px; }
-.merger-length { margin: 0 0 12px; color: #786457; font-size: 13px; white-space: nowrap; }
+.mg-drop { display: flex; align-items: center; gap: 14px; margin-top: 12px; padding: 14px 16px; border: 1.5px dashed #f0bf9f; border-radius: 14px; background: #fff7f1; color: #f26522; cursor: pointer; }
+.mg-drop:hover { background: #fff0e5; }
+.mg-drop:focus-within { outline: 3px solid #b8522b; outline-offset: 2px; }
+.mg-drop[aria-invalid="true"] { border-color: #d0604f; }
+.mg-drop strong { display: block; color: #27211e; font-size: 15px; }
+.mg-drop small { display: block; margin-top: 2px; color: #786457; font-size: 13px; }
 
-.merger-track-tools button, .merger-actions button, .merger-add {
-  min-height: 44px; padding: 8px 14px; border: 1px solid #e7bca5; border-radius: 10px; background: #fff; color: #9c4825; font: inherit; font-size: 14px; cursor: pointer;
-}
-.merger-track-tools button { min-width: 44px; }
-.merger-track-tools button:hover:not(:disabled), .merger-actions button:hover:not(:disabled), .merger-add:hover:not(:disabled) { background: #fff1e5; }
-.merger-track-tools button:disabled, .merger-actions button:disabled, .merger-add:disabled { opacity: 0.5; cursor: not-allowed; }
-.merger-add { margin-top: 16px; font-weight: 650; }
+.mg-times { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; align-items: end; gap: 14px; }
 
-.merger-summary dl { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin: 0 0 14px; }
-.merger-summary dt { color: #786457; font-size: 13px; }
-.merger-summary dd { margin: 4px 0 0; color: #27211e; font-size: 24px; font-weight: 750; letter-spacing: -0.03em; }
+/* Fields */
+.mg-field { display: flex; flex-direction: column; gap: 6px; min-width: 0; margin-top: 12px; }
+.mg-field label { color: #3d332c; font-size: 14px; font-weight: 600; }
+.mg-field input, .mg-field select { min-width: 0; min-height: 44px; padding: 9px 12px; border: 1px solid #e6d3c4; border-radius: 12px; background: #fff; color: #27211e; font: inherit; font-size: 15px; }
+.mg-field select { padding-right: 36px; appearance: none; background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2327211e' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 12px center; cursor: pointer; }
+.mg-field select:disabled { background-color: #f6eee8; color: #8a7a6e; cursor: not-allowed; }
+.mg-field [aria-invalid="true"] { border-color: #d0604f; }
+.mg-field input:focus-visible, .mg-field select:focus-visible { border-color: #f5a87c; outline: none; box-shadow: 0 0 0 3px rgba(242, 101, 34, .18); }
+.mg-length { display: inline-flex; align-items: center; gap: 6px; margin: 0 0 12px; color: #786457; font-size: 13px; white-space: nowrap; }
 
-.merger-consent { display: flex; align-items: flex-start; gap: 10px; margin-top: 18px; font-size: 14px; line-height: 1.6; cursor: pointer; }
-.merger-consent input { flex: none; width: 20px; height: 20px; margin-top: 2px; accent-color: #b74d23; }
+.mg-add { display: inline-flex; align-items: center; gap: 8px; min-height: 42px; margin-top: 14px; padding: 0 16px; border: 1.5px dashed #f0bf9f; border-radius: 12px; background: transparent; color: #d9541a; font: inherit; font-size: 14px; font-weight: 650; cursor: pointer; }
+.mg-add:hover:not(:disabled) { background: #fff3ea; }
+.mg-add:disabled { opacity: .5; cursor: not-allowed; }
 
-.merger-submit { width: 100%; min-height: 50px; margin-top: 18px; border: 1px solid #b74d23; border-radius: 12px; background: #b74d23; color: #fff; font: inherit; font-size: 16px; font-weight: 700; cursor: pointer; }
-.merger-submit:hover:not(:disabled) { background: #943c1c; }
-.merger-submit:disabled { cursor: wait; opacity: 0.7; }
-.merger-submit:focus-visible, .merger-track-tools button:focus-visible, .merger-actions button:focus-visible, .merger-add:focus-visible, .merger-link:focus-visible { outline: 3px solid #b8522b; outline-offset: 3px; }
+/* Options and summary */
+.mg-section { margin-top: 22px; padding-top: 20px; border-top: 1px solid #f0e1d5; }
+.mg-section h2 { display: flex; align-items: center; gap: 10px; margin: 0; color: #27211e; font-size: 19px; letter-spacing: -.02em; }
+.mg-section h2 svg { color: #f26522; }
+.mg-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0 22px; }
 
-.merger-hint { margin: 8px 0 0; color: #786457; font-size: 13px; line-height: 1.5; }
+.mg-summary { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: center; gap: 18px; margin-top: 12px; }
+.mg-summary dl { display: grid; gap: 9px; margin: 0; }
+.mg-summary dl div { display: flex; align-items: center; gap: 6px; color: #3d332c; font-size: 15px; }
+.mg-summary dt { display: inline-flex; align-items: center; gap: 10px; }
+.mg-summary dt svg { color: #f26522; }
+.mg-summary dd { margin: 0; font-weight: 650; }
+.mg-callout { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 0; padding: 16px 18px; border-radius: 14px; background: #fdeee4; color: #c2471a; font-size: 13px; font-weight: 600; line-height: 1.5; text-align: center; }
+.mg-callout svg { flex: none; }
+
+.mg-submit { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; min-height: 52px; margin-top: 18px; border: 0; border-radius: 14px; background: linear-gradient(90deg, #f7742f, #f05a1a); box-shadow: 0 8px 20px rgba(240, 90, 26, .28); color: #fff; font: inherit; font-size: 17px; font-weight: 700; cursor: pointer; transition: filter .15s, transform .15s; }
+.mg-submit:hover:not(:disabled) { filter: brightness(.95); transform: translateY(-1px); }
+.mg-submit:disabled { cursor: wait; opacity: .7; }
+
+/* Shared with the Pro editor */
+.merger-consent { display: flex; align-items: flex-start; gap: 10px; margin-top: 16px; color: #51473f; font-size: 14px; line-height: 1.6; cursor: pointer; }
+.merger-consent input { flex: none; width: 19px; height: 19px; margin-top: 2px; accent-color: #f26522; }
 .merger-note { margin: 12px 0 0; padding: 12px 14px; border-radius: 12px; background: #fff1e5; color: #684638; font-size: 14px; line-height: 1.5; }
-.merger-error { margin: 12px 0 0; color: #b64032; font-size: 14px; line-height: 1.5; }
+.merger-error { margin: 10px 0 0; color: #b64032; font-size: 14px; line-height: 1.5; }
 .merger-success { margin: 12px 0 0; color: #2f6b3a; font-size: 14px; }
-.merger-status { margin: 12px 0 0; color: #684638; font-size: 15px; }
-.merger-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
-.merger-audio { display: block; width: 100%; margin-top: 14px; }
 .merger-link { border: 0; padding: 0; background: none; color: #a34320; font: inherit; text-decoration: underline; cursor: pointer; }
+.mg-hint { margin: 6px 0 0; color: #786457; font-size: 13px; line-height: 1.5; }
+
+.mg-btn:focus-visible, .mg-icon-btn:focus-visible, .mg-play:focus-visible, .mg-source button:focus-visible, .mg-add:focus-visible,
+.mg-submit:focus-visible, .merger-link:focus-visible { outline: 3px solid #b8522b; outline-offset: 2px; }
+
+/* Your merges */
+.mg-history { margin-top: 40px; }
+.mg-history h2 { margin: 0 0 16px; color: #27211e; font-size: clamp(22px, 2.4vw, 28px); letter-spacing: -.03em; }
+.mg-empty { margin: 0; padding: 22px; border: 1.5px dashed #ecd5c4; border-radius: 18px; background: rgba(255, 255, 255, .55); color: #786457; font-size: 15px; text-align: center; }
+.mg-results { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); gap: 14px; margin: 0; padding: 0; list-style: none; }
+.mg-result { display: flex; gap: 14px; min-width: 0; padding: 18px; border: 1px solid #f1e0d3; border-radius: 18px; background: #fffaf6; box-shadow: 0 6px 18px rgba(160, 80, 30, .05); }
+.mg-result-body { flex: 1; min-width: 0; }
+.mg-result-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.mg-result-head h3 { margin: 4px 0 0; color: #27211e; font-size: 16px; letter-spacing: -.01em; }
+.mg-cost { flex: none; padding: 4px 10px; border-radius: 999px; background: #fdeee4; color: #c2471a; font-size: 12px; font-weight: 700; }
+.mg-status { display: inline-flex; align-items: center; gap: 7px; margin: 10px 0 0; font-size: 14px; font-weight: 600; }
+.mg-status::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+.mg-status--done { color: #22874a; }
+.mg-status--busy { color: #d9741a; }
+.mg-status--failed { color: #b64032; }
+.mg-status--muted { color: #8a7a6e; }
+.mg-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+.mg-audio { display: block; width: 100%; margin-top: 12px; }
+
+@media (max-width: 980px) {
+  .mg-shell { grid-template-columns: 1fr; }
+  .mg-art { position: static; flex-direction: row; gap: 18px; padding: 18px 22px; text-align: left; }
+  .mg-art-svg { width: 110px; margin: 0; }
+  .mg-art p { max-width: none; }
+}
 
 @media (max-width: 640px) {
-  .merger-form section, .merger-history { margin-top: 34px; }
-  .merger-track, .merger-result, .merger-summary { padding: 18px; }
-  .merger-options-grid { grid-template-columns: 1fr; padding: 18px; }
-  .merger-times { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .merger-length { grid-column: 1 / -1; margin: 0; }
-  .merger-track-head { flex-wrap: wrap; }
-  .merger-summary dl { grid-template-columns: 1fr; }
+  .merger-page { width: calc(100% - 32px); }
+  .mg-track-head .mg-source { order: 3; width: 100%; margin-left: 0; }
+  .mg-source button { flex: 1; justify-content: center; }
+  .mg-shell { padding: 8px; border-radius: 20px; }
+  .mg-art { display: none; }
+  .mg-main { padding: 14px; }
+  .mg-track-head { flex-wrap: wrap; }
+  .mg-track-tools { width: 100%; margin-left: 0; }
+  .mg-track-tools .mg-btn { flex: 1; }
+  .mg-row { flex-wrap: wrap; }
+  .mg-file { flex-basis: calc(100% - 40px); }
+  .mg-play { margin-left: 0; }
+  .mg-times { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .mg-length { grid-column: 1 / -1; margin: 0; }
+  .mg-options, .mg-summary { grid-template-columns: 1fr; }
 }
