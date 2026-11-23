@@ -1,0 +1,7 @@
+.ban-overlay { position: fixed; inset: 0; z-index: 500; display: grid; place-items: center; padding: 16px; background: rgba(40, 24, 14, .6); backdrop-filter: blur(4px); }
+.ban-card { width: min(440px, 100%); padding: 28px 24px; border-radius: 18px; background: #fffaf6; border: 1px solid #f0d9c5; text-align: center; box-shadow: 0 24px 60px rgba(60, 30, 10, .35); }
+.ban-card h2 { margin: 0 0 12px; font-size: 21px; color: #1f1612; }
+.ban-reason { margin: 0 0 12px; padding: 12px 14px; border-radius: 12px; background: #fff3e9; color: #7a2e12; font-weight: 600; line-height: 1.5; overflow-wrap: anywhere; }
+.ban-note { margin: 0 0 20px; color: #74685f; font-size: 14px; line-height: 1.5; }
+.ban-card button { min-height: 46px; border: 0; border-radius: 12px; padding: 10px 24px; background: #ff6b35; color: #fff; font: inherit; font-size: 15px; font-weight: 700; cursor: pointer; }
+.ban-card button:focus-visible { outline: 3px solid #a9411d; outline-offset: 3px; }

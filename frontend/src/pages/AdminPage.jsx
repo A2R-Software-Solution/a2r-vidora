@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { adjustCredits, getList, getOverview, getSettings, getUserDetail, saveSettings } from "../api/adminApi";
+import { adjustCredits, banUser, getList, getOverview, getSettings, getUserDetail, saveSettings, unbanUser } from "../api/adminApi";
 import "./AdminPage.css";
 
 const PAGE_SIZE = 25;
@@ -20,8 +20,9 @@ function errorText(error) {
 const TABS = {
   users: {
     label: "Users", search: "Search email or user id",
-    columns: [["Email", (r) => r.email], ["Plan", (r) => r.plan], ["Admin", (r) => (r.is_admin ? "yes" : "")],
-      ["Purchased credits", (r) => r.purchased_balance], ["Joined", (r) => fmtDate(r.created_at)]],
+    columns: [["Email", (r) => r.email], ["Status", (r) => (r.banned ? "Banned" : r.is_admin ? "Admin" : "")],
+      ["Credits left", (r) => r.available], ["Purchased", (r) => r.purchased_balance],
+      ["Free left", (r) => r.free_left], ["Plan", (r) => r.plan], ["Joined", (r) => fmtDate(r.created_at)]],
   },
   payments: {
     label: "Payments", statuses: ["created", "paid", "failed", "refunded", "disputed"],
@@ -165,6 +166,9 @@ function UserDetail({ userId, onBack }) {
   const [reason, setReason] = useState("");
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+  const [banReason, setBanReason] = useState("");
+  const [banning, setBanning] = useState(false);
+  const [banMessage, setBanMessage] = useState("");
 
   const load = useCallback((signal) => getUserDetail(userId, signal)
     .then((r) => { setDetail(r.data); setError(""); })
@@ -195,12 +199,48 @@ function UserDetail({ userId, onBack }) {
     }
   }
 
+  async function ban(event) {
+    event.preventDefault();
+    const reason = banReason.trim();
+    if (reason.length < 3 || !window.confirm(`Ban ${detail.email}?
+
+They will see this message:
+${reason}`)) return;
+    setBanning(true);
+    setBanMessage("");
+    try {
+      await banUser(userId, reason);
+      setBanReason("");
+      setBanMessage("User banned. They see your message the next time the app talks to the server.");
+      await load();
+    } catch (e) {
+      setBanMessage(errorText(e));
+    } finally {
+      setBanning(false);
+    }
+  }
+
+  async function unban() {
+    if (!window.confirm(`Unban ${detail.email}?`)) return;
+    setBanning(true);
+    setBanMessage("");
+    try {
+      await unbanUser(userId);
+      setBanMessage("User unbanned.");
+      await load();
+    } catch (e) {
+      setBanMessage(errorText(e));
+    } finally {
+      setBanning(false);
+    }
+  }
+
   return (
     <>
       <button type="button" className="admin-link" onClick={onBack}>← Back to users</button>
       {error ? <p className="admin-error" role="alert">{error}</p> : !detail ? <p className="admin-muted">Loading…</p> : (
         <>
-          <h2>{detail.email}</h2>
+          <h2>{detail.email}{detail.banned ? " · BANNED" : ""}</h2>
           <p className="admin-muted">
             {detail.plan} plan · joined {fmtDate(detail.created_at)}{detail.is_admin ? " · admin" : ""} · id {detail.id}
           </p>
@@ -222,6 +262,22 @@ function UserDetail({ userId, onBack }) {
             <button type="submit" disabled={saving}>{saving ? "Saving…" : "Apply"}</button>
           </form>
           {message && <p role="status">{message}</p>}
+
+          <h3>Ban</h3>
+          {detail.banned ? (
+            <>
+              <p className="admin-error">Banned {fmtDate(detail.banned_at)}. The user sees: “{detail.ban_reason}”</p>
+              <button type="button" className="admin-button" onClick={unban} disabled={banning}>{banning ? "Saving…" : "Unban user"}</button>
+            </>
+          ) : detail.is_admin ? <p className="admin-muted">Admins cannot be banned.</p> : (
+            <form className="admin-filters" onSubmit={ban}>
+              <input type="text" value={banReason} onChange={(e) => setBanReason(e.target.value)}
+                placeholder="Message the user will see (why they are banned)" aria-label="Ban message"
+                minLength={3} maxLength={300} required />
+              <button type="submit" disabled={banning}>{banning ? "Saving…" : "Ban user"}</button>
+            </form>
+          )}
+          {banMessage && <p role="status">{banMessage}</p>}
 
           <h3>Ledger (latest 50)</h3>
           <Table rows={detail.ledger} columns={[["When", (r) => fmtDate(r.created_at)], ["Kind", (r) => r.kind],

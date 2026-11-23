@@ -5,9 +5,9 @@ from fastapi import Depends, HTTPException, Query, Request, Response
 from app.core.rate_limit import limiter
 from app.deps import get_db, require_admin
 from app.models.user_model import User
-from app.schemas.admin_schema import CreditAdjustRequest, CreditAdjustResponse, SettingsUpdateRequest
+from app.schemas.admin_schema import BanRequest, CreditAdjustRequest, CreditAdjustResponse, SettingsUpdateRequest
 from app.services import runtime_settings
-from app.services.admin_service import AdminService
+from app.services.admin_service import AdminBanError, AdminService
 from app.utils.router_config import create_router
 
 # Every route needs users.is_admin; a non-admin gets 403, a guest 401.
@@ -50,6 +50,27 @@ async def adjust_credits(request: Request, response: Response, user_id: uuid.UUI
     if balance is None:
         raise HTTPException(status_code=404, detail="User not found.")
     return CreditAdjustResponse(user_id=user_id, purchased_balance=balance)
+
+
+@router.post("/users/{user_id}/ban")
+@limiter.limit("20/minute")
+async def ban_user(request: Request, response: Response, user_id: uuid.UUID, body: BanRequest,
+                   db=Depends(get_db), admin: User = Depends(require_admin)):
+    try:
+        found = await AdminService(db).ban(user_id, body.reason, admin)
+    except AdminBanError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    if not found:
+        raise HTTPException(status_code=404, detail="User not found.")
+    return {"user_id": user_id, "banned": True}
+
+
+@router.post("/users/{user_id}/unban")
+@limiter.limit("20/minute")
+async def unban_user(request: Request, response: Response, user_id: uuid.UUID, db=Depends(get_db)):
+    if not await AdminService(db).unban(user_id):
+        raise HTTPException(status_code=404, detail="User not found.")
+    return {"user_id": user_id, "banned": False}
 
 
 @router.get("/settings")

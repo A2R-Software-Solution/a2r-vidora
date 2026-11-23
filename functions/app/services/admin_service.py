@@ -13,12 +13,16 @@ from app.models.qa_log_model import QALog
 from app.models.short_model import Short
 from app.models.user_model import User
 from app.models.video_model import Video, VideoStatus
-from app.services.credit_service import CreditService
+from app.services.credit_service import CreditService, ist_today, month_start
 
 
 def _like(term: str) -> str:
     escaped = term.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
     return f"%{escaped}%"
+
+
+class AdminBanError(Exception):
+    """The ban is not allowed (for example, the target is an admin)."""
 
 
 class AdminService:
@@ -66,14 +70,24 @@ class AdminService:
         }
 
     async def users(self, q: str | None, limit: int, offset: int) -> list[dict]:
-        stmt = (select(User, CreditAccount.purchased_balance)
+        stmt = (select(User, CreditAccount.purchased_balance, CreditAccount.free_used, CreditAccount.free_month)
                 .outerjoin(CreditAccount, CreditAccount.user_id == User.id)
                 .order_by(User.created_at.desc()).limit(limit).offset(offset))
         if q:
             stmt = stmt.where(or_(User.email.ilike(_like(q), escape="\\"), cast(User.id, String) == q))
-        return [{"id": u.id, "email": u.email, "plan": u.plan, "is_admin": u.is_admin,
-                 "purchased_balance": balance or 0, "created_at": u.created_at}
-                for u, balance in (await self.db.execute(stmt)).all()]
+        return [self._user_row(u, balance, free_used, free_month)
+                for u, balance, free_used, free_month in (await self.db.execute(stmt)).all()]
+
+    @staticmethod
+    def _user_row(u: User, balance, free_used, free_month) -> dict:
+        """Purchased credits plus what is left of this month's free allowance."""
+        purchased = balance or 0
+        monthly = settings.user_monthly_credits
+        used = free_used if free_month == month_start(ist_today()) and free_used else 0
+        free_left = max(monthly - used, 0)
+        return {"id": u.id, "email": u.email, "plan": u.plan, "is_admin": u.is_admin,
+                "purchased_balance": purchased, "free_left": free_left, "available": purchased + free_left,
+                "banned": u.banned_at is not None, "ban_reason": u.ban_reason, "created_at": u.created_at}
 
     async def user_detail(self, user_id: uuid.UUID) -> dict | None:
         user = (await self.db.execute(select(User).where(User.id == user_id))).scalar_one_or_none()
@@ -94,6 +108,7 @@ class AdminService:
             .order_by(Video.created_at.desc()).limit(20))).scalars().all()
         return {
             "id": user.id, "email": user.email, "plan": user.plan, "is_admin": user.is_admin,
+            "banned": user.banned_at is not None, "banned_at": user.banned_at, "ban_reason": user.ban_reason,
             "created_at": user.created_at,
             "account": None if account is None else {
                 "purchased_balance": account.purchased_balance, "free_used": account.free_used, "free_month": account.free_month,
@@ -109,6 +124,27 @@ class AdminService:
         if (await self.db.execute(select(User.id).where(User.id == user_id))).scalar_one_or_none() is None:
             return None
         return await CreditService(self.db).adjust(user_id, amount, note=f"admin:{admin_email}: {reason}")
+
+    async def ban(self, user_id: uuid.UUID, reason: str, admin: User) -> bool:
+        """Bans the user and stores the message they will see. False if there is no such user."""
+        user = (await self.db.execute(select(User).where(User.id == user_id).with_for_update())).scalar_one_or_none()
+        if user is None:
+            return False
+        if user.is_admin or user.id == admin.id:
+            raise AdminBanError("Admins cannot be banned.")
+        user.banned_at = datetime.now(timezone.utc)
+        user.ban_reason = reason
+        await self.db.commit()
+        return True
+
+    async def unban(self, user_id: uuid.UUID) -> bool:
+        user = (await self.db.execute(select(User).where(User.id == user_id).with_for_update())).scalar_one_or_none()
+        if user is None:
+            return False
+        user.banned_at = None
+        user.ban_reason = None
+        await self.db.commit()
+        return True
 
     @staticmethod
     def _payment(p: Payment) -> dict:

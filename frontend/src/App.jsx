@@ -21,6 +21,7 @@ import { homeMeta } from "./content/siteDetails";
 import { getCurrentPath, getServerPath, subscribeToNavigation } from "./utils/siteNavigation";
 import SpotlightGlow from "./components/common/SpotlightGlow";
 import BugReportButton from "./components/common/BugReportButton";
+import BannedNotice from "./components/common/BannedNotice";
 import "./App.css";
 
 // Loaded only when needed (admin route, an analysed video, the sign-in dialog) so
@@ -103,6 +104,7 @@ function App() {
       </main>
       <Footer currentPath={path} />
       <BugReportButton />
+      <BannedNotice />
       {authOpen && <Suspense fallback={null}><AuthModal onClose={() => setAuthOpen(false)} /></Suspense>}
     </div>
   );

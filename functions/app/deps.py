@@ -14,6 +14,14 @@ from app.repository.user_repository import UserRepository
 from app.services import runtime_settings
 
 
+class AccountBannedError(Exception):
+    """The signed-in account was banned by an admin; `reason` is shown to the user."""
+
+    def __init__(self, reason: str | None) -> None:
+        super().__init__("account banned")
+        self.reason = reason
+
+
 def _ensure_firebase_initialized() -> None:
     """
     Lazily initializes firebase_admin on first use, not at import time.
@@ -75,6 +83,9 @@ async def get_current_user_id(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="No account found for this Firebase user. Call /users to register first.",
         )
+
+    if user.banned_at is not None:
+        raise AccountBannedError(user.ban_reason)
 
     return user.id
 

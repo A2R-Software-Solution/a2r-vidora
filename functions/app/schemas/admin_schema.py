@@ -16,6 +16,19 @@ class CreditAdjustRequest(BaseModel):
         return v
 
 
+class BanRequest(BaseModel):
+    # Shown to the user, so write it for them.
+    reason: str = Field(..., min_length=3, max_length=300)
+
+    @field_validator("reason")
+    @classmethod
+    def tidy(cls, v: str) -> str:
+        v = " ".join(v.split())
+        if len(v) < 3:
+            raise ValueError("reason is too short")
+        return v
+
+
 class SettingsUpdateRequest(BaseModel):
     # Setting key -> new value; null resets the setting to its default.
     values: dict[str, int | None] = Field(..., min_length=1, max_length=50)

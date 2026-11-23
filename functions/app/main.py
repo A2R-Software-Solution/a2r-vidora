@@ -8,6 +8,7 @@ from slowapi.errors import RateLimitExceeded
 from app.core.rate_limit import limiter, rate_limit_exceeded
 from app.routes.health_routes import router as health_router
 from app.core.config import settings
+from app.deps import AccountBannedError
 from app.middleware.logging import logger, setup_logging
 from app.routes.user_routes import router as user_router
 from app.routes.video_routes import router as video_router
@@ -63,6 +64,14 @@ async def insufficient_credits(request: Request, exc: InsufficientCreditsError) 
     return JSONResponse(status_code=402, content={
         "detail": "Not enough credits for this request.", "code": "insufficient_credits",
         "needed": exc.needed, "available": exc.available,
+    })
+
+
+@app.exception_handler(AccountBannedError)
+async def account_banned(request: Request, exc: AccountBannedError) -> JSONResponse:
+    reason = exc.reason or "Please contact support."
+    return JSONResponse(status_code=403, content={
+        "detail": f"Your account has been suspended. {reason}", "code": "account_banned", "reason": reason,
     })
 
 
