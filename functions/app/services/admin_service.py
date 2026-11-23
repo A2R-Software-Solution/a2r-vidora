@@ -2,12 +2,13 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, time, timedelta, timezone
 
 from sqlalchemy import String, cast, func, or_, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
+from app.models.app_setting_model import AppSetting
 from app.models.credit_model import CreditAccount, CreditLedgerEntry, Payment
 from app.models.qa_log_model import QALog
 from app.models.short_model import Short
@@ -77,6 +78,58 @@ class AdminService:
             stmt = stmt.where(or_(User.email.ilike(_like(q), escape="\\"), cast(User.id, String) == q))
         return [self._user_row(u, balance, free_used, free_month)
                 for u, balance, free_used, free_month in (await self.db.execute(stmt)).all()]
+
+    async def timeseries(self, days: int) -> dict:
+        """Per-day counts for the last `days` days (UTC), zeros included, for the dashboard charts."""
+        today = datetime.now(timezone.utc).date()
+        first = today - timedelta(days=days - 1)
+        since = datetime.combine(first, time.min, tzinfo=timezone.utc)
+        labels = [first + timedelta(days=i) for i in range(days)]
+
+        async def per_day(column, value, *conditions) -> list[int]:
+            day = func.date(func.timezone("UTC", column))
+            rows = (await self.db.execute(
+                select(day, value).where(column >= since, *conditions).group_by(day))).all()
+            found = {row[0]: int(row[1] or 0) for row in rows}
+            return [found.get(label, 0) for label in labels]
+
+        return {
+            "days": [label.isoformat() for label in labels],
+            "users": await per_day(User.created_at, func.count()),
+            "videos": await per_day(Video.created_at, func.count()),
+            "shorts": await per_day(Short.created_at, func.count()),
+            "revenue_cents": await per_day(Payment.paid_at, func.sum(Payment.amount_cents), Payment.status == "paid"),
+            # Reserve rows are negative and release rows positive: -sum is net spend.
+            "credits_spent": await per_day(CreditLedgerEntry.created_at, -func.sum(CreditLedgerEntry.amount),
+                                           CreditLedgerEntry.kind.in_(("reserve", "release"))),
+        }
+
+    async def activity(self, limit: int) -> list[dict]:
+        """The latest things that happened on the platform, newest first."""
+        events: list[dict] = []
+
+        async def rows(stmt):
+            return (await self.db.execute(stmt.limit(limit))).all()
+
+        for email, at in await rows(select(User.email, User.created_at).order_by(User.created_at.desc())):
+            events.append({"type": "user", "title": "New user registered", "detail": email, "at": at})
+        for status, at in await rows(select(Short.status, Short.created_at).order_by(Short.created_at.desc())):
+            events.append({"type": "short", "title": "New reel created", "detail": status, "at": at})
+        for title, url, at in await rows(select(Video.title, Video.youtube_url, Video.created_at).order_by(Video.created_at.desc())):
+            events.append({"type": "video", "title": "Video analysed", "detail": title or url, "at": at})
+        for kind, amount, email, at in await rows(
+                select(CreditLedgerEntry.kind, CreditLedgerEntry.amount, User.email, CreditLedgerEntry.created_at)
+                .join(CreditAccount, CreditAccount.id == CreditLedgerEntry.account_id)
+                .outerjoin(User, User.id == CreditAccount.user_id)
+                .where(CreditLedgerEntry.kind.in_(("adjust", "purchase")))
+                .order_by(CreditLedgerEntry.created_at.desc())):
+            word = "purchased" if kind == "purchase" else ("added" if amount > 0 else "removed")
+            events.append({"type": "credits", "title": f"Credits {word} ({abs(amount)})", "detail": email, "at": at})
+        for key, by, at in await rows(select(AppSetting.key, AppSetting.updated_by, AppSetting.updated_at)
+                                      .order_by(AppSetting.updated_at.desc())):
+            events.append({"type": "settings", "title": "Settings updated", "detail": f"{key} by {by}", "at": at})
+        events.sort(key=lambda event: event["at"], reverse=True)
+        return events[:limit]
 
     @staticmethod
     def _user_row(u: User, balance, free_used, free_month) -> dict:

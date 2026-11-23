@@ -79,16 +79,16 @@ function App() {
   }, [path, isHome, isAdmin, isTool, mode, publicPage]);
 
   return (
-    <div className={`page${isHome ? "" : " page--reading"}`}>
+    <div className={`page${isHome ? "" : " page--reading"}${isAdmin ? " page--admin" : ""}`}>
       <a className="skip-link" href="#main-content">Skip to content</a>
-      <div className="floating-bubbles" aria-hidden="true">
+      {!isAdmin && <div className="floating-bubbles" aria-hidden="true">
         <span className="bubble b1"></span>
         <span className="bubble b2"></span>
         <span className="bubble b3"></span>
         <span className="bubble b4"></span>
-      </div>
-      <SpotlightGlow />
-      <Navbar currentPath={path} user={user} onAuth={() => setAuthOpen(true)} />
+      </div>}
+      {!isAdmin && <SpotlightGlow />}
+      {!isAdmin && <Navbar currentPath={path} user={user} onAuth={() => setAuthOpen(true)} />}
       <main id="main-content" className="site-main" tabIndex={-1}>
         {isHome && <ProductHome />}
         {hasVisitedHome && <div className="home-content" hidden={!isTool} inert={!isTool}>
@@ -102,8 +102,8 @@ function App() {
         {isAdmin && <Suspense fallback={null}><AdminPage user={user} onSignIn={() => setAuthOpen(true)} /></Suspense>}
         {!isHome && !isTool && !isPricing && !isMerger && !isDownloader && !isAdmin && <PublicPage page={publicPage} />}
       </main>
-      <Footer currentPath={path} />
-      <BugReportButton />
+      {!isAdmin && <Footer currentPath={path} />}
+      {!isAdmin && <BugReportButton />}
       <BannedNotice />
       {authOpen && <Suspense fallback={null}><AuthModal onClose={() => setAuthOpen(false)} /></Suspense>}
     </div>

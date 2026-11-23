@@ -1,5 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
-import { adjustCredits, banUser, getList, getOverview, getSettings, getUserDetail, saveSettings, unbanUser } from "../api/adminApi";
+import { adjustCredits, banUser, getList, getSettings, getUserDetail, saveSettings, unbanUser } from "../api/adminApi";
+import { signOut } from "firebase/auth";
+import { auth } from "../firebase";
+import SiteLink from "../components/common/SiteLink";
+import { config } from "../config";
+import Dashboard from "./admin/Dashboard";
+import Icon from "./admin/Icon";
 import "./AdminPage.css";
 
 const PAGE_SIZE = 25;
@@ -49,49 +55,6 @@ const TABS = {
       ["Answer", (r) => clip(r.answer, 90)], ["Asked", (r) => fmtDate(r.created_at)]],
   },
 };
-
-function Overview() {
-  const [data, setData] = useState(null);
-  const [error, setError] = useState("");
-  useEffect(() => {
-    const controller = new AbortController();
-    getOverview(controller.signal).then((r) => setData(r.data)).catch((e) => {
-      if (!controller.signal.aborted) setError(errorText(e));
-    });
-    return () => controller.abort();
-  }, []);
-  if (error) return <p className="admin-error" role="alert">{error}</p>;
-  if (!data) return <p className="admin-muted">Loading…</p>;
-  const videos = data.videos_by_status || {};
-  const sttPct = Math.round((data.stt_seconds_24h / data.stt_seconds_limit_day) * 100);
-  const tiles = [
-    ["Users", data.users_total, `+${data.users_24h} in 24h`],
-    ["Videos (24h)", data.videos_24h, `${videos.completed || 0} done · ${videos.processing || 0} running · ${videos.failed || 0} failed (all time)`],
-    ["Revenue", fmtMoney(data.revenue_cents), `${fmtMoney(data.revenue_cents_24h)} in 24h · ${data.payments_paid} payments`],
-    ["Credits outstanding", data.credits_outstanding, `${data.credits_spent_24h} spent in 24h`],
-    ["STT audio (24h)", `${Math.round(data.stt_seconds_24h / 60)} min`, `${sttPct}% of the daily limit`],
-    ["Shorts (24h)", data.shorts_24h, ""],
-  ];
-  return (
-    <>
-      <div className="admin-tiles">
-        {tiles.map(([label, value, note]) => (
-          <div className="admin-tile" key={label}>
-            <span className="admin-tile-label">{label}</span>
-            <strong>{value}</strong>
-            {note && <span className="admin-muted">{note}</span>}
-          </div>
-        ))}
-      </div>
-      <h2>Failures in the last 24h, by stage</h2>
-      {data.failures_24h_by_stage.length === 0 ? <p className="admin-muted">No failures.</p> : (
-        <ul className="admin-plain">
-          {data.failures_24h_by_stage.map((f) => <li key={f.stage}><strong>{f.count}</strong> {f.stage}</li>)}
-        </ul>
-      )}
-    </>
-  );
-}
 
 function Table({ columns, rows, onRowClick }) {
   if (rows.length === 0) return <p className="admin-muted">Nothing found.</p>;
@@ -392,13 +355,17 @@ function Settings() {
   );
 }
 
+const NAV = [["overview", "Dashboard", "home"], ["users", "Users", "users"], ["payments", "Payments", "card"],
+  ["videos", "Videos", "video"], ["shorts", "Shorts", "bolt"], ["qa-logs", "Q&A Logs", "chat"], ["settings", "Settings", "gear"]];
+
 export default function AdminPage({ user, onSignIn }) {
   const [tab, setTab] = useState("overview");
   const [userId, setUserId] = useState(null);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   if (!user) {
     return (
-      <section className="admin">
+      <section className="ad-signin">
         <h1>Admin</h1>
         <p className="admin-muted">Sign in with an admin account to continue.</p>
         <button type="button" className="admin-button" onClick={onSignIn}>Sign in</button>
@@ -406,21 +373,38 @@ export default function AdminPage({ user, onSignIn }) {
     );
   }
 
-  const open = (name) => { setUserId(null); setTab(name); };
+  const open = (name) => { setUserId(null); setTab(name); setMenuOpen(false); };
+  const title = NAV.find(([key]) => key === tab)?.[1];
+  const name = user.displayName || user.email || "Admin";
   return (
-    <section className="admin">
-      <h1>Admin</h1>
-      <div className="admin-tabs" role="tablist">
-        {[["overview", "Overview"], ...Object.entries(TABS).map(([key, t]) => [key, t.label]), ["settings", "Settings"]].map(([key, label]) => (
-          <button key={key} type="button" role="tab" aria-selected={tab === key} onClick={() => open(key)}>{label}</button>
-        ))}
-      </div>
-      {tab === "overview" && <Overview />}
-      {tab === "users" && (userId
-        ? <UserDetail userId={userId} onBack={() => setUserId(null)} />
-        : <ListTab resource="users" onOpenUser={(row) => setUserId(row.id)} />)}
-      {tab === "settings" && <Settings />}
-      {TABS[tab] && tab !== "users" && <ListTab key={tab} resource={tab} />}
-    </section>
+    <div className="ad-shell admin">
+      <aside className={`ad-side${menuOpen ? " is-open" : ""}`}>
+        <div className="ad-side-top">
+          <span className="ad-logo"><span className="ad-logo-mark" aria-hidden="true" /> Vidora <b>AI</b></span>
+          <button type="button" className="ad-menu" aria-label="Menu" aria-expanded={menuOpen} onClick={() => setMenuOpen((value) => !value)}><Icon name="menu" /></button>
+        </div>
+        <nav className="ad-nav" aria-label="Admin">
+          {NAV.map(([key, label, icon]) => (
+            <button key={key} type="button" aria-current={tab === key ? "page" : undefined} onClick={() => open(key)}>
+              <Icon name={icon} />{label}</button>
+          ))}
+        </nav>
+        <div className="ad-side-foot">
+          <a href={config.bugReportUrl} target="_blank" rel="noopener noreferrer"><Icon name="help" />Help &amp; Support</a>
+          <SiteLink href="/"><Icon name="arrow" />Back to site</SiteLink>
+          <button type="button" onClick={() => signOut(auth)}><Icon name="logout" />Logout</button>
+        </div>
+      </aside>
+      <main className="ad-main">
+        <div className="ad-topbar"><span className="ad-account"><span className="ad-avatar" aria-hidden="true">{name[0].toUpperCase()}</span>{name}</span></div>
+        {tab === "overview" && <Dashboard user={user} go={open} />}
+        {tab !== "overview" && <h1 className="ad-title">{title}</h1>}
+        {tab === "users" && (userId
+          ? <UserDetail userId={userId} onBack={() => setUserId(null)} />
+          : <ListTab resource="users" onOpenUser={(row) => setUserId(row.id)} />)}
+        {tab === "settings" && <Settings />}
+        {TABS[tab] && tab !== "users" && <ListTab key={tab} resource={tab} />}
+      </main>
+    </div>
   );
 }

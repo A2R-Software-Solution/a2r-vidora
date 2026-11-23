@@ -151,3 +151,66 @@ class ApiTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class DashboardDataTests(unittest.IsolatedAsyncioTestCase):
+    async def test_timeseries_fills_missing_days_with_zero(self):
+        today = datetime.now(timezone.utc).date()
+        yesterday = today.fromordinal(today.toordinal() - 1)
+        db = Mock(execute=AsyncMock(side_effect=lambda stmt: Mock(all=Mock(return_value=[(yesterday, 3)]))))
+        data = await AdminService(db).timeseries(7)
+        self.assertEqual(len(data["days"]), 7)
+        self.assertEqual(data["days"][-1], today.isoformat())
+        for key in ("users", "videos", "shorts", "revenue_cents", "credits_spent"):
+            self.assertEqual(len(data[key]), 7)
+            self.assertEqual(data[key][-2:], [3, 0])
+            self.assertEqual(sum(data[key]), 3)
+
+    async def test_activity_merges_sources_newest_first_and_trims(self):
+        now = datetime.now(timezone.utc)
+        sequence = [
+            [("a@b.c", now.replace(microsecond=1))],                    # users
+            [("completed", now.replace(microsecond=5))],                # shorts
+            [("Title", "https://youtu.be/x", now.replace(microsecond=3))],  # videos
+            [("adjust", 75, "a@b.c", now.replace(microsecond=4)), ("adjust", -30, None, now.replace(microsecond=2))],
+            [("short_credit_cost", "boss@x", now.replace(microsecond=6))],  # settings
+        ]
+        results = iter(sequence)
+        db = Mock(execute=AsyncMock(side_effect=lambda stmt: Mock(all=Mock(return_value=next(results)))))
+        events = await AdminService(db).activity(4)
+        self.assertEqual([event["title"] for event in events],
+                         ["Settings updated", "New reel created", "Credits added (75)", "Video analysed"])
+
+    def test_dashboard_routes_need_an_admin_and_validate_the_range(self):
+        from fastapi.testclient import TestClient
+        from app.core.rate_limit import limiter
+        from app.deps import get_current_user_id, get_db
+        from app.main import app
+        from app.routes import admin_routes
+        limiter.reset()
+        admin_id = uuid.uuid4()
+        user = Mock(id=admin_id, email="boss@test.local", is_admin=False)
+
+        async def current():
+            return admin_id
+
+        async def db():
+            yield Mock()
+        app.dependency_overrides[get_current_user_id] = current
+        app.dependency_overrides[get_db] = db
+        service = Mock(timeseries=AsyncMock(return_value={"days": []}), activity=AsyncMock(return_value=[]))
+        try:
+            with patch.object(admin_routes, "AdminService", Mock(return_value=service)), \
+                 patch("app.deps.UserRepository", Mock(return_value=Mock(get_by_id=AsyncMock(return_value=user)))), \
+                 TestClient(app) as client:
+                self.assertEqual(client.get("/admin/timeseries").status_code, 403)
+                self.assertEqual(client.get("/admin/activity").status_code, 403)
+                user.is_admin = True
+                self.assertEqual(client.get("/admin/timeseries?days=30").status_code, 200)
+                self.assertEqual(client.get("/admin/timeseries?days=3").status_code, 422)
+                self.assertEqual(client.get("/admin/timeseries?days=500").status_code, 422)
+                self.assertEqual(client.get("/admin/activity?limit=99").status_code, 422)
+                self.assertEqual(client.get("/admin/activity").status_code, 200)
+        finally:
+            app.dependency_overrides.clear()
+            limiter.reset()
