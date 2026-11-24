@@ -3,6 +3,10 @@
 <IfModule mod_rewrite.c>
   RewriteEngine On
 
+  # www.vidoraa.com -> vidoraa.com, so Google sees one site instead of two.
+  RewriteCond %{HTTP_HOST} ^www\.vidoraa\.com$ [NC]
+  RewriteRule ^(.*)$ https://vidoraa.com/$1 [R=301,L]
+
   # /terms/ -> /terms, so each page has a single URL.
   RewriteCond %{REQUEST_FILENAME} -d
   RewriteRule ^(.+)/$ /$1 [R=301,L]
@@ -12,7 +16,7 @@
   RewriteRule ^(.+)$ /$1/index.html [L]
 
   # Client-side routes with no prerendered page.
-  RewriteRule ^(admin|reels|analyze)/?$ /index.html [L]
+  RewriteRule ^admin/?$ /index.html [L]
 
   # Other folders (e.g. /assets) are not pages.
   RewriteCond %{REQUEST_FILENAME} -d
