@@ -40,6 +40,17 @@
 .pricing-pack:not(.pricing-pack--featured) .pricing-buy:not(:disabled):hover { background: #fff1e5; }
 .pricing-tier-note { margin: 0; padding: 12px 0 2px; color: #786457; font-size: 14px; }
 
+.pricing-was { margin-right: 8px; color: #8a7a6e; font-size: 20px; font-weight: 500; }
+.pricing-bonus { color: #22663a; font-weight: 600; }
+.pricing-coupon { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 0 0 18px; font-size: 15px; }
+.pricing-coupon label { font-weight: 600; color: #3d3028; }
+.pricing-coupon input { width: min(240px, 100%); min-height: 42px; padding: 8px 12px; border: 1px solid #e1cdbd; border-radius: 10px; background: #fff; font: inherit; text-transform: uppercase; }
+.pricing-coupon input:focus-visible { outline: 3px solid #b8522b; outline-offset: 2px; }
+.pricing-coupon button { min-height: 42px; padding: 8px 16px; border: 1px solid #b74d23; border-radius: 10px; background: #fff; color: #a34320; font: inherit; font-weight: 650; cursor: pointer; }
+.pricing-coupon button:disabled { opacity: 0.55; cursor: not-allowed; }
+.pricing-coupon-error { flex-basis: 100%; color: #a8342a; }
+.pricing-coupon--applied { padding: 12px 16px; border-radius: 12px; background: #e8f6ec; color: #22663a; }
+.pricing-coupon--applied .pricing-coupon-remove { min-height: 0; padding: 0; border: 0; background: none; color: #a34320; text-decoration: underline; }
 .pricing-result { margin: 0 0 18px; padding: 14px 16px; border-radius: 12px; font-size: 15px; line-height: 1.5; }
 .pricing-result--ok { background: #e8f6ec; color: #22663a; }
 .pricing-result--error { background: #fdecea; color: #a8342a; }

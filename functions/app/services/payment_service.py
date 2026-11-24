@@ -19,6 +19,7 @@ from app.core.config import settings
 from app.integration import razorpay_client
 from app.middleware.logging import logger
 from app.models.credit_model import Payment
+from app.services.coupon_service import CouponService, discounted
 from app.services.credit_service import CreditService
 
 
@@ -62,20 +63,35 @@ class PaymentService:
     def __init__(self, db: AsyncSession) -> None:
         self.db = db
 
-    async def create_order(self, user_id: uuid.UUID, pack_code: str, currency: str = "USD") -> Payment:
+    async def create_order(self, user_id: uuid.UUID, pack_code: str, currency: str = "USD",
+                           coupon_code: str | None = None) -> Payment:
+        """Raises UnknownPackError, or CouponError when the coupon cannot be used."""
         pack = credit_packs(currency).get(pack_code)
         if pack is None:
             raise UnknownPackError(pack_code)
+        amount, credits, coupon = pack.amount_cents, pack.credits, None
+        if coupon_code:
+            # Locked until the commit below, so the coupon's use limits cannot race.
+            coupon = await CouponService(self.db).usable(coupon_code, user_id=user_id, currency=currency,
+                                                         pack_code=pack.code, lock=True)
+            price = discounted(amount, credits, coupon)
+            amount, credits = price.amount, price.credits
         payment_id = uuid.uuid4()
-        order = await razorpay_client.create_order(
-            amount=pack.amount_cents, currency=pack.currency, receipt=str(payment_id),
-            notes={"payment_id": str(payment_id), "user_id": str(user_id), "pack": pack.code},
-        )
+        notes = {"payment_id": str(payment_id), "user_id": str(user_id), "pack": pack.code}
+        if coupon:
+            notes["coupon"] = coupon.code
+        try:
+            order = await razorpay_client.create_order(
+                amount=amount, currency=pack.currency, receipt=str(payment_id), notes=notes)
+        except Exception:
+            await self.db.rollback()
+            raise
         # An order whose row fails to save is simply never paid; nothing to undo.
         payment = Payment(
-            id=payment_id, user_id=user_id, pack_code=pack.code, credits=pack.credits,
-            amount_cents=pack.amount_cents, currency=pack.currency, provider="razorpay",
+            id=payment_id, user_id=user_id, pack_code=pack.code, credits=credits,
+            amount_cents=amount, currency=pack.currency, provider="razorpay",
             provider_order_id=order["id"], status="created",
+            coupon_id=coupon.id if coupon else None, coupon_code=coupon.code if coupon else None,
         )
         self.db.add(payment)
         await self.db.commit()

@@ -146,3 +146,9 @@
 .ad-credits-note { display: block; font-size: 12px; font-weight: 400; }
 .ad-credits-total td { font-weight: 700; color: #1f1612; background: rgba(255, 107, 53, .06); }
 .ad-credits-sub { margin: 22px 0 10px; font-size: 16px; color: #1f1612; }
+
+.admin-coupon-form { margin: 8px 0 24px; }
+.admin-coupon-form .admin-setting input, .admin-coupon-form .admin-setting select { max-width: 260px; }
+.admin-coupon-form fieldset.admin-setting { border: 0; padding: 0; margin: 0; }
+.admin-coupon-form fieldset.admin-setting label { display: inline-flex; gap: 6px; align-items: center; margin-right: 14px; }
+.admin-coupon-actions { display: inline-flex; gap: 12px; white-space: nowrap; }

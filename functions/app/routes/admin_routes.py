@@ -5,9 +5,11 @@ from fastapi import Depends, HTTPException, Query, Request, Response
 from app.core.rate_limit import limiter
 from app.deps import get_db, require_admin
 from app.models.user_model import User
-from app.schemas.admin_schema import BanRequest, CreditAdjustRequest, CreditAdjustResponse, SettingsUpdateRequest
+from app.schemas.admin_schema import (BanRequest, CouponCreate, CouponUpdate, CreditAdjustRequest,
+                                      CreditAdjustResponse, SettingsUpdateRequest)
 from app.services import runtime_settings
 from app.services.admin_service import AdminBanError, AdminService
+from app.services.coupon_service import CouponError, CouponService
 from app.utils.router_config import create_router
 
 # Every route needs users.is_admin; a non-admin gets 403, a guest 401.
@@ -105,6 +107,37 @@ async def update_settings(request: Request, response: Response, body: SettingsUp
         return await runtime_settings.update(db, body.values, admin.email)
     except runtime_settings.InvalidSettingError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@router.get("/coupons")
+@limiter.limit("60/minute")
+async def coupons(request: Request, response: Response, db=Depends(get_db)):
+    return await CouponService(db).list()
+
+
+@router.post("/coupons", status_code=201)
+@limiter.limit("20/minute")
+async def create_coupon(request: Request, response: Response, body: CouponCreate,
+                        db=Depends(get_db), admin: User = Depends(require_admin)):
+    try:
+        coupon = await CouponService(db).create(body.model_dump(),
+                                                admin_email=admin.email)
+    except CouponError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return CouponService.row(coupon)
+
+
+@router.patch("/coupons/{coupon_id}")
+@limiter.limit("30/minute")
+async def update_coupon(request: Request, response: Response, coupon_id: uuid.UUID, body: CouponUpdate,
+                        db=Depends(get_db)):
+    try:
+        coupon = await CouponService(db).update(coupon_id, body.model_dump(exclude_unset=True))
+    except CouponError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail="Coupon not found.") from exc
+    return CouponService.row(coupon)
 
 
 @router.get("/payments")

@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
-import { adjustCredits, banUser, getCreditsSummary, getList, getSettings, getUserDetail, saveSettings, unbanUser } from "../api/adminApi";
+import {
+  adjustCredits, banUser, createCoupon, getCoupons, getCreditsSummary, getList, getSettings, getUserDetail,
+  saveSettings, unbanUser, updateCoupon,
+} from "../api/adminApi";
 import { signOut } from "firebase/auth";
 import { auth } from "../firebase";
 import SiteLink from "../components/common/SiteLink";
@@ -7,7 +10,7 @@ import { config } from "../config";
 import Dashboard from "./admin/Dashboard";
 import Icon from "./admin/Icon";
 import SalesTable from "./admin/SalesTable";
-import { formatPrice } from "../utils/pricing";
+import { PACK_DETAILS, formatPrice } from "../utils/pricing";
 import "./AdminPage.css";
 
 const PAGE_SIZE = 25;
@@ -35,6 +38,7 @@ const TABS = {
     label: "Payments", statuses: ["created", "paid", "failed", "refunded", "disputed"],
     columns: [["Email", (r) => r.email], ["Pack", (r) => r.pack_code], ["Credits", (r) => r.credits],
       ["Amount", (r) => formatPrice(r.amount_cents, r.currency || "USD")], ["Status", (r) => r.status],
+      ["Coupon", (r) => r.coupon_code || ""],
       ["Payment id", (r) => r.provider_payment_id || r.provider_order_id], ["Created", (r) => fmtDate(r.created_at)]],
   },
   videos: {
@@ -369,7 +373,167 @@ function Settings() {
   );
 }
 
+// An expiry date picked in the form means the end of that day, in the admin's time zone.
+const pad = (n) => String(n).padStart(2, "0");
+const toDateInput = (iso) => {
+  if (!iso) return "";
+  const d = new Date(iso);
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+};
+const fromDateInput = (day) => (day ? new Date(`${day}T23:59:59`).toISOString() : null);
+const optionalNumber = (text) => (text === "" ? null : Number(text));
+
+const EMPTY_COUPON = { code: "", percent_off: "50", bonus_credits: "0", packs: [], currency: "",
+  max_uses: "", per_user_limit: "1", expires: "", note: "" };
+
+function couponDraft(c) {
+  return { code: c.code, percent_off: String(c.percent_off), bonus_credits: String(c.bonus_credits),
+    packs: c.packs || [], currency: c.currency || "", max_uses: c.max_uses == null ? "" : String(c.max_uses),
+    per_user_limit: c.per_user_limit == null ? "" : String(c.per_user_limit),
+    expires: toDateInput(c.expires_at), note: c.note || "" };
+}
+
+function couponBenefit(c) {
+  return [c.percent_off > 0 && `${c.percent_off}% off`, c.bonus_credits > 0 && `+${c.bonus_credits} credits`]
+    .filter(Boolean).join(", ");
+}
+
+function CouponForm({ editing, onSaved, onCancel }) {
+  const [draft, setDraft] = useState(editing ? couponDraft(editing) : EMPTY_COUPON);
+  const [message, setMessage] = useState("");
+  const [saving, setSaving] = useState(false);
+  const set = (key) => (e) => setDraft({ ...draft, [key]: e.target.value });
+  const togglePack = (code) => setDraft({ ...draft,
+    packs: draft.packs.includes(code) ? draft.packs.filter((p) => p !== code) : [...draft.packs, code] });
+
+  const save = async (event) => {
+    event.preventDefault();
+    const fields = {
+      percent_off: Number(draft.percent_off), bonus_credits: Number(draft.bonus_credits),
+      packs: draft.packs.length ? draft.packs : null, currency: draft.currency || null,
+      max_uses: optionalNumber(draft.max_uses), per_user_limit: optionalNumber(draft.per_user_limit),
+      expires_at: fromDateInput(draft.expires), note: draft.note.trim() || null,
+    };
+    setSaving(true);
+    setMessage("");
+    try {
+      if (editing) await updateCoupon(editing.id, fields);
+      else await createCoupon({ ...fields, code: draft.code.trim() });
+      onSaved();
+    } catch (e) {
+      setMessage(errorText(e));
+      setSaving(false);
+    }
+  };
+
+  return (
+    <form className="admin-coupon-form" onSubmit={save}>
+      <h2>{editing ? `Edit ${editing.code}` : "New coupon"}</h2>
+      <div className="admin-settings">
+        <label className="admin-setting">Code
+          <input value={draft.code} onChange={set("code")} required minLength={3} maxLength={40}
+            pattern="[A-Za-z0-9_\-]+" disabled={!!editing} placeholder="LAUNCH50" />
+          <span className="admin-muted">Letters, numbers, - and _. Buyers can type it in any case.</span></label>
+        <label className="admin-setting">Discount
+          <span className="admin-setting-input"><input type="number" min="0" max="100" step="1" required
+            value={draft.percent_off} onChange={set("percent_off")} /><span className="admin-muted">% off</span></span>
+          <span className="admin-muted">The price never goes below ₹1 / $1. 100 makes a ₹1 test coupon.</span></label>
+        <label className="admin-setting">Bonus credits
+          <span className="admin-setting-input"><input type="number" min="0" max="100000" step="1" required
+            value={draft.bonus_credits} onChange={set("bonus_credits")} /><span className="admin-muted">extra credits</span></span></label>
+        <fieldset className="admin-setting"><legend>Packs</legend>
+          {Object.entries(PACK_DETAILS).map(([code, { name }]) => (
+            <label key={code}><input type="checkbox" checked={draft.packs.includes(code)}
+              onChange={() => togglePack(code)} /> {name}</label>))}
+          <span className="admin-muted">None ticked: every pack.</span></fieldset>
+        <label className="admin-setting">Currency
+          <select value={draft.currency} onChange={set("currency")}>
+            <option value="">Both (₹ and $)</option><option value="INR">Only ₹ (India)</option>
+            <option value="USD">Only $</option></select></label>
+        <label className="admin-setting">Total uses
+          <input type="number" min="1" step="1" value={draft.max_uses} onChange={set("max_uses")} placeholder="No limit" />
+          <span className="admin-muted">Paid purchases allowed in all. Empty: no limit.</span></label>
+        <label className="admin-setting">Uses per user
+          <input type="number" min="1" step="1" value={draft.per_user_limit} onChange={set("per_user_limit")} placeholder="No limit" />
+          <span className="admin-muted">Empty: no limit.</span></label>
+        <label className="admin-setting">Expires after
+          <input type="date" value={draft.expires} onChange={set("expires")} />
+          <span className="admin-muted">Works until the end of this day. Empty: never expires.</span></label>
+        <label className="admin-setting">Note
+          <input value={draft.note} onChange={set("note")} maxLength={200} placeholder="Who it is for (only admins see this)" /></label>
+      </div>
+      <div className="admin-savebar">
+        <button type="submit" className="admin-button" disabled={saving}>{saving ? "Saving…" : editing ? "Save changes" : "Create coupon"}</button>
+        <button type="button" className="admin-link" onClick={onCancel}>Cancel</button>
+        {message && <span role="alert">{message}</span>}
+      </div>
+    </form>
+  );
+}
+
+function Coupons() {
+  const [rows, setRows] = useState(null);
+  const [error, setError] = useState("");
+  const [form, setForm] = useState(null); // null, "new" or the coupon being edited
+  const [busy, setBusy] = useState("");
+
+  const load = useCallback((signal) => getCoupons(signal).then((r) => setRows(r.data)).catch((e) => {
+    if (!signal?.aborted) setError(errorText(e));
+  }), []);
+  useEffect(() => {
+    const controller = new AbortController();
+    load(controller.signal);
+    return () => controller.abort();
+  }, [load]);
+
+  const toggle = async (coupon) => {
+    if (coupon.active && !window.confirm(`Turn off ${coupon.code}? Buyers can no longer use it.`)) return;
+    setBusy(coupon.id);
+    try {
+      await updateCoupon(coupon.id, { active: !coupon.active });
+      await load();
+    } catch (e) {
+      setError(errorText(e));
+    } finally {
+      setBusy("");
+    }
+  };
+
+  if (error) return <p className="admin-error" role="alert">{error}</p>;
+  if (!rows) return <p className="admin-muted">Loading…</p>;
+  const expired = (c) => c.expires_at && new Date(c.expires_at) <= new Date();
+  return (
+    <>
+      <p className="admin-muted">Buyers enter a coupon on the pricing page. A use counts once the payment is made.
+        Coupons are turned off, never deleted, so past payments keep their coupon.</p>
+      {form
+        ? <CouponForm key={form === "new" ? "new" : form.id} editing={form === "new" ? null : form}
+            onCancel={() => setForm(null)} onSaved={() => { setForm(null); load(); }} />
+        : <button type="button" className="admin-button" onClick={() => setForm("new")}>New coupon</button>}
+      <h2>All coupons</h2>
+      <Table rows={rows} columns={[
+        ["Code", (c) => <strong>{c.code}</strong>], ["Gives", couponBenefit],
+        ["Packs", (c) => (c.packs ? c.packs.map((p) => PACK_DETAILS[p]?.name || p).join(", ") : "All")],
+        ["Currency", (c) => c.currency || "Both"],
+        ["Used", (c) => `${c.uses}${c.max_uses ? ` / ${c.max_uses}` : ""}`],
+        ["Per user", (c) => c.per_user_limit ?? "No limit"],
+        ["Revenue", (c) => Object.entries(c.revenue).map(([cur, amt]) => formatPrice(amt, cur)).join(" + ") || "—"],
+        ["Expires", (c) => (c.expires_at ? fmtDate(c.expires_at) : "Never")],
+        ["Status", (c) => (!c.active ? "Off" : expired(c) ? "Expired" : c.max_uses && c.uses >= c.max_uses ? "Used up" : "Active")],
+        ["Note", (c) => clip(c.note, 40)],
+        ["", (c) => (
+          <span className="admin-coupon-actions">
+            <button type="button" className="admin-link" onClick={() => setForm(c)}>Edit</button>
+            <button type="button" className="admin-link" disabled={busy === c.id} onClick={() => toggle(c)}>
+              {c.active ? "Turn off" : "Turn on"}</button>
+          </span>)],
+      ]} />
+    </>
+  );
+}
+
 const NAV = [["overview", "Dashboard", "home"], ["users", "Users", "users"], ["payments", "Payments", "card"],
+  ["coupons", "Coupons", "star"],
   ["videos", "Videos", "video"], ["shorts", "Shorts", "bolt"], ["qa-logs", "Q&A Logs", "chat"], ["settings", "Settings", "gear"]];
 
 export default function AdminPage({ user, onSignIn }) {
@@ -423,6 +587,7 @@ export default function AdminPage({ user, onSignIn }) {
           ? <UserDetail userId={userId} onBack={() => setUserId(null)} />
           : <ListTab resource="users" onOpenUser={(row) => setUserId(row.id)} />)}
         {tab === "settings" && <Settings />}
+        {tab === "coupons" && <Coupons />}
         {tab === "payments" && <PaymentsSummary />}
         {TABS[tab] && tab !== "users" && <ListTab key={tab} resource={tab} />}
       </main>

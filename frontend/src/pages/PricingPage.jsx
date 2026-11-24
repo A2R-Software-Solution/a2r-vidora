@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import SiteLink from "../components/common/SiteLink";
-import { createOrder, getPacks, verifyPayment } from "../api/billingApi";
+import { checkCoupon, createOrder, getPacks, verifyPayment } from "../api/billingApi";
 import { refreshCredits, useCredits } from "../hooks/useCredits";
 import { checkoutError, openCheckout } from "../utils/checkout";
 import { usePlans } from "../hooks/usePlans";
 import { siteDetails } from "../content/siteDetails";
 import {
-  PACK_DETAILS, buyerCurrency, fallbackPacks,
+  PACK_DETAILS, buyerCurrency, couponError, fallbackPacks, withCoupon,
   displayPacks, formatHours, formatPrice, pricePer100Credits,
 } from "../utils/pricing";
 import "./PricingPage.css";
@@ -36,10 +36,13 @@ function PackCard({ pack, signedIn, onSignIn, onBuy, busy, buying }) {
       {details.featured && <p className="pricing-pack-flag">Best value</p>}
       <h3 id={`pack-${pack.code}`}>{details.name}</h3>
       <p className="pricing-price">
+        {pack.list_amount_cents > pack.amount_cents && <s className="pricing-was">
+          <span className="sr-only">Was </span>{formatPrice(pack.list_amount_cents, pack.currency)}</s>}
         <span className="pricing-amount">{formatPrice(pack.amount_cents, pack.currency)}</span>
         <span className="pricing-once">one-time</span>
       </p>
-      <p className="pricing-credits">{pack.credits} credits</p>
+      <p className="pricing-credits">{pack.credits} credits
+        {pack.bonus_credits > 0 && <span className="pricing-bonus"> incl. {pack.bonus_credits} bonus</span>}</p>
       <p className="pricing-blurb">{details.blurb}</p>
       <ul className="pricing-points">
         <li>{pricePer100Credits(pack)} per 100 credits</li>
@@ -75,6 +78,47 @@ function FreeCard({ plans, signedIn, onSignIn }) {
   );
 }
 
+function CouponBox({ coupon, currency, onApply, onRemove }) {
+  const [code, setCode] = useState("");
+  const [state, setState] = useState({ checking: false, error: "" });
+
+  const apply = async (event) => {
+    event.preventDefault();
+    if (!code.trim() || state.checking) return;
+    setState({ checking: true, error: "" });
+    try {
+      const { data } = await checkCoupon(code.trim(), currency);
+      onApply(data);
+      setCode("");
+      setState({ checking: false, error: "" });
+    } catch (error) {
+      setState({ checking: false, error: couponError(error) });
+    }
+  };
+
+  if (coupon) {
+    const parts = [coupon.percent_off > 0 && `${coupon.percent_off}% off`,
+      coupon.bonus_credits > 0 && `${coupon.bonus_credits} bonus credits`].filter(Boolean).join(" and ");
+    const which = coupon.packs ? ` on ${coupon.packs.map((p) => PACK_DETAILS[p]?.name || p).join(", ")}` : "";
+    return (
+      <p className="pricing-coupon pricing-coupon--applied" role="status">
+        Coupon <strong>{coupon.code}</strong> applied: {parts}{which}.{" "}
+        <button type="button" className="pricing-coupon-remove" onClick={onRemove}>Remove</button>
+      </p>
+    );
+  }
+  return (
+    <form className="pricing-coupon" onSubmit={apply}>
+      <label htmlFor="coupon-code">Have a coupon?</label>
+      <input id="coupon-code" value={code} maxLength={40} autoComplete="off" spellCheck={false}
+        onChange={(e) => setCode(e.target.value)} aria-invalid={!!state.error}
+        aria-describedby={state.error ? "coupon-error" : undefined} />
+      <button type="submit" disabled={!code.trim() || state.checking}>{state.checking ? "Checking…" : "Apply"}</button>
+      {state.error && <span id="coupon-error" className="pricing-coupon-error" role="alert">{state.error}</span>}
+    </form>
+  );
+}
+
 // The time zone does not change while the page is open.
 const noSubscription = () => () => {};
 
@@ -82,7 +126,11 @@ export default function PricingPage({ signedIn = false, onSignIn }) {
   // USD in the prerendered page and on first hydration, then the buyer's own currency.
   const currency = useSyncExternalStore(noSubscription, buyerCurrency, () => "USD");
   const [loaded, setLoaded] = useState(null);
-  const packs = loaded?.currency === currency ? loaded.packs : fallbackPacks(currency);
+  const [coupon, setCoupon] = useState(null);
+  const listPacks = loaded?.currency === currency ? loaded.packs : fallbackPacks(currency);
+  // A coupon checked for one currency is not applied to the other.
+  const activeCoupon = signedIn && coupon?.currency === currency ? coupon : null;
+  const packs = listPacks.map((pack) => withCoupon(pack, activeCoupon));
   const [buying, setBuying] = useState("");
   const [result, setResult] = useState(null);
   const busy = useRef(false);
@@ -103,7 +151,18 @@ export default function PricingPage({ signedIn = false, onSignIn }) {
     setBuying(pack.code);
     setResult(null);
     try {
-      const { data: order } = await createOrder(pack.code, pack.currency);
+      let order;
+      try {
+        ({ data: order } = await createOrder(pack.code, pack.currency, pack.coupon_code || null));
+      } catch (error) {
+        // The coupon was refused at checkout (used up or expired since it was applied).
+        if (pack.coupon_code && error?.response?.status === 400) {
+          setCoupon(null);
+          setResult({ ok: false, text: `${couponError(error)} Prices are back to normal.` });
+          return;
+        }
+        throw error;
+      }
       const paid = await openCheckout(order, { description: `${order.credits} Vidora AI credits` });
       setBuying("");
       const { data } = await verifyPayment(paid);
@@ -145,6 +204,8 @@ export default function PricingPage({ signedIn = false, onSignIn }) {
       <section className="pricing-section" aria-labelledby="packs-title">
         <h2 id="packs-title">Credit packs</h2>
         <p className="pricing-section-intro">Packs add to your free signup credits. Free credits are always used first.</p>
+        {signedIn && <CouponBox key={currency} coupon={activeCoupon} currency={currency}
+          onApply={(data) => { setCoupon({ ...data, currency }); setResult(null); }} onRemove={() => setCoupon(null)} />}
         {result && <p className={`pricing-result pricing-result--${result.ok ? "ok" : "error"}`} role={result.ok ? "status" : "alert"}>{result.text}</p>}
         <div className="pricing-packs">
           <FreeCard plans={plans} signedIn={signedIn} onSignIn={onSignIn} />

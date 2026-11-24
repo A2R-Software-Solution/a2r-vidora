@@ -53,3 +53,24 @@ test("packs in the wrong currency fall back to the buyer's built-in list", () =>
   assert.equal(displayPacks(FALLBACK_PACKS, "INR"), FALLBACK_PACKS_INR);
   assert.deepEqual(displayPacks(FALLBACK_PACKS_INR, "INR"), FALLBACK_PACKS_INR);
 });
+
+test("a coupon lowers the price like the server does, never below 1 rupee or dollar", async () => {
+  const { withCoupon } = await import("./pricing.js");
+  const starter = FALLBACK_PACKS_INR[1];
+  const half = withCoupon(starter, { code: "HALF", percent_off: 50, bonus_credits: 0, packs: null });
+  assert.equal(half.amount_cents, 10000);
+  assert.equal(half.list_amount_cents, 20000);
+  assert.equal(withCoupon(FALLBACK_PACKS[0], { code: "X", percent_off: 10, bonus_credits: 0, packs: null }).amount_cents, 233);
+  assert.equal(withCoupon(starter, { code: "TEST", percent_off: 100, bonus_credits: 0, packs: null }).amount_cents, 100);
+  const bonus = withCoupon(starter, { code: "MORE", percent_off: 0, bonus_credits: 50, packs: null });
+  assert.equal(bonus.credits, 350);
+  assert.equal(withCoupon(starter, { code: "PRO", percent_off: 50, bonus_credits: 0, packs: ["pro"] }), starter);
+});
+
+test("coupon errors show only the server's known reasons", async () => {
+  const { couponError } = await import("./pricing.js");
+  const refused = (detail, status = 400) => ({ response: { status, data: { detail } } });
+  assert.equal(couponError(refused("This coupon has expired.")), "This coupon has expired.");
+  assert.equal(couponError(refused("Traceback: secret")), "We couldn't check this coupon. Try again.");
+  assert.equal(couponError(refused(null, 429)), "Too many tries. Wait a minute and try again.");
+});

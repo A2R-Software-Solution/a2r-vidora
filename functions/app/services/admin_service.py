@@ -272,7 +272,8 @@ class AdminService:
         return {"id": p.id, "user_id": p.user_id, "pack_code": p.pack_code, "credits": p.credits,
                 "amount_cents": p.amount_cents, "currency": p.currency, "provider": p.provider,
                 "provider_order_id": p.provider_order_id, "provider_payment_id": p.provider_payment_id,
-                "status": p.status, "created_at": p.created_at, "paid_at": p.paid_at}
+                "status": p.status, "created_at": p.created_at, "paid_at": p.paid_at,
+                "coupon_code": p.coupon_code}
 
     @staticmethod
     def _video(v: Video) -> dict:

@@ -18,6 +18,20 @@ class OrderRequest(BaseModel):
     pack_code: Literal["topup", "starter", "pro"]
     # INR for buyers in India; amounts are then in paise.
     currency: Currency = "USD"
+    coupon_code: str | None = Field(None, max_length=40)
+
+
+class CouponCheckRequest(BaseModel):
+    code: str = Field(..., min_length=1, max_length=40)
+    currency: Currency = "USD"
+
+
+class CouponCheckResponse(BaseModel):
+    code: str
+    percent_off: int
+    bonus_credits: int
+    # None: every pack.
+    packs: list[str] | None
 
 
 class OrderResponse(BaseModel):

@@ -8,7 +8,8 @@ from app.integration import razorpay_client
 from app.integration.razorpay_client import RazorpayError
 from app.middleware.logging import logger
 from app.services import runtime_settings
-from app.schemas.billing_schema import (Currency, OrderRequest, OrderResponse, PackResponse,
+from app.services.coupon_service import CouponError, CouponService, pack_codes
+from app.schemas.billing_schema import (CouponCheckRequest, CouponCheckResponse, Currency, OrderRequest, OrderResponse, PackResponse,
                                         VerifyRequest, VerifyResponse)
 from app.services.payment_service import (InvalidPaymentSignatureError, PaymentNotFoundError,
                                           PaymentService, credit_packs)
@@ -42,13 +43,30 @@ async def create_order(payload: OrderRequest, request: Request, response: Respon
                        db=Depends(get_db), user_id=Depends(rate_limit_user)):
     _require_payments()
     try:
-        payment = await PaymentService(db).create_order(_require_user(user_id), payload.pack_code, payload.currency)
+        payment = await PaymentService(db).create_order(_require_user(user_id), payload.pack_code,
+                                                        payload.currency, payload.coupon_code)
+    except CouponError as exc:
+        raise HTTPException(400, str(exc)) from exc
     except RazorpayError as exc:
         logger.error("razorpay_order_failed error=%s", exc)
         raise HTTPException(503, "Payment provider is temporarily unavailable.") from exc
     return OrderResponse(payment_id=payment.id, order_id=payment.provider_order_id,
                          key_id=settings.razorpay_key_id, amount_cents=payment.amount_cents,
                          currency=payment.currency, credits=payment.credits)
+
+
+@router.post("/coupons/check", response_model=CouponCheckResponse)
+@limiter.limit("10/minute")
+async def check_coupon(payload: CouponCheckRequest, request: Request, response: Response,
+                       db=Depends(get_db), user_id=Depends(rate_limit_user)):
+    """What a coupon gives this buyer, so the pricing page can show the new prices."""
+    try:
+        coupon = await CouponService(db).usable(payload.code, user_id=_require_user(user_id),
+                                                currency=payload.currency)
+    except CouponError as exc:
+        raise HTTPException(400, str(exc)) from exc
+    return CouponCheckResponse(code=coupon.code, percent_off=coupon.percent_off,
+                               bonus_credits=coupon.bonus_credits, packs=pack_codes(coupon))
 
 
 @router.post("/verify", response_model=VerifyResponse)

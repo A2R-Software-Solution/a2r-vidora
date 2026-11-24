@@ -13,3 +13,7 @@ export const adjustCredits = (id, amount, reason) =>
   apiClient.post(`/admin/users/${id}/credits`, { amount, reason });
 export const getTimeseries = (days, signal) => apiClient.get("/admin/timeseries", { params: { days }, signal });
 export const getActivity = (limit, signal) => apiClient.get("/admin/activity", { params: { limit }, signal });
+export const getCoupons = (signal) => apiClient.get("/admin/coupons", { signal });
+export const createCoupon = (coupon) => apiClient.post("/admin/coupons", coupon);
+// Fields left out stay as they are; null clears a limit.
+export const updateCoupon = (id, fields) => apiClient.patch(`/admin/coupons/${id}`, fields);

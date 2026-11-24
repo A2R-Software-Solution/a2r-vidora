@@ -1,4 +1,6 @@
 import uuid
+from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -37,3 +39,37 @@ class SettingsUpdateRequest(BaseModel):
 class CreditAdjustResponse(BaseModel):
     user_id: uuid.UUID
     purchased_balance: int
+
+
+PackCode = Literal["topup", "starter", "pro"]
+
+
+class CouponUpdate(BaseModel):
+    """Fields left out stay as they are."""
+    percent_off: int | None = Field(None, ge=0, le=100)
+    bonus_credits: int | None = Field(None, ge=0, le=100_000)
+    # None or an empty list: every pack.
+    packs: list[PackCode] | None = None
+    # None: both currencies.
+    currency: Literal["USD", "INR"] | None = None
+    # None: no limit.
+    max_uses: int | None = Field(None, ge=1, le=1_000_000)
+    per_user_limit: int | None = Field(None, ge=1, le=1000)
+    expires_at: datetime | None = None
+    active: bool | None = None
+    note: str | None = Field(None, max_length=200)
+
+    @field_validator("percent_off", "bonus_credits", "active")
+    @classmethod
+    def not_null(cls, v):
+        if v is None:
+            raise ValueError("must not be null")
+        return v
+
+
+class CouponCreate(CouponUpdate):
+    code: str = Field(..., min_length=3, max_length=40)
+    percent_off: int = Field(0, ge=0, le=100)
+    bonus_credits: int = Field(0, ge=0, le=100_000)
+    per_user_limit: int | None = Field(1, ge=1, le=1000)
+    active: bool = True

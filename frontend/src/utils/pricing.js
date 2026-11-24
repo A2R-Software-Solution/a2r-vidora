@@ -84,3 +84,36 @@ export function displayPacks(packs, currency = "USD") {
     && pack.currency === currency) : [];
   return valid.length ? valid : fallbackPacks(currency);
 }
+
+// A coupon's lowest price: 1 rupee or 1 dollar (100 units), as on the server.
+const COUPON_MIN_AMOUNT = 100;
+
+// The pack after a coupon, matching functions/app/services/coupon_service.py.
+// A coupon that does not cover this pack leaves it unchanged.
+export function withCoupon(pack, coupon) {
+  if (!coupon || (coupon.packs && !coupon.packs.includes(pack.code))) return pack;
+  const price = Math.floor((pack.amount_cents * (100 - coupon.percent_off) + 50) / 100);
+  return {
+    ...pack,
+    amount_cents: Math.max(price, Math.min(pack.amount_cents, COUPON_MIN_AMOUNT)),
+    credits: pack.credits + coupon.bonus_credits,
+    list_amount_cents: pack.amount_cents,
+    bonus_credits: coupon.bonus_credits,
+    coupon_code: coupon.code,
+  };
+}
+
+// The server's reasons a coupon is refused; anything else gets a general line.
+const COUPON_MESSAGES = new Set([
+  "This coupon code is not valid.", "This coupon has expired.", "This coupon does not apply to this pack.",
+  "This coupon has been used up.", "You have already used this coupon.",
+  "This coupon is not valid for payments in USD.", "This coupon is not valid for payments in INR.",
+]);
+
+export function couponError(error) {
+  const detail = error?.response?.data?.detail;
+  if (COUPON_MESSAGES.has(detail)) return detail;
+  if (error?.response?.status === 429) return "Too many tries. Wait a minute and try again.";
+  if (error?.response?.status === 401) return "Sign in to use a coupon.";
+  return "We couldn't check this coupon. Try again.";
+}

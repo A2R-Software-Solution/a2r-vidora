@@ -8,7 +8,8 @@ from app.models.credit_model import CreditAccount, CreditReservation, Payment, C
 from app.models.audio_merge_model import AudioMerge, AudioSource
 from app.models.media_download_model import MediaDownload
 from app.models.app_setting_model import AppSetting
+from app.models.coupon_model import Coupon
 
 __all__ = ["User", "Video", "TranscriptChunk", "QALog", "RateLimitBucket", "Short", "ShortPreset",
            "CreditAccount", "CreditReservation", "Payment", "CreditLedgerEntry", "AudioMerge", "AudioSource",
-           "MediaDownload", "AppSetting"]
+           "MediaDownload", "AppSetting", "Coupon"]
