@@ -52,7 +52,7 @@ export function friendlyApiError(error, context = "analyze") {
 // pricing: offer the pricing page; signIn: offer signing in.
 export function analysisFailure(stage, signedIn) {
   if (stage === "insufficient_credits") return {
-    text: "This video needs more credits than you have left (1 credit per minute). Your free signup credits do not renew; buy a pack to continue.",
+    text: "This video needs more credits than you have left. Your free signup credits do not renew; buy a pack to continue.",
     pricing: true, signIn: !signedIn,
   };
   if (stage === "no_speech") return {

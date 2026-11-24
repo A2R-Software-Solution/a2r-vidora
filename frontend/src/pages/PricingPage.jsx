@@ -7,14 +7,9 @@ import { usePlans } from "../hooks/usePlans";
 import { siteDetails } from "../content/siteDetails";
 import {
   FALLBACK_PACKS, PACK_DETAILS,
-  displayPacks, formatHours, formatPrice, packEquivalents, pricePer100Credits,
+  displayPacks, formatHours, formatPrice, pricePer100Credits,
 } from "../utils/pricing";
 import "./PricingPage.css";
-
-const freeTiers = (plans) => [
-  { id: "account", name: "Free account", credits: plans.user_monthly_credits, note: "Sign up free",
-    points: ["Videos up to 3 hours, within your credits", `${plans.user_daily_questions} questions a day`, "Your video history"] },
-];
 
 const perks = (plans) => [
   [`Kept for ${formatHours(plans.paid_retention_hours)}`,
@@ -34,9 +29,8 @@ function YourCredits({ credits }) {
   );
 }
 
-function PackCard({ pack, shortCost, signedIn, onSignIn, onBuy, busy, buying }) {
+function PackCard({ pack, signedIn, onSignIn, onBuy, busy, buying }) {
   const details = PACK_DETAILS[pack.code];
-  const { videos, videoMinutes, shorts } = packEquivalents(pack.credits, shortCost);
   return (
     <article className={`pricing-pack${details.featured ? " pricing-pack--featured" : ""}`} aria-labelledby={`pack-${pack.code}`}>
       {details.featured && <p className="pricing-pack-flag">Best value</p>}
@@ -48,8 +42,6 @@ function PackCard({ pack, shortCost, signedIn, onSignIn, onBuy, busy, buying }) 
       <p className="pricing-credits">{pack.credits} credits</p>
       <p className="pricing-blurb">{details.blurb}</p>
       <ul className="pricing-points">
-        <li>About {videos} videos of {videoMinutes} minutes</li>
-        <li>or up to {shorts} Shorts</li>
         <li>{pricePer100Credits(pack)} per 100 credits</li>
         <li>Credits never expire</li>
       </ul>
@@ -57,6 +49,28 @@ function PackCard({ pack, shortCost, signedIn, onSignIn, onBuy, busy, buying }) 
         ? <button type="button" className="pricing-buy" onClick={() => onBuy(pack)} disabled={busy}>
             {buying ? "Opening payment…" : `Buy ${pack.credits} credits`}</button>
         : <button type="button" className="pricing-buy" onClick={onSignIn}>Sign in to buy</button>}
+    </article>
+  );
+}
+
+function FreeCard({ plans, signedIn, onSignIn }) {
+  return (
+    <article className="pricing-pack" aria-labelledby="pack-free">
+      <h3 id="pack-free">Free</h3>
+      <p className="pricing-price">
+        <span className="pricing-amount">Free</span>
+        <span className="pricing-once">one-time</span>
+      </p>
+      <p className="pricing-credits">{plans.user_monthly_credits} credits</p>
+      <p className="pricing-blurb">Sign up and start with free credits.</p>
+      <ul className="pricing-points">
+        <li>{plans.user_daily_questions} questions a day</li>
+        <li>Your video history</li>
+        <li>One-time bonus, does not renew</li>
+      </ul>
+      {signedIn
+        ? <p className="pricing-tier-note">You're signed in</p>
+        : <button type="button" className="pricing-buy" onClick={onSignIn}>Sign up free</button>}
     </article>
   );
 }
@@ -121,40 +135,13 @@ export default function PricingPage({ signedIn = false, onSignIn }) {
         <YourCredits credits={credits} />
       </header>
 
-      <section className="pricing-section" aria-labelledby="credits-title">
-        <h2 id="credits-title">How credits work</h2>
-        <ul className="pricing-rules">
-          <li><strong>1 credit</strong><span>per minute of video analyzed</span></li>
-          <li><strong>{plans.short_credit_cost} credits</strong><span>per Short you create</span></li>
-          <li><strong>0 credits</strong><span>to ask questions about your video</span></li>
-          <li><strong>One-time bonus</strong><span>free credits are given once when you sign up and do not renew</span></li>
-        </ul>
-      </section>
-
-      <section className="pricing-section" aria-labelledby="free-title">
-        <h2 id="free-title">Free when you sign up</h2>
-        <div className="pricing-free">
-          {freeTiers(plans).map((tier) => (
-            <article className="pricing-tier" key={tier.id} aria-labelledby={`tier-${tier.id}`}>
-              <h3 id={`tier-${tier.id}`}>{tier.name}</h3>
-              <p className="pricing-credits"><span className="pricing-amount">{tier.credits}</span> free credits, one time</p>
-              <ul className="pricing-points">
-                {tier.points.map((point) => <li key={point}>{point}</li>)}
-              </ul>
-              {signedIn
-                ? <p className="pricing-tier-note">You're signed in</p>
-                : <button type="button" className="pricing-tier-cta" onClick={onSignIn}>{tier.note}</button>}
-            </article>
-          ))}
-        </div>
-      </section>
-
       <section className="pricing-section" aria-labelledby="packs-title">
         <h2 id="packs-title">Credit packs</h2>
         <p className="pricing-section-intro">Packs add to your free signup credits. Free credits are always used first.</p>
         {result && <p className={`pricing-result pricing-result--${result.ok ? "ok" : "error"}`} role={result.ok ? "status" : "alert"}>{result.text}</p>}
         <div className="pricing-packs">
-          {packs.map((pack) => <PackCard key={pack.code} pack={pack} shortCost={plans.short_credit_cost} signedIn={signedIn} onSignIn={onSignIn}
+          <FreeCard plans={plans} signedIn={signedIn} onSignIn={onSignIn} />
+          {packs.map((pack) => <PackCard key={pack.code} pack={pack} signedIn={signedIn} onSignIn={onSignIn}
             onBuy={buy} busy={!!buying} buying={buying === pack.code} />)}
         </div>
         <p className="pricing-footnote">Prices in US dollars. Payments are handled securely by Razorpay.</p>

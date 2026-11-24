@@ -12,7 +12,7 @@
 .pricing-rules span { font-size: 14px; line-height: 1.5; }
 
 .pricing-free { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
-.pricing-packs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; align-items: stretch; }
+.pricing-packs { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 18px; align-items: stretch; }
 
 .pricing-tier, .pricing-pack { position: relative; display: flex; flex-direction: column; padding: 26px; border: 1px solid #e1cdbd; border-radius: 22px; background: #fffaf5; color: #28221e; }
 .pricing-pack--featured { border-color: #c96a3f; background: #fbe8da; box-shadow: 0 14px 32px rgba(101, 55, 19, 0.1); }
