@@ -31,13 +31,18 @@ class CreditPack:
 
 
 PACK_CODES = ("topup", "starter", "pro")
+CURRENCIES = ("USD", "INR")
 
 
-def credit_packs() -> dict[str, CreditPack]:
-    """Current packs. Prices are copied onto each Payment at checkout, so
-    changing them (admin panel) never alters past purchases."""
+def credit_packs(currency: str = "USD") -> dict[str, CreditPack]:
+    """Current packs in USD (amount in cents) or INR (amount in paise). Prices
+    are copied onto each Payment at checkout, so changing them (admin panel)
+    never alters past purchases."""
+    if currency not in CURRENCIES:
+        raise UnknownPackError(currency)
+    unit = "paise" if currency == "INR" else "cents"
     return {code: CreditPack(code, credits=getattr(settings, f"pack_{code}_credits"),
-                             amount_cents=getattr(settings, f"pack_{code}_amount_cents"))
+                             amount_cents=getattr(settings, f"pack_{code}_amount_{unit}"), currency=currency)
             for code in PACK_CODES}
 
 
@@ -57,8 +62,8 @@ class PaymentService:
     def __init__(self, db: AsyncSession) -> None:
         self.db = db
 
-    async def create_order(self, user_id: uuid.UUID, pack_code: str) -> Payment:
-        pack = credit_packs().get(pack_code)
+    async def create_order(self, user_id: uuid.UUID, pack_code: str, currency: str = "USD") -> Payment:
+        pack = credit_packs(currency).get(pack_code)
         if pack is None:
             raise UnknownPackError(pack_code)
         payment_id = uuid.uuid4()

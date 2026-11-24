@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
-  FALLBACK_PACKS, FALLBACK_PLANS, displayPacks, displayPlans, formatHours, formatPrice, packEquivalents,
+  FALLBACK_PACKS, FALLBACK_PACKS_INR, FALLBACK_PLANS, buyerCurrency, displayPacks, displayPlans, formatHours, formatPrice, packEquivalents,
   pricePer100Credits,
 } from "./pricing.js";
 
@@ -39,4 +39,17 @@ test("unknown or malformed packs fall back to the built-in list", () => {
   assert.equal(displayPacks([{ code: "pro", credits: "800", amount_cents: 1000, currency: "USD" }]), FALLBACK_PACKS);
   const fromServer = [{ code: "pro", credits: 900, amount_cents: 1000, currency: "USD" }];
   assert.deepEqual(displayPacks(fromServer), fromServer);
+});
+
+test("buyers in India see rupee packs priced in paise", () => {
+  assert.equal(buyerCurrency("Asia/Kolkata"), "INR");
+  assert.equal(buyerCurrency("Asia/Calcutta"), "INR");
+  assert.equal(buyerCurrency("America/New_York"), "USD");
+  assert.deepEqual(FALLBACK_PACKS_INR.map((pack) => formatPrice(pack.amount_cents, pack.currency)), ["₹100", "₹200", "₹500"]);
+  assert.equal(formatPrice(8333, "INR"), "₹83.33");
+});
+
+test("packs in the wrong currency fall back to the buyer's built-in list", () => {
+  assert.equal(displayPacks(FALLBACK_PACKS, "INR"), FALLBACK_PACKS_INR);
+  assert.deepEqual(displayPacks(FALLBACK_PACKS_INR, "INR"), FALLBACK_PACKS_INR);
 });

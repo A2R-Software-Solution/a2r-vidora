@@ -53,6 +53,9 @@ EDITABLE: dict[str, Editable] = {e.key: e for e in (
     Editable("pack_starter_amount_cents", PACKS, "Starter: price", 50, 100_000, "US cents"),
     Editable("pack_pro_credits", PACKS, "Pro: credits", 1, 100_000),
     Editable("pack_pro_amount_cents", PACKS, "Pro: price", 50, 100_000, "US cents"),
+    Editable("pack_topup_amount_paise", PACKS, "Top-up: price in India", 100, 10_000_000, "paise"),
+    Editable("pack_starter_amount_paise", PACKS, "Starter: price in India", 100, 10_000_000, "paise"),
+    Editable("pack_pro_amount_paise", PACKS, "Pro: price in India", 100, 10_000_000, "paise"),
 )}
 
 # The .env values, captured before any override is applied.

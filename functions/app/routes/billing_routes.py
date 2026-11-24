@@ -8,7 +8,7 @@ from app.integration import razorpay_client
 from app.integration.razorpay_client import RazorpayError
 from app.middleware.logging import logger
 from app.services import runtime_settings
-from app.schemas.billing_schema import (OrderRequest, OrderResponse, PackResponse,
+from app.schemas.billing_schema import (Currency, OrderRequest, OrderResponse, PackResponse,
                                         VerifyRequest, VerifyResponse)
 from app.services.payment_service import (InvalidPaymentSignatureError, PaymentNotFoundError,
                                           PaymentService, credit_packs)
@@ -30,10 +30,10 @@ def _require_user(user_id):
 
 @router.get("/packs", response_model=list[PackResponse])
 @limiter.limit("50/minute")
-async def list_packs(request: Request, response: Response):
+async def list_packs(request: Request, response: Response, currency: Currency = "USD"):
     await runtime_settings.refresh()
     return [PackResponse(code=p.code, credits=p.credits, amount_cents=p.amount_cents, currency=p.currency)
-            for p in credit_packs().values()]
+            for p in credit_packs(currency).values()]
 
 
 @router.post("/orders", response_model=OrderResponse, status_code=201)
@@ -42,7 +42,7 @@ async def create_order(payload: OrderRequest, request: Request, response: Respon
                        db=Depends(get_db), user_id=Depends(rate_limit_user)):
     _require_payments()
     try:
-        payment = await PaymentService(db).create_order(_require_user(user_id), payload.pack_code)
+        payment = await PaymentService(db).create_order(_require_user(user_id), payload.pack_code, payload.currency)
     except RazorpayError as exc:
         logger.error("razorpay_order_failed error=%s", exc)
         raise HTTPException(503, "Payment provider is temporarily unavailable.") from exc

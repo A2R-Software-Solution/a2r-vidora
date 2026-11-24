@@ -162,6 +162,12 @@ class Settings(BaseSettings):
     pack_starter_amount_cents: int = Field(default=500, gt=0)
     pack_pro_credits: int = Field(default=800, gt=0)
     pack_pro_amount_cents: int = Field(default=1000, gt=0)
+    # The same packs for buyers in India, in paise (INR). Editable from the admin panel.
+    pack_topup_amount_paise: int = Field(default=10000, gt=0)
+    pack_starter_amount_paise: int = Field(default=20000, gt=0)
+    pack_pro_amount_paise: int = Field(default=50000, gt=0)
+    # Only for admin revenue totals, which are shown in US dollars.
+    admin_inr_per_usd: float = Field(default=88, gt=0)
 
     @property
     def cors_origins(self) -> list[str]:

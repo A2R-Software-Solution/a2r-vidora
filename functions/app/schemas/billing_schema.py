@@ -11,8 +11,13 @@ class PackResponse(BaseModel):
     currency: str
 
 
+Currency = Literal["USD", "INR"]
+
+
 class OrderRequest(BaseModel):
     pack_code: Literal["topup", "starter", "pro"]
+    # INR for buyers in India; amounts are then in paise.
+    currency: Currency = "USD"
 
 
 class OrderResponse(BaseModel):

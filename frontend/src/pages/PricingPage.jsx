@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import SiteLink from "../components/common/SiteLink";
 import { createOrder, getPacks, verifyPayment } from "../api/billingApi";
 import { refreshCredits, useCredits } from "../hooks/useCredits";
@@ -6,7 +6,7 @@ import { checkoutError, openCheckout } from "../utils/checkout";
 import { usePlans } from "../hooks/usePlans";
 import { siteDetails } from "../content/siteDetails";
 import {
-  FALLBACK_PACKS, PACK_DETAILS,
+  PACK_DETAILS, buyerCurrency, fallbackPacks,
   displayPacks, formatHours, formatPrice, pricePer100Credits,
 } from "../utils/pricing";
 import "./PricingPage.css";
@@ -75,8 +75,14 @@ function FreeCard({ plans, signedIn, onSignIn }) {
   );
 }
 
+// The time zone does not change while the page is open.
+const noSubscription = () => () => {};
+
 export default function PricingPage({ signedIn = false, onSignIn }) {
-  const [packs, setPacks] = useState(FALLBACK_PACKS);
+  // USD in the prerendered page and on first hydration, then the buyer's own currency.
+  const currency = useSyncExternalStore(noSubscription, buyerCurrency, () => "USD");
+  const [loaded, setLoaded] = useState(null);
+  const packs = loaded?.currency === currency ? loaded.packs : fallbackPacks(currency);
   const [buying, setBuying] = useState("");
   const [result, setResult] = useState(null);
   const busy = useRef(false);
@@ -97,7 +103,7 @@ export default function PricingPage({ signedIn = false, onSignIn }) {
     setBuying(pack.code);
     setResult(null);
     try {
-      const { data: order } = await createOrder(pack.code);
+      const { data: order } = await createOrder(pack.code, pack.currency);
       const paid = await openCheckout(order, { description: `${order.credits} Vidora AI credits` });
       setBuying("");
       const { data } = await verifyPayment(paid);
@@ -119,9 +125,10 @@ export default function PricingPage({ signedIn = false, onSignIn }) {
 
   useEffect(() => {
     const controller = new AbortController();
-    getPacks(controller.signal).then(({ data }) => setPacks(displayPacks(data))).catch(() => {});
+    getPacks(controller.signal, currency)
+      .then(({ data }) => setLoaded({ currency, packs: displayPacks(data, currency) })).catch(() => {});
     return () => controller.abort();
-  }, []);
+  }, [currency]);
 
   return (
     <article className="public-page pricing-page">
@@ -144,7 +151,7 @@ export default function PricingPage({ signedIn = false, onSignIn }) {
           {packs.map((pack) => <PackCard key={pack.code} pack={pack} signedIn={signedIn} onSignIn={onSignIn}
             onBuy={buy} busy={!!buying} buying={buying === pack.code} />)}
         </div>
-        <p className="pricing-footnote">Prices in US dollars. Payments are handled securely by Razorpay.</p>
+        <p className="pricing-footnote">Prices in {packs[0]?.currency === "INR" ? "Indian rupees" : "US dollars"}. Payments are handled securely by Razorpay.</p>
       </section>
 
       <section className="pricing-section" aria-labelledby="perks-title">

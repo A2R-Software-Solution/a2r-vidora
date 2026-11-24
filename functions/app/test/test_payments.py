@@ -45,6 +45,10 @@ class SignatureTests(unittest.TestCase):
         self.assertEqual({code: (p.amount_cents, p.credits, p.currency) for code, p in credit_packs().items()},
                          {"topup": (259, 120, "USD"), "starter": (500, 300, "USD"), "pro": (1000, 800, "USD")})
 
+    def test_indian_packs_are_priced_in_paise(self):
+        self.assertEqual({code: (p.amount_cents, p.credits, p.currency) for code, p in credit_packs("INR").items()},
+                         {"topup": (10000, 120, "INR"), "starter": (20000, 300, "INR"), "pro": (50000, 800, "INR")})
+
 
 class BillingApiTests(unittest.TestCase):
     def setUp(self):
@@ -78,6 +82,9 @@ class BillingApiTests(unittest.TestCase):
 
     def test_packs_are_public(self):
         self.assertEqual(len(self.client.get("/billing/packs").json()), 3)
+        inr = self.client.get("/billing/packs", params={"currency": "INR"}).json()
+        self.assertEqual({p["currency"] for p in inr}, {"INR"})
+        self.assertEqual(self.client.get("/billing/packs", params={"currency": "EUR"}).status_code, 422)
 
     def test_guests_must_sign_in_to_buy(self):
         response = self.client.post("/billing/orders", json={"pack_code": "pro"})
@@ -87,6 +94,7 @@ class BillingApiTests(unittest.TestCase):
     def test_unknown_pack_is_rejected(self):
         self.user = uuid.uuid4()
         self.assertEqual(self.client.post("/billing/orders", json={"pack_code": "free"}).status_code, 422)
+        self.assertEqual(self.client.post("/billing/orders", json={"pack_code": "pro", "currency": "EUR"}).status_code, 422)
 
     def test_disabled_payments_refuse_orders(self):
         self.user = uuid.uuid4()

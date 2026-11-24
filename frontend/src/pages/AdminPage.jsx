@@ -7,11 +7,11 @@ import { config } from "../config";
 import Dashboard from "./admin/Dashboard";
 import Icon from "./admin/Icon";
 import SalesTable from "./admin/SalesTable";
+import { formatPrice } from "../utils/pricing";
 import "./AdminPage.css";
 
 const PAGE_SIZE = 25;
 const fmtDate = (value) => (value ? new Date(value).toLocaleString() : "—");
-const fmtMoney = (cents) => `$${((cents || 0) / 100).toFixed(2)}`;
 const fmtDuration = (seconds) => (seconds == null ? "—" : `${Math.floor(seconds / 60)}m ${seconds % 60}s`);
 const short = (id) => (id ? String(id).slice(0, 8) : "—");
 const clip = (text, n = 80) => (text && text.length > n ? `${text.slice(0, n)}…` : text || "—");
@@ -34,7 +34,7 @@ const TABS = {
   payments: {
     label: "Payments", statuses: ["created", "paid", "failed", "refunded", "disputed"],
     columns: [["Email", (r) => r.email], ["Pack", (r) => r.pack_code], ["Credits", (r) => r.credits],
-      ["Amount", (r) => fmtMoney(r.amount_cents)], ["Status", (r) => r.status],
+      ["Amount", (r) => formatPrice(r.amount_cents, r.currency || "USD")], ["Status", (r) => r.status],
       ["Payment id", (r) => r.provider_payment_id || r.provider_order_id], ["Created", (r) => fmtDate(r.created_at)]],
   },
   videos: {
@@ -261,7 +261,7 @@ ${reason}`)) return;
             ["Note", (r) => clip(r.note, 70)]]} />
           <h3>Payments</h3>
           <Table rows={detail.payments} columns={[["Pack", (r) => r.pack_code], ["Credits", (r) => r.credits],
-            ["Amount", (r) => fmtMoney(r.amount_cents)], ["Status", (r) => r.status], ["Created", (r) => fmtDate(r.created_at)]]} />
+            ["Amount", (r) => formatPrice(r.amount_cents, r.currency || "USD")], ["Status", (r) => r.status], ["Created", (r) => fmtDate(r.created_at)]]} />
           <h3>Recent videos</h3>
           <Table rows={detail.videos} columns={TABS.videos.columns.filter(([n]) => n !== "Owner")} />
         </>
@@ -339,7 +339,8 @@ function Settings() {
                       min={row.minimum} max={row.maximum} value={value}
                       onChange={(e) => setDraft({ ...draft, [row.key]: e.target.value })} />
                     <span className="admin-muted">
-                      {row.unit}{row.unit === "US cents" && value !== "" ? ` (${fmtMoney(Number(value))})` : ""}
+                      {row.unit}{value !== "" && (row.unit === "US cents" || row.unit === "paise")
+                        ? ` (${formatPrice(Number(value), row.unit === "paise" ? "INR" : "USD")})` : ""}
                     </span>
                   </span>
                   <span className="admin-muted">

@@ -4,7 +4,7 @@ from __future__ import annotations
 import uuid
 from datetime import date, datetime, time, timedelta, timezone
 
-from sqlalchemy import String, cast, func, or_, select, text
+from sqlalchemy import String, case, cast, func, or_, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
@@ -20,6 +20,13 @@ from app.services.credit_service import IST, CreditService, ist_today, month_sta
 def _like(term: str) -> str:
     escaped = term.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
     return f"%{escaped}%"
+
+
+def _usd_cents():
+    """A payment's amount in US cents. INR payments (paise) are converted at
+    settings.admin_inr_per_usd, so revenue totals are an estimate in dollars."""
+    return case((Payment.currency == "INR", func.round(Payment.amount_cents / settings.admin_inr_per_usd)),
+                else_=Payment.amount_cents)
 
 
 class AdminBanError(Exception):
@@ -42,10 +49,10 @@ class AdminService:
                 Video.status == VideoStatus.FAILED, Video.created_at >= since)
             .group_by(Video.processing_stage).order_by(func.count().desc()).limit(10))).all()
         paid = (await self.db.execute(
-            select(func.count(), func.coalesce(func.sum(Payment.amount_cents), 0))
+            select(func.count(), func.coalesce(func.sum(_usd_cents()), 0))
             .where(Payment.status == "paid"))).one()
         paid_24h = (await self.db.execute(
-            select(func.count(), func.coalesce(func.sum(Payment.amount_cents), 0))
+            select(func.count(), func.coalesce(func.sum(_usd_cents()), 0))
             .where(Payment.status == "paid", Payment.paid_at >= since))).one()
         # Reserve rows are negative and release rows positive, so -sum is net spend.
         spent_24h = await self._scalar(
@@ -117,7 +124,7 @@ class AdminService:
         # Paid packs per IST month, newest first; a refunded or disputed payment is no longer a sale.
         paid_month = func.date_trunc("month", func.timezone("Asia/Kolkata", Payment.paid_at))
         sales = (await self.db.execute(
-            select(paid_month, func.count(), func.sum(Payment.credits), func.sum(Payment.amount_cents))
+            select(paid_month, func.count(), func.sum(Payment.credits), func.sum(_usd_cents()))
             .where(Payment.status == "paid", Payment.paid_at.is_not(None))
             .group_by(paid_month).order_by(paid_month.desc()).limit(12))).all()
 
@@ -161,7 +168,7 @@ class AdminService:
             "users": await per_day(User.created_at, func.count()),
             "videos": await per_day(Video.created_at, func.count()),
             "shorts": await per_day(Short.created_at, func.count()),
-            "revenue_cents": await per_day(Payment.paid_at, func.sum(Payment.amount_cents), Payment.status == "paid"),
+            "revenue_cents": await per_day(Payment.paid_at, func.sum(_usd_cents()), Payment.status == "paid"),
             # Reserve rows are negative and release rows positive: -sum is net spend.
             "credits_spent": await per_day(CreditLedgerEntry.created_at, -func.sum(CreditLedgerEntry.amount),
                                            CreditLedgerEntry.kind.in_(("reserve", "release"))),
