@@ -30,7 +30,7 @@ for (const path of paths) {
   const dir = resolve(dist, path.slice(1));
   mkdirSync(dir, { recursive: true });
   writeFileSync(resolve(dir, "index.html"), build({
-    title: `${page.label} | Vidora AI`, description: page.description, path, body: html,
+    title: page.seoTitle || `${page.label} | Vidora AI`, description: page.description, path, body: html,
   }));
 }
 

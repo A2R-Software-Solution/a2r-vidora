@@ -4,6 +4,7 @@ import { auth } from "./firebase";
 import Navbar from "./components/layout/Navbar";
 import Footer from "./components/layout/Footer";
 import LandingPage from "./pages/LandingPage";
+import { reelsMeta, analyzeMeta } from "./content/toolMeta";
 import ProductHome from "./pages/ProductHome";
 import HowItWorksSection from "./components/landing/HowItWorksSection";
 import PublicPage from "./pages/PublicPage";
@@ -45,7 +46,7 @@ function App() {
   const [hasVisitedHome, setHasVisitedHome] = useState(isTool);
   // Mount on first home visit, then retain drafts and the workspace while reading.
   if (isTool && !hasVisitedHome) setHasVisitedHome(true);
-  const publicPage = isPricing ? pricingMeta : isMerger ? songMergerMeta : isDownloader ? downloaderMeta
+  const publicPage = isTool ? (mode === "reels" ? reelsMeta : analyzeMeta) : isPricing ? pricingMeta : isMerger ? songMergerMeta : isDownloader ? downloaderMeta
     : Object.hasOwn(publicPages, path) ? publicPages[path] : null;
 
   useEffect(() => onAuthStateChanged(auth, setUser), []);
@@ -63,11 +64,10 @@ function App() {
   }, []);
 
   useLayoutEffect(() => {
-    document.title = isHome ? homeMeta.title : `${isAdmin ? "Admin" : publicPage?.label || "Page not found"} | Vidora AI`;
+    document.title = isHome ? homeMeta.title : publicPage?.seoTitle || `${isAdmin ? "Admin" : publicPage?.label || "Page not found"} | Vidora AI`;
     document.querySelector('meta[name="description"]')?.setAttribute("content",
       publicPage?.description || homeMeta.description);
     const frame = window.requestAnimationFrame(() => {
-      if (isTool) document.title = `${mode === "reels" ? "Create Reel" : "Analyze Video"} | Vidora AI`;
       const heading = document.querySelector(isHome ? ".product-home h1" : isTool ? ".home-content h1" : ".public-page h1");
       heading?.setAttribute("tabindex", "-1");
       heading?.focus({ preventScroll: true });

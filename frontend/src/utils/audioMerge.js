@@ -6,7 +6,8 @@ import { CREDITS_MESSAGE, YOUTUBE_LINK_MESSAGE, isYouTubeVideoUrl } from "./vide
 
 export const songMergerMeta = {
   label: "Song Merger",
-  description: "Join sections of YouTube videos and your own audio into one downloadable song with Vidora AI Song Merger.",
+  seoTitle: "Song Merger Online – Merge Songs & Make Mashups | Vidora AI",
+  description: "Merge two or more songs online into one track. Join parts of YouTube songs and your own audio, trim each part, and download the mashup. Free credits when you sign up.",
 };
 
 export const DEFAULT_LIMITS = Object.freeze({

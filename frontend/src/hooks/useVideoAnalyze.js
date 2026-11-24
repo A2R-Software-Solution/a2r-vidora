@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { analyzeVideo, getVideos } from "../api/videoApi";
 import { isYouTubeVideoUrl, YOUTUBE_LINK_MESSAGE, creditProblem, friendlyApiError, isYouTubeSessionUnavailable } from "../utils/videoInput";
 import { refreshCredits } from "./useCredits";
@@ -9,9 +9,10 @@ const PENDING_KEY = "vidora_pending_analysis";
 export function useVideoAnalyze() {
   const [loading, setLoading] = useState(false);
   const [restoring, setRestoring] = useState(false);
-  const [hasPreviousVideo, setHasPreviousVideo] = useState(
-    () => Boolean(localStorage.getItem(VIDEO_ID_STORAGE_KEY))
-  );
+  // Read after mount: the page is prerendered, where localStorage does not exist.
+  const [hasPreviousVideo, setHasPreviousVideo] = useState(false);
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- browser storage is read once hydration is done
+  useEffect(() => { setHasPreviousVideo(Boolean(localStorage.getItem(VIDEO_ID_STORAGE_KEY))); }, []);
   const [youtubeUnavailable, setYoutubeUnavailable] = useState(false);
   const [error, setError] = useState(null);
   const [video, setVideo] = useState(null);

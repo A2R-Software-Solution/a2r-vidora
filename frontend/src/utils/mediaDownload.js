@@ -1,5 +1,6 @@
 export const downloaderMeta = {
   label: "Media Downloader",
+  seoTitle: "Download Audio or Video from Your YouTube Content – MP3 & MP4 | Vidora AI",
   description: "Download audio or video from your own YouTube content in the quality you choose, with Vidora AI Media Downloader.",
 };
 

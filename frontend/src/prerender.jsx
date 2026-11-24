@@ -5,12 +5,13 @@ import App from "./App";
 import { pricingMeta, FALLBACK_PACKS } from "./utils/pricing";
 import { songMergerMeta } from "./utils/audioMerge";
 import { downloaderMeta } from "./utils/mediaDownload";
+import { reelsMeta, analyzeMeta } from "./content/toolMeta";
 import { publicPages } from "./content/publicPages";
 import { siteDetails, homeMeta } from "./content/siteDetails";
 import { setPrerenderPath } from "./utils/siteNavigation";
 
 const SITE = "https://vidoraa.com";
-const toolPages = { "/pricing": pricingMeta, "/song-merger": songMergerMeta, "/downloader": downloaderMeta };
+const toolPages = { "/reels": reelsMeta, "/analyze": analyzeMeta, "/pricing": pricingMeta, "/song-merger": songMergerMeta, "/downloader": downloaderMeta };
 
 export const paths = [...Object.keys(publicPages), ...Object.keys(toolPages)];
 export { homeMeta };
