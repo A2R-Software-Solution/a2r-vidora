@@ -21,6 +21,14 @@ Offset = Query(0, ge=0, le=100_000)
 Search = Query(None, max_length=100)
 
 
+@router.get("/me")
+@limiter.limit("60/minute")
+async def me(request: Request, response: Response):
+    """Lets the admin page check access before it shows anything: the router's
+    require_admin answers 401/403 for anyone else."""
+    return {"is_admin": True}
+
+
 @router.get("/overview")
 @limiter.limit("60/minute")
 async def overview(request: Request, response: Response, db=Depends(get_db)):

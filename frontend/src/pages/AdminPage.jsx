@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import {
-  adjustCredits, banUser, createCoupon, getCoupons, getCreditsSummary, getList, getSettings, getUserDetail,
+  adjustCredits, banUser, checkAdmin, createCoupon, getCoupons, getCreditsSummary, getList, getSettings, getUserDetail,
   saveSettings, unbanUser, updateCoupon,
 } from "../api/adminApi";
 import { signOut } from "firebase/auth";
@@ -536,10 +536,54 @@ const NAV = [["overview", "Dashboard", "home"], ["users", "Users", "users"], ["p
   ["coupons", "Coupons", "star"],
   ["videos", "Videos", "video"], ["shorts", "Shorts", "bolt"], ["qa-logs", "Q&A Logs", "chat"], ["settings", "Settings", "gear"]];
 
+// Nothing of the panel is shown until the server confirms this account is an
+// admin; anyone else gets the site's plain "not found", as if /admin did not exist.
+function useAdminAccess(user) {
+  const [access, setAccess] = useState({ uid: null, state: "checking" });
+  const [attempt, setAttempt] = useState(0);
+  const uid = user?.uid ?? null;
+  useEffect(() => {
+    if (!uid) return undefined;
+    const controller = new AbortController();
+    checkAdmin(controller.signal)
+      .then(() => setAccess({ uid, state: "ok" }))
+      .catch((e) => {
+        if (controller.signal.aborted) return;
+        const status = e?.response?.status;
+        setAccess({ uid, state: status === 401 || status === 403 ? "denied" : "error" });
+      });
+    return () => controller.abort();
+  }, [uid, attempt]);
+  // A different account (or a retry) is unchecked until its own answer arrives.
+  const state = access.uid === uid ? access.state : "checking";
+  return [state, () => { setAccess({ uid: null, state: "checking" }); setAttempt((n) => n + 1); }];
+}
+
 export default function AdminPage({ user, onSignIn }) {
   const [tab, setTab] = useState("overview");
   const [userId, setUserId] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [access, retryAccess] = useAdminAccess(user);
+
+  if (user && access === "checking") return <section className="ad-signin" aria-busy="true" />;
+  if (user && access === "denied") {
+    return (
+      <section className="ad-signin">
+        <h1>Page not found</h1>
+        <p className="admin-muted">The page you are looking for does not exist.</p>
+        <SiteLink href="/" className="admin-button">Back to home</SiteLink>
+      </section>
+    );
+  }
+  if (user && access === "error") {
+    return (
+      <section className="ad-signin">
+        <h1>Admin</h1>
+        <p className="admin-muted">Could not check your access. Check your connection and try again.</p>
+        <button type="button" className="admin-button" onClick={retryAccess}>Try again</button>
+      </section>
+    );
+  }
 
   if (!user) {
     return (

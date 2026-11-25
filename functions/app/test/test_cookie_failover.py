@@ -68,6 +68,12 @@ class CookieFailoverTests(unittest.TestCase):
             picks = {secrets.get_youtube_cookie()[0] for _ in range(20)}
         self.assertEqual(picks, {"b"})
 
+    def test_first_account_is_primary_and_others_are_fallbacks(self):
+        with patch.object(secrets, "_get_cached_secret", return_value="c"):
+            self.assertEqual({secrets.get_youtube_cookie()[0] for _ in range(20)}, {"a"})
+            secrets.report_bad_youtube_cookie("a")
+            self.assertEqual(secrets.get_youtube_cookie()[0], "b")
+
 
 if __name__ == "__main__":
     unittest.main()

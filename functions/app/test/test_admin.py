@@ -61,6 +61,13 @@ class AdminApiTests(unittest.TestCase):
         self.assertEqual(response.status_code, 403)
         self.settings_update.assert_not_awaited()
 
+    def test_access_check_admits_only_admins(self):
+        self.assertEqual(self.client.get("/admin/me").status_code, 401)
+        self.as_user(is_admin=False)
+        self.assertEqual(self.client.get("/admin/me").status_code, 403)
+        self.as_user(is_admin=True)
+        self.assertEqual(self.client.get("/admin/me").json(), {"is_admin": True})
+
     def test_admin_reads_and_saves_settings(self):
         self.as_user(is_admin=True)
         self.assertEqual(self.client.get("/admin/settings").json(), self.settings_rows)

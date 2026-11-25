@@ -1,6 +1,7 @@
 import apiClient from "./client";
 
-export const getOverview = (signal) => apiClient.get("/admin/overview", { signal });
+export const checkAdmin = (signal) => apiClient.get("/admin/me", { signal });
+export const getOverview =(signal) => apiClient.get("/admin/overview", { signal });
 export const getCreditsSummary = (signal) => apiClient.get("/admin/credits-summary", { signal });
 export const getList = (resource, params, signal) => apiClient.get(`/admin/${resource}`, { params, signal });
 export const getUserDetail = (id, signal) => apiClient.get(`/admin/users/${id}`, { signal });

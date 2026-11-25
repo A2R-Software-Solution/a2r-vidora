@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import random
 import time
 from dataclasses import dataclass
 
@@ -54,8 +53,9 @@ def _get_cached_secret(secret_id: str) -> str:
 
 def get_youtube_cookie(exclude: tuple[str, ...] | set[str] = ()) -> tuple[str, str]:
     """
-    Returns (secret_id, cookie_content) for one of the configured
-    YouTube accounts, chosen at random per call. Content is cached
+    Returns (secret_id, cookie_content) for the first configured YouTube
+    account that is not cooling down: the first account is the primary and
+    the rest are fallbacks, used only while it is refused. Content is cached
     in-memory per secret_id for _CACHE_TTL_SECONDS to avoid a Secret
     Manager round-trip on every download.
 
@@ -69,7 +69,7 @@ def get_youtube_cookie(exclude: tuple[str, ...] | set[str] = ()) -> tuple[str, s
         raise LookupError("No YouTube cookie account left to try.")
     # Prefer accounts YouTube has not refused recently; if all were, try them anyway.
     ready = [s for s in ids if _cooling.get(s, 0) <= now]
-    secret_id = random.choice(ready or ids)
+    secret_id = (ready or ids)[0]
     return secret_id, _get_cached_secret(secret_id)
 
 
