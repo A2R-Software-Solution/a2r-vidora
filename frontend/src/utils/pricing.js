@@ -15,9 +15,14 @@ export const FALLBACK_PACKS_INR = [
   { code: "pro", credits: 800, amount_cents: 50000, currency: "INR" },
 ];
 
-// INR for browsers set to Indian time, USD for everyone else. Call it only in
-// the browser after the first render: the prerendered page is always in USD.
-export function buyerCurrency(timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone) {
+// Off while the Razorpay account is US-based: it takes only USD, so everyone,
+// India included, pays in dollars. Turn on with INR_PAYMENTS_ENABLED in the backend.
+export const INR_ENABLED = false;
+
+// INR for browsers set to Indian time (when enabled), USD for everyone else. Call it
+// only in the browser after the first render: the prerendered page is always in USD.
+export function buyerCurrency(timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone, inrEnabled = INR_ENABLED) {
+  if (!inrEnabled) return "USD";
   return timeZone === "Asia/Kolkata" || timeZone === "Asia/Calcutta" ? "INR" : "USD";
 }
 

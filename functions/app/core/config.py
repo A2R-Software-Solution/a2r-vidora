@@ -162,6 +162,9 @@ class Settings(BaseSettings):
     pack_starter_amount_cents: int = Field(default=500, gt=0)
     pack_pro_credits: int = Field(default=800, gt=0)
     pack_pro_amount_cents: int = Field(default=1000, gt=0)
+    # Off while the Razorpay account is US-based: it can only take USD, and INR
+    # payments fail at checkout with "Currency is invalid". Needs an Indian account.
+    inr_payments_enabled: bool = False
     # The same packs for buyers in India, in paise (INR). Editable from the admin panel.
     pack_topup_amount_paise: int = Field(default=10000, gt=0)
     pack_starter_amount_paise: int = Field(default=20000, gt=0)

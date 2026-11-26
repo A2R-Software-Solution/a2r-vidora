@@ -101,6 +101,13 @@ class BillingApiTests(unittest.TestCase):
         with patch.object(settings, "payments_enabled", False):
             self.assertEqual(self.client.post("/billing/orders", json={"pack_code": "pro"}).status_code, 503)
 
+    def test_inr_orders_are_refused_while_inr_is_off(self):
+        self.user = uuid.uuid4()
+        with patch.object(settings, "inr_payments_enabled", False):
+            response = self.client.post("/billing/orders", json={"pack_code": "pro", "currency": "INR"})
+        self.assertEqual(response.status_code, 400)
+        self.payments.create_order.assert_not_awaited()
+
     def test_webhook_requires_a_valid_signature(self):
         body = json.dumps({"event": "order.paid", "payload": {}}).encode()
         bad = self.client.post("/billing/webhook", content=body, headers={"X-Razorpay-Signature": "forged"})

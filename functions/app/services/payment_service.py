@@ -154,7 +154,15 @@ class PaymentService:
         if name in {"payment.captured", "order.paid"}:
             await self._fulfil(payload.get("payment", {}).get("entity", {}))
         elif name == "payment.failed":
-            payment = await self._locked(order_id=payload.get("payment", {}).get("entity", {}).get("order_id"))
+            entity = payload.get("payment", {}).get("entity", {})
+            # Razorpay's own reason, without card or contact details.
+            logger.warning(
+                "payment_failed order_id=%s method=%s currency=%s international=%s code=%s "
+                "reason=%s source=%s step=%s description=%s",
+                entity.get("order_id"), entity.get("method"), entity.get("currency"),
+                entity.get("international"), entity.get("error_code"), entity.get("error_reason"),
+                entity.get("error_source"), entity.get("error_step"), entity.get("error_description"))
+            payment = await self._locked(order_id=entity.get("order_id"))
             if payment is not None and payment.status == "created":
                 payment.status = "failed"
             await self.db.commit()

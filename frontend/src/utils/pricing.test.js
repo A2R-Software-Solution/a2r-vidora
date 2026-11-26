@@ -42,9 +42,10 @@ test("unknown or malformed packs fall back to the built-in list", () => {
 });
 
 test("buyers in India see rupee packs priced in paise", () => {
-  assert.equal(buyerCurrency("Asia/Kolkata"), "INR");
-  assert.equal(buyerCurrency("Asia/Calcutta"), "INR");
-  assert.equal(buyerCurrency("America/New_York"), "USD");
+  assert.equal(buyerCurrency("Asia/Kolkata"), "USD"); // INR payments are off
+  assert.equal(buyerCurrency("Asia/Kolkata", true), "INR");
+  assert.equal(buyerCurrency("Asia/Calcutta", true), "INR");
+  assert.equal(buyerCurrency("America/New_York", true), "USD");
   assert.deepEqual(FALLBACK_PACKS_INR.map((pack) => formatPrice(pack.amount_cents, pack.currency)), ["₹100", "₹200", "₹500"]);
   assert.equal(formatPrice(8333, "INR"), "₹83.33");
 });

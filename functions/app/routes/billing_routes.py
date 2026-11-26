@@ -42,6 +42,8 @@ async def list_packs(request: Request, response: Response, currency: Currency = 
 async def create_order(payload: OrderRequest, request: Request, response: Response,
                        db=Depends(get_db), user_id=Depends(rate_limit_user)):
     _require_payments()
+    if payload.currency == "INR" and not settings.inr_payments_enabled:
+        raise HTTPException(400, "Payments in INR are not available.")
     try:
         payment = await PaymentService(db).create_order(_require_user(user_id), payload.pack_code,
                                                         payload.currency, payload.coupon_code)
